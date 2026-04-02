@@ -18,6 +18,9 @@ Tests are the executable spec. Design names the hill and the playback
 questions. Tests prove the answers. No ceremonial prose between
 intent and proof.
 
+If a claimed result cannot be reproduced, it is not done. Witnesses are
+not victory photos. They are rerunnable proof.
+
 Truth should lower honestly. Rich interaction is not the only reality.
 If meaning disappears without color, layout, motion, or shared context,
 the design is unfinished.
@@ -172,8 +175,10 @@ Numbered sequentially.
    questions. The human answers user questions. Write it down. The
    witness is the concrete artifact — test output, transcript,
    screenshot, recording — that shows both answers. No clear yes
-   means no. If the hill claims accessibility, localization, or
-   agent-facing explainability, witness those paths too.
+   means no. If the witness cannot be reproduced from committed
+   commands, inputs, or mechanisms, the answer is still no. If the
+   hill claims accessibility, localization, or agent-facing
+   explainability, witness those paths too.
 
 5. **PR → main** — review until merge.
 

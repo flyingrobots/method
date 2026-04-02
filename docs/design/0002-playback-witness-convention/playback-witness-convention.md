@@ -18,7 +18,8 @@ Every closed cycle has a `docs/method/retro/<cycle>/witness/`
 directory that contains a small human-readable index plus the concrete
 artifacts needed to answer the cycle's playback questions. A reviewer
 should be able to open the witness directory, map artifact to claim,
-and decide whether the cycle earned a clear yes.
+and decide whether the cycle earned a clear yes. If the key claim
+cannot be reproduced, the cycle is not done.
 
 ## Playback Questions
 
@@ -92,6 +93,9 @@ Every closed cycle should aim to produce:
 Additional artifacts are optional and only included when they prove
 something the text witnesses cannot prove alone.
 
+Observational artifacts may support the witness, but they cannot be the
+entire basis for done.
+
 ### Preferred Artifact Types
 
 Prefer these in roughly this order:
@@ -104,6 +108,9 @@ Prefer these in roughly this order:
 
 This keeps witness directories small, diffable, and agent-readable by
 default.
+
+The ordering is strict in spirit: rich media can supplement reproducible
+proof, not replace it.
 
 ### Naming
 
@@ -127,6 +134,9 @@ such as `playback-agent.md` or `verification-accessible.txt`.
 2. Which command or mechanism produced it?
 3. Is it deterministic and reproducible, or only observational?
 4. What should a later reviewer look for?
+
+If the artifact is only observational, the index should also point to
+the reproducible artifact that carries the actual done-claim.
 
 ### CLI / MCP Posture
 

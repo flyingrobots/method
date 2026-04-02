@@ -9,6 +9,8 @@ is not to create a compliance archive. The goal is to leave behind just
 enough concrete evidence that a later human or agent can answer the
 playback questions honestly.
 
+If the core claim cannot be reproduced, the cycle is not done.
+
 ## Default Shape
 
 ```text
@@ -32,6 +34,9 @@ Add extra artifacts when the default packet would hide important truth:
   would be too lossy
 - `screenshot.png` when visual correctness itself is the thing being
   proven
+
+These artifacts do not replace reproducible proof. They only add
+context.
 
 ## What The Index Should Say
 
@@ -58,6 +63,8 @@ deterministic and reproducible one.
   preserves a past observation.
 - If an artifact is observational rather than reproducible, say so
   plainly in the witness index.
+- Do not treat a screenshot, recording, or one-off manual observation as
+  sufficient proof of done by itself.
 
 ## Accessibility Bias
 
