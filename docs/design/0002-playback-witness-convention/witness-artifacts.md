@@ -46,16 +46,18 @@ flat, literal language:
 If a richer artifact is present, the index should still make the answer
 legible without opening that artifact.
 
-## Determinism Bias
+## Determinism And Reproducibility Bias
 
 When two artifacts answer the same question, prefer the more
-deterministic one.
+deterministic and reproducible one.
 
 - Prefer `status.jsonl` over a screenshot of terminal output.
 - Prefer a Markdown or text transcript over a prose memory of what
   happened.
-- Prefer a committed trace file over "I clicked around and it looked
-  right."
+- Prefer an artifact that another reviewer can rerun over one that only
+  preserves a past observation.
+- If an artifact is observational rather than reproducible, say so
+  plainly in the witness index.
 
 ## Accessibility Bias
 

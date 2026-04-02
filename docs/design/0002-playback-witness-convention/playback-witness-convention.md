@@ -8,9 +8,9 @@ Legend: none
 - Human: I can inspect any closed cycle quickly and see what was
   actually proven without rereading the full design or reconstructing
   the demo from memory.
-- Agent: I can produce deterministic, self-contained playback evidence
-  with stable filenames and low-overhead tooling, then leave it behind
-  as durable repo truth for the next collaborator.
+- Agent: I can produce deterministic and reproducible, self-contained
+  playback evidence with stable filenames and low-overhead tooling,
+  then leave it behind as durable repo truth for the next collaborator.
 
 ## Hill
 
@@ -34,9 +34,9 @@ and decide whether the cycle earned a clear yes.
 
 - [ ] Can I generate witness artifacts through repo-native commands and
       files rather than hidden chat state or ad hoc manual notes?
-- [ ] Do the conventions favor deterministic outputs such as command
-      transcripts, exit codes, JSON, JSONL, TAP, or JUnit before
-      falling back to richer artifacts?
+- [ ] Do the conventions favor outputs that are both deterministic and
+      reproducible, such as command transcripts, exit codes, JSON,
+      JSONL, TAP, or JUnit, before falling back to richer artifacts?
 
 ## Accessibility and Assistive Reading
 
@@ -74,7 +74,8 @@ and decide whether the cycle earned a clear yes.
 - [ ] Replacing the design doc, tests, or retro. Witnesses prove; they
       do not restate intent.
 - [ ] Committing large or sensitive binary artifacts by default when a
-      deterministic text artifact would answer the same question.
+      deterministic and reproducible text artifact would answer the
+      same question.
 
 ## Proposed Convention
 
@@ -85,7 +86,7 @@ Every closed cycle should aim to produce:
 - `witness/README.md` — index of playback questions to artifacts
 - `witness/playback.md` — the direct playback answers, including human
   and agent outcomes
-- `witness/verification.md` — deterministic verification commands and
+- `witness/verification.md` — reproducible verification commands and
   their results
 
 Additional artifacts are optional and only included when they prove
@@ -97,7 +98,7 @@ Prefer these in roughly this order:
 
 1. Plain text or Markdown transcripts
 2. JSON or JSONL output
-3. TAP, JUnit, or other deterministic test reports
+3. TAP, JUnit, or other deterministic, reproducible test reports
 4. Screenshots, traces, or recordings when the behavior is genuinely
    visual or interactive
 
@@ -124,7 +125,7 @@ such as `playback-agent.md` or `verification-accessible.txt`.
 
 1. What playback question does each artifact support?
 2. Which command or mechanism produced it?
-3. Is it deterministic or observational?
+3. Is it deterministic and reproducible, or only observational?
 4. What should a later reviewer look for?
 
 ### CLI / MCP Posture
