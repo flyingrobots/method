@@ -1,0 +1,28 @@
+{
+  "name": "method",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "method": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "method": "tsx src/cli.ts",
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest --config vitest.config.ts"
+  },
+  "dependencies": {
+    "@flyingrobots/bijou": "4.0.0",
+    "@flyingrobots/bijou-node": "4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

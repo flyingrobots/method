@@ -18,6 +18,22 @@ Tests are the executable spec. Design names the hill and the playback
 questions. Tests prove the answers. No ceremonial prose between
 intent and proof.
 
+Truth should lower honestly. Rich interaction is not the only reality.
+If meaning disappears without color, layout, motion, or shared context,
+the design is unfinished.
+
+Accessibility is a product concern, not a fallback string path. Designs
+must name the linear reading model and reduced-complexity experience,
+not assume the default operator.
+
+Localization is not translation after the fact. Wording, wrapping,
+formatting, and directionality are design constraints early. Prefer
+logical `start`/`end` thinking over hardcoded left/right assumptions.
+
+Agent surfaces must be explicit and inspectable. If work is
+agent-mediated, say what is agent-generated, why it exists, what
+evidence it relies on, and what action it expects next.
+
 The filesystem is the database. A directory is a priority. A filename
 is an identity. Moving a file is a decision. `ls` is the query.
 
@@ -140,7 +156,12 @@ Numbered sequentially.
    - Sponsor agent
    - Hill
    - Playback questions — yes/no, both perspectives. Write them first.
+   - Accessibility / assistive reading posture
+   - Localization / directionality posture
+   - Agent inspectability / explainability posture
    - Non-goals
+
+   If a posture is not relevant, say so explicitly.
 
 2. **RED** — write failing tests. Playback questions become specs.
    Default to agent surface first.
@@ -151,7 +172,8 @@ Numbered sequentially.
    questions. The human answers user questions. Write it down. The
    witness is the concrete artifact — test output, transcript,
    screenshot, recording — that shows both answers. No clear yes
-   means no.
+   means no. If the hill claims accessibility, localization, or
+   agent-facing explainability, witness those paths too.
 
 5. **PR → main** — review until merge.
 
@@ -190,6 +212,31 @@ idea → inbox/ → cool-ideas/ → up-next/ → asap/
       — or →
   → graveyard/
 ```
+
+## CLI
+
+The repo ships a small TypeScript CLI for METHOD workspace operations,
+using published Bijou packages for terminal output and prompts.
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run it directly from the repo during development:
+
+```bash
+npm run method -- status
+```
+
+Core commands:
+
+- `method init` — scaffold the METHOD directories and placeholder docs.
+- `method inbox "raw idea"` — capture a backlog note in `inbox/`.
+- `method pull <item>` — promote a backlog item into the next numbered cycle.
+- `method close [cycle]` — write a retro for an active cycle and create its `witness/` directory.
+- `method status` — summarize backlog lanes, active cycles, and legend load.
 
 ## What this system does not have
 
