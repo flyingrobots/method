@@ -4,48 +4,61 @@ A backlog, a loop, and honest bookkeeping.
 
 ## Principles
 
-The agent and the human sit at the same table. They see different
+### Stances
+
+**The agent and the human sit at the same table.** They see different
 things. Both are named in every design. Both must agree before work
-ships. Default to building the agent surface first — it is the
-foundation the human experience stands on. If the work is
-human-first exploratory design, say so in the design doc.
+ships.
 
-Everything traces to a playback question. If you cannot say which
-question your work answers, you are drifting. Stop. Reconnect to
-the design, or change it.
+**Default to building the agent surface first** - it is the foundation
+the human experience stands on. If the work is human-first exploratory
+design, say so in the design doc.
 
-Tests are the executable spec. Design names the hill and the playback
-questions. Tests prove the answers. No ceremonial prose between
-intent and proof.
-
-If a claimed result cannot be reproduced, it is not done. Witnesses are
-not victory photos. They are rerunnable proof.
-
-Truth should lower honestly. Rich interaction is not the only reality.
-If meaning disappears without color, layout, motion, or shared context,
-the design is unfinished.
-
-Accessibility is a product concern, not a fallback string path. Designs
-must name the linear reading model and reduced-complexity experience,
-not assume the default operator.
-
-Localization is not translation after the fact. Wording, wrapping,
-formatting, and directionality are design constraints early. Prefer
-logical `start`/`end` thinking over hardcoded left/right assumptions.
-
-Agent surfaces must be explicit and inspectable. If work is
+**Agent surfaces must be explicit and inspectable.** If work is
 agent-mediated, say what is agent-generated, why it exists, what
 evidence it relies on, and what action it expects next.
 
-The filesystem is the database. A directory is a priority. A filename
-is an identity. Moving a file is a decision. `ls` is the query.
+**The filesystem is the database.** A directory is a priority. A
+filename is an identity. Moving a file is a decision. `ls` is the
+query.
 
-Process should be calm. No sprints. No velocity. No burndown. A
+**Process should be calm.** No sprints. No velocity. No burndown. A
 backlog tiered by judgment, and a loop for doing it well.
+
+### Design constraints
+
+**Meaning must survive without decoration.** If the work only makes
+sense with color, layout, motion, or shared visual context, the design
+is unfinished. Rich interaction is valuable, but the underlying truth
+must stand on its own.
+
+**Accessibility is a product concern, not a fallback string path.**
+Designs must name the linear reading model and reduced-complexity
+experience, not assume the default operator.
+
+**Localization is not translation after the fact.** Wording, wrapping,
+formatting, and directionality are design constraints from the start.
+Prefer logical `start`/`end` thinking over hardcoded left/right
+assumptions.
+
+### Quality gates
+
+**Everything traces to a playback question.** If you cannot say which
+question your work answers, you are drifting. Stop. Reconnect to the
+design, or change it.
+
+**Tests are the executable spec.** Design names the hill and the
+playback questions. Tests prove the answers. No ceremonial prose
+between intent and proof.
+
+**If a claimed result cannot be reproduced, it is not done.**
+Witnesses are not victory photos. They are rerunnable proof.
+
+---
 
 ## Structure
 
-```
+```text
 docs/
   method/
     backlog/
@@ -68,6 +81,8 @@ docs/
 Signpost documents live at root or one level into `docs/`. They use
 `ALL_CAPS.md`. Deeper than that, it is not a signpost.
 
+---
+
 ## Backlog
 
 Markdown files. Each describes work worth doing. The filesystem is
@@ -75,17 +90,19 @@ the index.
 
 ### Inbox
 
-Anyone — human or agent — drops ideas in at any time. A sentence is
+Anyone - human or agent - drops ideas in at any time. A sentence is
 enough. No legend, no scope, no ceremony. Capture it. Keep moving.
 The inbox is processed during maintenance.
 
 ### Lanes
 
-- **`inbox/`** — unprocessed.
-- **`asap/`** — pull into a cycle soon.
-- **`up-next/`** — next in line.
-- **`cool-ideas/`** — not commitments.
-- **`bad-code/`** — it works, but it bothers you.
+| Lane | Purpose |
+|------|---------|
+| `inbox/` | Unprocessed. |
+| `asap/` | Pull into a cycle soon. |
+| `up-next/` | Next in line. |
+| `cool-ideas/` | Not commitments. |
+| `bad-code/` | It works, but it bothers you. |
 
 Anything else sits in the backlog root.
 
@@ -93,7 +110,7 @@ Anything else sits in the backlog root.
 
 Legend prefix if applicable. No numeric IDs.
 
-```
+```text
 VIZ_braille-rendering.md
 PROTO_strand-lifecycle.md
 debt-trailer-codec-dts.md
@@ -101,21 +118,22 @@ debt-trailer-codec-dts.md
 
 ### Promoting
 
-Pulled into a cycle, a backlog item becomes a design doc:
+When a backlog item is pulled into a cycle, it becomes a design doc:
 
-```
-backlog/asap/PROTO_strand-lifecycle.md → design/<cycle>/strand-lifecycle.md
+```text
+backlog/asap/PROTO_strand-lifecycle.md -> design/<cycle>/strand-lifecycle.md
 ```
 
-The backlog file is removed.
+The backlog file is removed. Work does not live in two places.
 
 ### Commitment
 
-Pull it and you own it. It does not go back.
+Pull it and you own it - "you" meaning the named sponsors (human and
+agent) in the design doc. It does not go back.
 
-- **Finish** — hill met.
-- **Pivot** — end early, write the retro. Remaining work re-enters
-  the backlog as a new item.
+- **Finish** - hill met.
+- **Pivot** - end early, write the retro. Remaining work re-enters
+  the backlog as a new item with fresh scope.
 
 ### Maintenance
 
@@ -131,94 +149,196 @@ Do not reorganize mid-cycle.
 
 Same loop regardless:
 
-- **Feature** — design, test, build, ship.
-- **Design** — the deliverable is docs, not code.
-- **Debt** — pull from `bad-code/`. The hill is "this no longer
+- **Feature** - design, test, build, ship.
+- **Design** - the deliverable is docs, not code.
+- **Debt** - pull from `bad-code/`. The hill is "this no longer
   bothers us."
+
+---
 
 ## Legends
 
-A named domain that spans many cycles. Each legend describes what it
-covers, who cares, what success looks like, and how you know.
+A named domain that spans many cycles. Legends organize attention, not
+timelines - they are reference frames, not milestones. A legend never
+starts or finishes. It describes what it covers, who cares, what
+success looks like, and how you know.
 
-Legends do not start or finish. They are reference frames.
+A legend code (`VIZ`, `PROTO`, `TUI`) prefixes backlog filenames so
+that `ls` reveals domain load at a glance. Legends live in
+`docs/method/legends/` as standalone documents.
 
-A legend code (`VIZ`, `PROTO`, `TUI`) prefixes backlog filenames.
+---
 
 ## Cycles
 
-A unit of shipped work. Design, implementation, retrospective.
-Numbered sequentially.
+A cycle is a unit of shipped work. Design, implementation,
+retrospective. Numbered sequentially.
+
+### Size
+
+A cycle has no prescribed duration. It should be small enough that a
+failed one teaches more than it costs. If you cannot describe the hill
+in one sentence, the cycle is too big. Split it.
 
 ### The loop
 
-0. **Pull** — choose. Move it. Committed.
+0. **Pull** - choose from the backlog. Move it into
+   `docs/design/<cycle>/`. You are now committed.
 
-1. **Design** — write a design doc in `docs/design/<cycle>/`.
+1. **Design** - write a design doc. Required sections:
+
    - Sponsor human
    - Sponsor agent
-   - Hill
-   - Playback questions — yes/no, both perspectives. Write them first.
+   - Hill (one sentence)
+   - Playback questions - yes/no, both perspectives. Write them first.
    - Accessibility / assistive reading posture
    - Localization / directionality posture
    - Agent inspectability / explainability posture
    - Non-goals
 
-   If a posture is not relevant, say so explicitly.
+   If a posture is not relevant, say so explicitly. Silence is not a
+   position.
 
-2. **RED** — write failing tests. Playback questions become specs.
+2. **RED** - write failing tests. Playback questions become specs.
    Default to agent surface first.
 
-3. **GREEN** — make them pass.
+3. **GREEN** - make them pass.
 
-4. **Playback** — produce a witness. The agent answers agent
-   questions. The human answers user questions. Write it down. The
-   witness is the concrete artifact — test output, transcript,
-   screenshot, recording — that shows both answers. No clear yes
-   means no. If the witness cannot be reproduced from committed
-   commands, inputs, or mechanisms, the answer is still no. If the
-   hill claims accessibility, localization, or agent-facing
-   explainability, witness those paths too.
+4. **Playback** - produce a witness. The agent answers agent
+   questions. The human answers user questions. Write it down.
 
-5. **PR → main** — review until merge.
+   The **witness** is the concrete artifact - test output, transcript,
+   screenshot, recording - that shows both answers. No clear yes means
+   no. If the witness cannot be reproduced from committed commands,
+   inputs, or mechanisms, the answer is still no. Observational
+   artifacts may support the witness, but they do not carry the
+   done-claim by themselves. If the hill claims accessibility,
+   localization, or agent-facing explainability, witness those paths
+   too.
 
-6. **Close** — merge. Retro in `docs/method/retro/<cycle>/`.
-   - Drift check (mandatory). Undocumented drift is the only failure.
+5. **PR -> main** - review until merge.
+
+6. **Close** - merge. Retro in `docs/method/retro/<cycle>/`.
+
+   - Drift check (mandatory). Undocumented drift is the only true
+     failure mode.
    - New debt to `bad-code/`.
    - Cool ideas to `cool-ideas/`.
    - Backlog maintenance.
 
-   Releases happen when externally meaningful behavior changes.
-   Not every cycle is a release. Update CHANGELOG and README
-   regardless.
+   Releases happen when externally meaningful behavior changes. Not
+   every cycle is a release. Update CHANGELOG and README regardless.
+
+### Disagreement at playback
+
+Both sponsors must say yes. When they disagree:
+
+1. Name the disagreement in the witness. What does the agent see that
+   the human does not, or vice versa?
+2. If the gap is scoping - the hill was met but the answer is
+   unsatisfying - the cycle is **partial**. Merge what is honest.
+   Write the retro. File a new backlog item for the remainder.
+3. If the gap is correctness - one sponsor believes the work is
+   wrong - do not merge it. Return to RED or GREEN. If the work is
+   abandoned instead of fixed, close the cycle as **not met** and write
+   the retro.
+
+The human does not automatically override the agent. The agent does
+not automatically override the human. The design doc is the tiebreaker:
+does the witness answer the playback questions or not?
 
 ### Outcomes
 
-- **Hill met** — merge, close.
-- **Partial** — merge what is honest. Retro explains the gap.
-- **Not met** — cycle still concludes. Write the retro. A failed
+- **Hill met** - merge, close.
+- **Partial** - merge what is honest. Retro explains the gap.
+- **Not met** - cycle still concludes. Write the retro. A failed
   cycle with a good retro beats a successful one with no learnings.
 
 Every cycle ends with a retro. Success is not required.
 
+---
+
+## Coordination
+
+METHOD is designed for a solo developer working with an agent. It
+scales to a team without adding meetings, roles, or synchronization
+ceremonies. The mechanism is passive legibility.
+
+### The filesystem is the coordination layer
+
+If you can answer these questions by reading the repo, you do not need
+a standup:
+
+- What is everyone working on? -> `method status`
+- What is committed? -> each design doc names its sponsors and hill
+- What is next? -> `ls docs/method/backlog/asap/`
+- What failed and why? -> `ls docs/method/retro/`
+- What did we decide not to do? -> `ls docs/method/graveyard/`
+
+If any of these are unclear, the docs are incomplete. Fix the docs,
+not the process.
+
+### BEARING.md
+
+A single living document at `docs/BEARING.md`. One page, updated at
+cycle boundaries - not mid-cycle. It answers three questions:
+
+1. **Where are we going?** - the current priority (legend, theme, or
+   plain English).
+2. **What just shipped?** - last completed cycle, one line.
+3. **What feels wrong?** - known tensions, open questions, gut
+   feelings that do not yet have backlog items.
+
+`BEARING.md` is a signpost, not a status report. It summarizes
+direction; it does not create commitments, replace backlog items, or
+record decisions that belong in design docs, retros, or the backlog.
+It is written by whoever closes a cycle. On a solo project, that is
+you. On a team, it is whoever merged last. No scheduling, no rotation,
+no process. It updates as a side effect of doing the work.
+
+If the bearing drifts without anyone noticing, that is the signal to
+talk - not a meeting, just a conversation. The drift itself is the
+agenda.
+
+### Conflict at the backlog
+
+Two people pulling conflicting work from `asap/` is a design-doc
+problem, not a process problem. Active design docs are visible through
+`method status` and the repo itself. If your hill contradicts an
+active cycle's hill, you should see it at step 1. Resolve it there or
+file it as a tension in `docs/BEARING.md`.
+
+### What this does not add
+
+No standups. No syncs. No status emails. No sprint planning. No retro
+meetings. The retro is a document, not a ceremony. The repo is the
+single source of truth. Read it.
+
+---
+
 ## Graveyard
 
-Rejected work moves to `docs/method/graveyard/` with a note. The
-graveyard prevents re-proposing without context.
+Rejected work moves to `docs/method/graveyard/` with a note explaining
+why. The graveyard prevents re-proposing without context. If you want
+to resurrect something, you must address the note.
+
+---
 
 ## Flow
 
-```
-idea → inbox/ → cool-ideas/ → up-next/ → asap/
-  → design/<cycle>/  (committed)
-  → RED → GREEN → playback (witness)
-  → retro/<cycle>/
-  → release (when meaningful)
-      — or →
-  → graveyard/
+```text
+idea -> inbox/ -> cool-ideas/ -> up-next/ -> asap/
+  -> design/<cycle>/  (committed)
+  -> RED -> GREEN -> playback (witness)
+  -> retro/<cycle>/
+  -> release (when meaningful)
+      - or ->
+  -> graveyard/
 ```
 
-## CLI
+---
+
+## Tooling
 
 The repo ships a small TypeScript CLI for METHOD workspace operations,
 using published Bijou packages for terminal output and prompts.
@@ -229,7 +349,7 @@ Install dependencies:
 npm install
 ```
 
-Run it directly from the repo during development:
+Run during development:
 
 ```bash
 npm run method -- status
@@ -237,25 +357,31 @@ npm run method -- status
 
 Core commands:
 
-- `method init` — scaffold the METHOD directories and placeholder docs.
-- `method inbox "raw idea"` — capture a backlog note in `inbox/`.
-- `method pull <item>` — promote a backlog item into the next numbered cycle.
-- `method close [cycle]` — write a retro for an active cycle and create its `witness/` directory.
-- `method status` — summarize backlog lanes, active cycles, and legend load.
+| Command | Purpose |
+|---------|---------|
+| `method init` | Scaffold METHOD directories and placeholder docs. |
+| `method inbox "raw idea"` | Capture a backlog note in `inbox/`. |
+| `method pull <item>` | Promote a backlog item into the next numbered cycle. |
+| `method close [cycle]` | Write a retro and create its `witness/` directory. |
+| `method status` | Summarize backlog lanes, active cycles, and legend load. |
+
+---
 
 ## What this system does not have
 
-No milestones. No velocity. No ticket numbers.
+No milestones. No velocity. No ticket numbers. No required meetings.
 
 The backlog is tiered by lane. Choice within a lane is judgment at
-pull time. That is enough.
+pull time. Coordination is reading the filesystem. That is enough.
+
+---
 
 ## Naming
 
 | Convention | Example | When |
 |------------|---------|------|
-| `ALL_CAPS.md` | `VISION.md` | Signpost — root or `docs/` |
+| `ALL_CAPS.md` | `VISION.md`, `BEARING.md` | Signpost - root or `docs/` |
 | `lowercase.md` | `doctrine.md` | Everything else |
 | `<LEGEND>_<name>.md` | `VIZ_braille.md` | Backlog with legend |
-| `<name>.md` | `debt-trailer-codec.md` | Backlog without |
+| `<name>.md` | `debt-trailer-codec.md` | Backlog without legend |
 | `<cycle>/` | `0010-strand-speculation/` | Cycle directory |
