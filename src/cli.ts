@@ -120,8 +120,15 @@ export async function main(argv: readonly string[] = process.argv.slice(2)): Pro
 
 function parseCliArgs(argv: readonly string[]): ParsedCommand {
   const [command, ...rest] = argv;
-  if (command === undefined || command === '--help' || command === '-h' || command === 'help') {
+  if (command === undefined || command === '--help' || command === '-h') {
     return { command: 'help' };
+  }
+
+  if (command === 'help') {
+    if (rest.length > 1) {
+      throw new MethodError('Usage: method help [command]');
+    }
+    return { command: 'help', topic: rest[0] };
   }
 
   if (rest.includes('--help') || rest.includes('-h')) {

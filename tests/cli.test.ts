@@ -44,6 +44,21 @@ describe('method CLI', () => {
     expectFile(root, 'CHANGELOG.md');
   });
 
+  it('shows command-specific help for help <command>', async () => {
+    const root = createTempRoot();
+    const stdout = new MemoryWriter();
+
+    const exitCode = await runCli(['help', 'close'], {
+      cwd: root,
+      stdout,
+      stderr: new MemoryWriter(),
+    });
+
+    expect(exitCode).toBe(0);
+    expect(stdout.output).toContain('Usage: method close');
+    expect(stdout.output).toContain('Close an active cycle into docs/method/retro/.');
+  });
+
   it('captures backlog ideas in inbox', async () => {
     const root = createTempRoot();
     await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
