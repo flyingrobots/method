@@ -5,17 +5,16 @@ replace backlog items, design docs, retros, or CLI status.
 
 ## Where are we going?
 
-Current priority: finish `0003-readme-revision`, then take up
-`drift-detector`.
+Current priority: design and pull `drift-detector`.
 
 ## What just shipped?
 
-`0002-playback-witness-convention` - witness packets are now explicit,
-and reproducible proof is required for done.
+`0003-readme-revision` - the README now has stronger structure,
+coordination language, and an explicit reproducibility gate.
 
 ## What feels wrong?
 
-- The README is still catching up to the repo's actual doctrine and
-  coordination model.
 - `drift-detector` is clearly next, but its exact scope is not yet
   designed.
+- `BEARING.md` is new and still needs repeated real use to prove it is
+  helping rather than becoming decorative.
