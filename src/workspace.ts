@@ -37,13 +37,18 @@ export function initWorkspace(root: string): { created: string[] } {
     resolve(root, BACKLOG_DIR, 'bad-code'),
     resolve(root, 'docs/method/legends'),
     resolve(root, 'docs/method/graveyard'),
+    resolve(root, 'docs/method/releases'),
     resolve(root, 'docs/method/retro'),
+    resolve(root, 'docs/releases'),
     resolve(root, DESIGN_DIR),
   ];
   const files = new Map<string, string>([
     [resolve(root, 'CHANGELOG.md'), '# Changelog\n\n## Unreleased\n\n- No externally meaningful changes recorded yet.\n'],
     [resolve(root, 'docs/method/process.md'), '# Process\n\nDescribe how cycles run in this repository.\n'],
     [resolve(root, 'docs/method/release.md'), '# Release\n\nDescribe when and how externally meaningful releases ship.\n'],
+    [resolve(root, 'docs/method/release-runbook.md'), '# Release Runbook\n\nDescribe the sequential release pre-flight for this repository.\n'],
+    [resolve(root, 'docs/method/releases/README.md'), '# Release Packets\n\nStore internal release design and verification artifacts here.\n'],
+    [resolve(root, 'docs/releases/README.md'), '# Releases\n\nStore user-facing release notes and migration guides here.\n'],
   ]);
 
   const created: string[] = [];

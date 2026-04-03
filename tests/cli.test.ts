@@ -41,6 +41,9 @@ describe('method CLI', () => {
     expectFile(root, 'docs/design');
     expectFile(root, 'docs/method/process.md');
     expectFile(root, 'docs/method/release.md');
+    expectFile(root, 'docs/method/release-runbook.md');
+    expectFile(root, 'docs/method/releases/README.md');
+    expectFile(root, 'docs/releases/README.md');
     expectFile(root, 'CHANGELOG.md');
   });
 

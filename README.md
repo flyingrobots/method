@@ -70,10 +70,15 @@ docs/
       *.md                          everything else
     legends/                        named domains
     retro/<cycle>/<task>.md         retrospectives
+    releases/vX.Y.Z/                internal release packets
     graveyard/                      rejected ideas
     guide.md                        operator advice and non-doctrinal practice notes
     process.md                      how cycles run
     release.md                      how releases work
+    release-runbook.md              sequential release pre-flight
+  releases/
+    vX.Y.Z.md                       user-facing release notes and migration guides
+    README.md                       release note structure
   design/
     <cycle>/<task>.md               cycle design docs
     *.md                            living documents
@@ -82,6 +87,9 @@ docs/
 Repo signposts live at root or one level into `docs/`. `README.md` is
 the standing root exception; every other signpost uses `ALL_CAPS.md`.
 Deeper than that, it is not a signpost.
+
+Release notes live under `docs/releases/`, and internal release packets
+live under `docs/method/releases/`.
 
 ---
 

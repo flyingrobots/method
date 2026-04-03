@@ -310,4 +310,45 @@ describe('METHOD docs', () => {
     expect(readme).toContain('npm run build');
     expect(readme).toContain('npm test');
   });
+
+  it('defines shaped releases as artifacts, not versioned backlog lanes', () => {
+    const release = readRepoFile('docs/method/release.md');
+
+    expect(release).toContain('docs/method/releases/vX.Y.Z/release.md');
+    expect(release).toContain('docs/method/releases/vX.Y.Z/verification.md');
+    expect(release).toContain('docs/releases/vX.Y.Z.md');
+    expect(release).toContain('`CHANGELOG.md` remains the ledger');
+    expect(release).toContain('Releases aggregate shipped work.');
+    expect(release).toMatch(/They do not create\s+`docs\/method\/backlog\/<version>\/`/u);
+    expect(release).toMatch(/The release design names and justifies the intended version/u);
+  });
+
+  it('ships a release runbook that separates doctrine from pre-flight execution', () => {
+    const runbook = readRepoFile('docs/method/release-runbook.md');
+
+    expect(runbook).toContain('# Release Runbook');
+    expect(runbook).toContain('## Phase 0: Discovery');
+    expect(runbook).toContain('## Phase 1: Guards');
+    expect(runbook).toContain('## Phase 2: Versioning and release notes');
+    expect(runbook).toContain('## Phase 3: Validation');
+    expect(runbook).toContain('## Phase 4: Commit, tag, and publish');
+    expect(runbook).toContain('## Abort conditions');
+    expect(runbook).toContain('Never guess. Never claim success');
+  });
+
+  it('documents release-note surfaces in the repo structure and release guidance', () => {
+    const readme = readRepoFile('README.md');
+    const releasesGuide = readRepoFile('docs/releases/README.md');
+
+    expect(readme).toContain('docs/releases/');
+    expect(readme).toContain('release-runbook.md');
+    expect(readme).toMatch(/release\s+notes\s+when\s+the\s+cycle\s+changes\s+them/u);
+    expect(releasesGuide).toContain('# Releases');
+    expect(releasesGuide).toContain('`docs/releases/vX.Y.Z.md`');
+    expect(releasesGuide).toContain('Summary');
+    expect(releasesGuide).toContain('What Changed');
+    expect(releasesGuide).toContain('Why It Matters');
+    expect(releasesGuide).toContain('Migration');
+    expect(releasesGuide).toContain('No migration required.');
+  });
 });
