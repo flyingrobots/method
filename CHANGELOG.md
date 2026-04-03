@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added `.github/workflows/ci.yml` so this repo now runs `npm ci`,
+  `npm run build`, and `npm test` automatically on `push` and
+  `pull_request`, and documented that repo-local CI contract in the
+  README.
 - Clarified METHOD doctrine and repo coordination: the README now makes
   reproducibility, accessibility, localization, agent explainability,
   disagreement handling, and forge-agnostic boundaries explicit.
