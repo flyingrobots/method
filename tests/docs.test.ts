@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -32,7 +32,12 @@ function legendCodes(): string[] {
 }
 
 function inboxItemNames(): string[] {
-  return readdirSync(resolve(REPO_ROOT, 'docs/method/backlog/inbox'))
+  const inboxPath = resolve(REPO_ROOT, 'docs/method/backlog/inbox');
+  if (!existsSync(inboxPath)) {
+    return [];
+  }
+
+  return readdirSync(inboxPath)
     .filter((entry) => entry.endsWith('.md'))
     .sort((left, right) => left.localeCompare(right));
 }

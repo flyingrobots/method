@@ -75,6 +75,23 @@ describe('method CLI', () => {
       .toContain('# What if Method had a CLI?');
   });
 
+  it('captures backlog ideas even when the inbox lane directory is absent', async () => {
+    const root = createTempRoot();
+    await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    rmSync(join(root, 'docs/method/backlog/inbox'), { recursive: true, force: true });
+    const stdout = new MemoryWriter();
+
+    const exitCode = await runCli(['inbox', 'Backfill the missing inbox lane'], {
+      cwd: root,
+      stdout,
+      stderr: new MemoryWriter(),
+    });
+
+    expect(exitCode).toBe(0);
+    expect(stdout.output).toContain('Captured');
+    expectFile(root, 'docs/method/backlog/inbox/backfill-the-missing-inbox-lane.md');
+  });
+
   it('promotes backlog items into numbered cycles', async () => {
     const root = createTempRoot();
     await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
@@ -145,6 +162,20 @@ describe('method CLI', () => {
     expect(stdout.output).toContain('0001-method-cli');
     expect(stdout.output).toContain('VIZ');
     expect(stdout.output).toContain('TUI');
+  });
+
+  it('shows status for a clone-like workspace even when empty lane directories are absent', async () => {
+    const root = createTempRoot();
+    await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    rmSync(join(root, 'docs/method/backlog/inbox'), { recursive: true, force: true });
+    rmSync(join(root, 'docs/method/backlog/bad-code'), { recursive: true, force: true });
+    const stdout = new MemoryWriter();
+
+    const exitCode = await runCli(['status'], { cwd: root, stdout, stderr: new MemoryWriter() });
+
+    expect(exitCode).toBe(0);
+    expect(stdout.output).toContain('inbox       0  -');
+    expect(stdout.output).toContain('bad-code    0  -');
   });
 
   it('refuses close when the drift check is not complete', async () => {
@@ -322,6 +353,44 @@ describe('method CLI', () => {
     expect(stdout.output).toContain('0 test descriptions');
   });
 
+  it('decodes escaped playback descriptions across quote delimiters', async () => {
+    const root = createTempRoot();
+    await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    writeDesignDoc(root, {
+      cycleName: '0001-drift-detector',
+      slug: 'drift-detector',
+      title: 'Drift Detector',
+      body: [
+        'Legend: PROCESS',
+        '',
+        '## Playback Questions',
+        '',
+        '### Human',
+        '',
+        '- [ ] Can I match "double-quoted" evidence?',
+        '- [ ] Can I match \'single-quoted\' evidence?',
+        '- [ ] Can I match `template-quoted` evidence?',
+      ].join('\n'),
+    });
+    writeWorkspaceTest(
+      root,
+      'tests/drift-quoted.test.ts',
+      [
+        'it("Can I match \\"double-quoted\\" evidence?", () => {});',
+        'it(\'Can I match \\\'single-quoted\\\' evidence?\', () => {});',
+        'it(`Can I match \\`template-quoted\\` evidence?`, () => {});',
+      ].join('\n'),
+    );
+
+    const stdout = new MemoryWriter();
+    const exitCode = await runCli(['drift'], { cwd: root, stdout, stderr: new MemoryWriter() });
+
+    expect(exitCode).toBe(0);
+    expect(stdout.output).toContain('No playback-question drift found.');
+    expect(stdout.output).toContain('3 playback questions');
+    expect(stdout.output).toContain('3 test descriptions');
+  });
+
   it('Does the detector return stable output and exit semantics that can be consumed in automation without a model in the loop?', async () => {
     const help = await runDriftHelpScenario();
     const clean = await runDriftCleanScenario();
@@ -335,12 +404,13 @@ describe('method CLI', () => {
   });
 
   it('shows help for the drift command', async () => {
-    const { exitCode, stdout } = await runDriftHelpScenario();
+    const { root, exitCode, stdout } = await runDriftHelpScenario();
 
     expect(exitCode).toBe(0);
     expect(stdout.output).toContain('Usage: method drift [cycle]');
     expect(stdout.output).toContain('Check active cycle playback questions against test descriptions in tests/.');
     expect(stdout.output).toContain('First cut scans tests/**/*.test.* and tests/**/*.spec.* only.');
+    expect(existsSync(join(root, 'docs/method'))).toBe(false);
   });
 
   it('returns exit code 0 when no drift is found', async () => {
@@ -396,9 +466,8 @@ function writeWorkspaceTest(root: string, relativePath: string, body: string): v
   writeFileSync(path, `${body}\n`, 'utf8');
 }
 
-async function runDriftHelpScenario(): Promise<{ exitCode: number; stdout: MemoryWriter }> {
+async function runDriftHelpScenario(): Promise<{ root: string; exitCode: number; stdout: MemoryWriter }> {
   const root = createTempRoot();
-  await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
   const stdout = new MemoryWriter();
   const exitCode = await runCli(['help', 'drift'], {
     cwd: root,
@@ -406,7 +475,7 @@ async function runDriftHelpScenario(): Promise<{ exitCode: number; stdout: Memor
     stderr: new MemoryWriter(),
   });
 
-  return { exitCode, stdout };
+  return { root, exitCode, stdout };
 }
 
 async function runDriftCleanScenario(): Promise<{ exitCode: number; stdout: MemoryWriter }> {

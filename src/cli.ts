@@ -375,7 +375,15 @@ class Workspace {
   }
 
   ensureInitialized(): void {
-    if (!existsSync(resolve(this.root, BACKLOG_DIR, 'inbox'))) {
+    const requiredPaths = [
+      resolve(this.root, 'CHANGELOG.md'),
+      resolve(this.root, BACKLOG_DIR),
+      resolve(this.root, DESIGN_DIR),
+      resolve(this.root, RETRO_DIR),
+      resolve(this.root, 'docs/method/process.md'),
+      resolve(this.root, 'docs/method/release.md'),
+    ];
+    if (requiredPaths.some((path) => !existsSync(path))) {
       throw new MethodError(`${this.root} is not a METHOD workspace. Run \`method init\` first.`);
     }
   }
@@ -405,6 +413,7 @@ class Workspace {
       throw new MethodError(`${relative(this.root, path)} already exists. Use --title to disambiguate.`);
     }
 
+    mkdirSync(resolve(path, '..'), { recursive: true });
     const heading = (title ?? cleanIdea).trim();
     writeFileSync(path, `# ${heading}\n\n${cleanIdea}\n`, 'utf8');
     return path;
@@ -835,7 +844,7 @@ function collectTestDescriptions(root: string): string[] {
   for (const file of collectTestFiles(root)) {
     const contents = stripComments(readFileSync(file, 'utf8'));
     for (const match of contents.matchAll(/\b(?:it|test)\s*\(\s*(['"`])((?:\\.|(?!\1)[\s\S])*?)\1/gu)) {
-      const description = decodeTestStringLiteral(match[2] ?? '').trim();
+      const description = decodeTestStringLiteral(match[2] ?? '', match[1] ?? '').trim();
       if (description !== undefined && description.length > 0) {
         descriptions.push(description);
       }
@@ -910,11 +919,12 @@ function plural(count: number): string {
   return count === 1 ? '' : 's';
 }
 
-function decodeTestStringLiteral(value: string): string {
+function decodeTestStringLiteral(value: string, quoteChar: string): string {
   return value.replace(/\\([\\'"`nrt])/gu, (_match, escaped: string) => {
     if (escaped === 'n') return '\n';
     if (escaped === 'r') return '\r';
     if (escaped === 't') return '\t';
+    if (escaped === quoteChar) return quoteChar;
     return escaped;
   });
 }
