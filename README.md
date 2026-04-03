@@ -71,6 +71,7 @@ docs/
     legends/                        named domains
     retro/<cycle>/<task>.md         retrospectives
     graveyard/                      rejected ideas
+    guide.md                        operator advice and non-doctrinal practice notes
     process.md                      how cycles run
     release.md                      how releases work
   design/
