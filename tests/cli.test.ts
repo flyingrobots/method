@@ -437,6 +437,22 @@ describe('method CLI', () => {
     expect(exitCode).toBe(1);
     expect(stderr.output).toContain('Could not find active cycle');
   });
+
+  it('keeps behavior-owned modules for arg parsing, workspace behavior, and drift logic', () => {
+    expect(existsSync(new URL('../src/cli-args.ts', import.meta.url))).toBe(true);
+    expect(existsSync(new URL('../src/workspace.ts', import.meta.url))).toBe(true);
+    expect(existsSync(new URL('../src/drift.ts', import.meta.url))).toBe(true);
+  });
+
+  it('keeps cli.ts as a thin entry point instead of a behavior monolith', () => {
+    const cliSource = readFileSync(new URL('../src/cli.ts', import.meta.url), 'utf8');
+
+    expect(cliSource).not.toContain('class Workspace');
+    expect(cliSource).not.toContain('function collectTestFiles');
+    expect(cliSource).not.toContain('function extractPlaybackQuestions');
+    expect(cliSource).not.toContain('function normalizeForMatch');
+    expect(cliSource.split(/\r?\n/u).length).toBeLessThan(260);
+  });
 });
 
 function expectFile(root: string, relativePath: string): void {
