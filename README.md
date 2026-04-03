@@ -396,6 +396,18 @@ Core commands:
 | `method drift [cycle]` | Check active cycle playback questions against test descriptions. |
 | `method status` | Summarize backlog lanes, active cycles, and legend load. |
 
+Repo-local CI currently uses GitHub Actions as a host adapter through
+`.github/workflows/ci.yml`. The first cut stays narrow and explicit:
+
+```bash
+npm ci
+npm run build
+npm test
+```
+
+That workflow is repo truth for this host, not METHOD doctrine for
+every forge.
+
 METHOD may be used alongside other tools, but they are sidecars, not
 doctrine. If a repo uses GitHub pull requests and review bots, an
 operator may use a tool like Draft Punks Doghouse to inspect live
