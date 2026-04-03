@@ -1,0 +1,223 @@
+import { readFileSync, readdirSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = resolve(__dirname, '..');
+
+function readRepoFile(relativePath: string): string {
+  return readFileSync(resolve(REPO_ROOT, relativePath), 'utf8');
+}
+
+function legendCodes(): string[] {
+  return readdirSync(resolve(REPO_ROOT, 'docs/method/legends'))
+    .filter((entry) => entry.endsWith('.md'))
+    .map((entry) => entry.replace(/\.md$/u, ''))
+    .sort((left, right) => left.localeCompare(right));
+}
+
+function inboxItemNames(): string[] {
+  return readdirSync(resolve(REPO_ROOT, 'docs/method/backlog/inbox'))
+    .filter((entry) => entry.endsWith('.md'))
+    .sort((left, right) => left.localeCompare(right));
+}
+
+function walkMarkdownFiles(relativePath: string): string[] {
+  const root = resolve(REPO_ROOT, relativePath);
+  const entries = readdirSync(root, { withFileTypes: true });
+  const files: string[] = [];
+
+  for (const entry of entries) {
+    const child = `${relativePath}/${entry.name}`;
+
+    if (entry.isDirectory()) {
+      files.push(...walkMarkdownFiles(child));
+      continue;
+    }
+
+    if (entry.isFile() && entry.name.endsWith('.md')) {
+      files.push(child);
+    }
+  }
+
+  return files.sort((left, right) => left.localeCompare(right));
+}
+
+describe('METHOD docs', () => {
+  it('structures the README around stances, constraints, and quality gates', () => {
+    const readme = readRepoFile('README.md');
+
+    expect(readme).toContain('### Stances');
+    expect(readme).toContain('### Design constraints');
+    expect(readme).toContain('### Quality gates');
+    expect(readme).toContain('## Coordination');
+    expect(readme).toContain('### BEARING.md');
+  });
+
+  it('keeps reproducibility as part of done', () => {
+    const readme = readRepoFile('README.md');
+
+    expect(readme).toContain('If a claimed result cannot be reproduced, it is not done.');
+    expect(readme).not.toContain('What is everyone working on? → `ls docs/design/`');
+  });
+
+  it('keeps METHOD distinct from forge-specific PR tooling', () => {
+    const readme = readRepoFile('README.md');
+
+    expect(readme).toContain('METHOD is not a GitHub workflow, a pull-request cockpit, or a');
+    expect(readme).toContain('Draft Punks Doghouse');
+    expect(readme).toContain('they do not define the method');
+  });
+
+  it('ships the BEARING signpost the README describes', () => {
+    const bearing = readRepoFile('docs/BEARING.md');
+
+    expect(bearing).toContain('# BEARING');
+    expect(bearing).toContain('Where are we going?');
+    expect(bearing).toContain('What just shipped?');
+    expect(bearing).toContain('What feels wrong?');
+  });
+
+  it('describes the discovered legends in repo-visible docs', () => {
+    const readme = readRepoFile('README.md');
+    const vision = readRepoFile('docs/VISION.md');
+    const codes = legendCodes();
+
+    expect(codes.length, 'expected at least one legend in docs/method/legends/').toBeGreaterThan(0);
+
+    for (const code of codes) {
+      const legendDoc = readRepoFile(`docs/method/legends/${code}.md`);
+
+      expect(legendDoc).toContain(`# Legend: ${code}`);
+      expect(readme).toContain(`\`${code}\``);
+      expect(vision).toContain(`### ${code}`);
+    }
+  });
+
+  it('keeps this repo inbox aligned with the current legend split', () => {
+    const untaggedItems = inboxItemNames().filter((entry) => !/^(PROCESS|SYNTH)_/u.test(entry));
+
+    expect(untaggedItems).toEqual([]);
+  });
+
+  it('keeps README legend examples aligned with the repo taxonomy', () => {
+    const readme = readRepoFile('README.md');
+
+    expect(readme).not.toContain('`VIZ`, `PROTO`, `TUI`');
+    expect(readme).not.toContain('VIZ_braille-rendering.md');
+    expect(readme).not.toContain('PROTO_strand-lifecycle.md');
+  });
+
+  it('records synthesis protocol and provenance contract details in backlog docs', () => {
+    const protocol = readRepoFile('docs/method/backlog/inbox/SYNTH_executive-summary-protocol.md');
+    const provenance = readRepoFile('docs/method/backlog/inbox/SYNTH_generated-signpost-provenance.md');
+    const legendAudit = readRepoFile('docs/method/backlog/inbox/PROCESS_legend-audit-and-assignment.md');
+
+    expect(protocol).toContain('## Protocol Specification');
+    expect(protocol).toContain('### Phase 1: Inventory');
+    expect(protocol).toContain('### Phase 2: Read and Synthesize');
+    expect(protocol).toContain('### Phase 3: Generate Witness');
+    expect(protocol).toContain('### Phase 4: Verification');
+    expect(provenance).toContain('## Provenance Contract');
+    expect(provenance).toContain('| `generated_at` | full ISO 8601 timestamp with timezone | yes |');
+    expect(provenance).toContain('`generated_from_commit`');
+    expect(provenance).toContain('`witness_ref`');
+    expect(provenance).toContain('| `read_order_version` | string | no |');
+    expect(provenance).toContain('| `origin_request` | object | no |');
+    expect(provenance).toContain('| `metadata` | object | no |');
+    expect(provenance).toContain('METHOD now defines which provenance fields are mandatory');
+    expect(provenance).toContain('Example (YAML frontmatter format):');
+    expect(provenance).toContain('```yaml');
+    expect(provenance).toContain('generated_at: 2026-04-02T17:41:54-07:00');
+    expect(provenance).toContain('read_order_version: "1"');
+    expect(legendAudit).toContain('By default, METHOD allows untagged backlog items.');
+    expect(legendAudit).toContain('One possible repo-level opt-in would be');
+    expect(legendAudit).toContain('`method.config.json`');
+    expect(legendAudit).toContain('`require_legend_coverage`');
+    expect(legendAudit).toContain('`method status`');
+    expect(legendAudit).toContain('`legend-audit`');
+    expect(legendAudit).toMatch(/If METHOD later implements that\s+flag/u);
+    expect(legendAudit).toContain('define the `PROCESS` and `SYNTH` legends');
+    expect(legendAudit).not.toContain('`graft`');
+    expect(legendAudit).not.toContain('`CORE`');
+    expect(legendAudit).not.toContain('`WARP`');
+  });
+
+  it('sanitizes personal absolute paths from committed verification witnesses', () => {
+    const readmeRevisionVerification = readRepoFile('docs/method/retro/0003-readme-revision/witness/verification.md');
+    const visionRefreshVerification = readRepoFile('docs/method/retro/0004-readme-and-vision-refresh/witness/verification.md');
+
+    const personalPathPatterns = [
+      '/Users/',
+      '/home/',
+      '/root/',
+      '/mnt/',
+      'C:\\Users\\',
+    ];
+
+    for (const pattern of personalPathPatterns) {
+      expect(readmeRevisionVerification).not.toContain(pattern);
+      expect(visionRefreshVerification).not.toContain(pattern);
+    }
+  });
+
+  it('keeps ALL_CAPS markdown docs at approved depths or approved legend paths', () => {
+    const markdownFiles = [
+      ...walkMarkdownFiles('docs'),
+      ...readdirSync(REPO_ROOT)
+        .filter((entry) => entry.endsWith('.md'))
+        .map((entry) => entry),
+    ];
+
+    const offenders = markdownFiles.filter((relativePath) => {
+      const base = relativePath.split('/').at(-1) ?? '';
+      const isAllCaps = /^[A-Z][A-Z0-9-]*\.md$/u.test(base);
+
+      if (!isAllCaps || base === 'README.md') {
+        return false;
+      }
+
+      if (!relativePath.includes('/')) {
+        return false;
+      }
+
+      if (/^docs\/[A-Z][A-Z0-9-]*\.md$/u.test(relativePath)) {
+        return false;
+      }
+
+      return !/^docs\/method\/legends\/[A-Z][A-Z0-9-]*\.md$/u.test(relativePath);
+    });
+
+    expect(offenders).toEqual([]);
+  });
+
+  it('ships a VISION signpost with bounded provenance metadata and repo-state grounding', () => {
+    const vision = readRepoFile('docs/VISION.md');
+
+    expect(vision).toContain('---\n');
+    expect(vision).toContain('title: "METHOD - Executive Summary"');
+    expect(vision).toMatch(/^generated_at:\s+\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/mu);
+    expect(vision).toMatch(/^generator:\s+(?:"[^"\n]+"|[^"\n][^\n]*)$/mu);
+    expect(vision).toMatch(/^generated_from_commit:\s+"?[0-9a-f]{40}"?$/mu);
+    expect(vision).toMatch(/^witness_ref:\s+\S+$/mu);
+    expect(vision).toMatch(/^provenance_level:\s+"?artifact_history"?$/mu);
+    expect(vision).toMatch(/^source_files:\s*$/mu);
+    expect(vision).toMatch(/^  - \S+$/mu);
+    if (/^read_order_version:/mu.test(vision)) {
+      expect(vision).toMatch(/^read_order_version:\s+(?:"[^"\n]+"|[^\s][^\n]*)$/mu);
+    }
+    if (/^origin_request:/mu.test(vision)) {
+      expect(vision).toMatch(/^origin_request:\s+.+$/mu);
+    }
+    if (/^metadata:/mu.test(vision)) {
+      expect(vision).toMatch(/^metadata:\s+.+$/mu);
+    }
+    expect(vision).toContain('docs/method/retro/0004-readme-and-vision-refresh/readme-and-vision-refresh.md');
+    expect(vision).toContain('docs/method/retro/0004-readme-and-vision-refresh/witness/verification.md');
+    expect(vision).toContain('# METHOD - Executive Summary');
+    expect(vision).toContain('## Legends');
+    expect(vision).toContain('## Roadmap');
+    expect(vision).toContain('## Open questions');
+  });
+});

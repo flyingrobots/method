@@ -2,10 +2,16 @@
 
 ## Unreleased
 
-- Strengthened METHOD doctrine so non-reproducible witness artifacts do
-  not satisfy done.
+- Clarified METHOD doctrine and repo coordination: the README now makes
+  reproducibility, accessibility, localization, agent explainability,
+  disagreement handling, and forge-agnostic boundaries explicit.
+- Added bounded repo signposts for direction and executive synthesis:
+  `docs/BEARING.md` and `docs/VISION.md` now summarize repo state with
+  source manifests and artifact-history provenance.
+- Organized current work under the `PROCESS` and `SYNTH` legends, cleaned
+  out stale backlog duplicates, and expanded docs tests to catch
+  provenance drift, signpost-depth mistakes, path leaks, and legend
+  hygiene regressions.
 - Added the initial TypeScript `method` CLI using published Bijou packages.
 - Implemented `init`, `inbox`, `pull`, `close`, and `status`.
 - Fixed `method help <command>` so command-specific usage resolves correctly.
-- Elevated accessibility, localization, and agent explainability into
-  METHOD doctrine and the generated design-doc template.
