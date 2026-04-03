@@ -35,6 +35,14 @@ describe('METHOD docs', () => {
     expect(readme).not.toContain('What is everyone working on? → `ls docs/design/`');
   });
 
+  it('keeps METHOD distinct from forge-specific PR tooling', () => {
+    const readme = readRepoFile('README.md');
+
+    expect(readme).toContain('METHOD is not a GitHub workflow, a pull-request cockpit, or a');
+    expect(readme).toContain('Draft Punks Doghouse');
+    expect(readme).toContain('they do not define the method');
+  });
+
   it('ships the BEARING signpost the README describes', () => {
     const bearing = readRepoFile('docs/BEARING.md');
 
