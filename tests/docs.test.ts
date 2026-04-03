@@ -327,11 +327,20 @@ describe('METHOD docs', () => {
     const runbook = readRepoFile('docs/method/release-runbook.md');
 
     expect(runbook).toContain('# Release Runbook');
-    expect(runbook).toContain('## Phase 0: Discovery');
-    expect(runbook).toContain('## Phase 1: Guards');
-    expect(runbook).toContain('## Phase 2: Versioning and release notes');
-    expect(runbook).toContain('## Phase 3: Validation');
-    expect(runbook).toContain('## Phase 4: Commit, tag, and publish');
+    const phases = [
+      '## Phase 0: Discovery',
+      '## Phase 1: Guards',
+      '## Phase 2: Versioning and release notes',
+      '## Phase 3: Validation',
+      '## Phase 4: Commit, tag, and publish',
+    ];
+    let lastIndex = -1;
+    for (const phase of phases) {
+      const index = runbook.indexOf(phase);
+      expect(index, `missing phase heading: ${phase}`).toBeGreaterThanOrEqual(0);
+      expect(index, `phase out of order: ${phase}`).toBeGreaterThan(lastIndex);
+      lastIndex = index;
+    }
     expect(runbook).toContain('## Abort conditions');
     expect(runbook).toContain('Never guess. Never claim success');
   });

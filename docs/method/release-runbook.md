@@ -87,12 +87,12 @@ in-progress CI state.
 4. Create the release tag.
 5. Verify the tag points at the release commit and satisfies signing
    requirements where applicable.
-6. Push `main`.
-7. Push the exact release tag.
-8. Create the GitHub Release or equivalent forge release using the
+6. Push `main` and the exact release tag atomically, for example:
+   `git push origin main vX.Y.Z`.
+7. Create the GitHub Release or equivalent forge release using the
    versioned release notes.
-9. Monitor triggered workflows to completion.
-10. Verify registries directly before claiming publication succeeded.
+8. Monitor triggered workflows to completion.
+9. Verify registries directly before claiming publication succeeded.
 
 ## Evidence
 

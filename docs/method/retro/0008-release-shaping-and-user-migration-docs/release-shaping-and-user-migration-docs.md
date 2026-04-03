@@ -49,3 +49,5 @@ claims.
   `PROCESS_git-branch-workflow-policy`,
   `PROCESS_library-api-surface`, and
   `PROCESS_system-style-javascript-adoption` in `up-next/`.
+- Branch tip now also carries the later backlog capture
+  `PROCESS_yaml-frontmatter-schema` in `inbox/`.

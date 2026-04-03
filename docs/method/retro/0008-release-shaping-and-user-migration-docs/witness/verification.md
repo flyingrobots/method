@@ -74,7 +74,7 @@ $ npm run method -- status
 METHOD Status  <REPO_ROOT>
 
 --- Backlog ---
-inbox       0  -
+inbox       1  PROCESS_yaml-frontmatter-schema
 asap        1  SYNTH_generated-signpost-provenance
 up-next     5  PROCESS_behavior-spike-convention, PROCESS_git-branch-workflow-policy, PROCESS_library-api-surface, PROCESS_system-style-javascript-adoption, SYNTH_executive-summary-protocol
 cool-ideas  6  PROCESS_drift-near-miss-hints, PROCESS_legend-audit-and-assignment, PROCESS_retro-conversational-closeout, PROCESS_review-config-hardening, SYNTH_artifact-history-and-semantic-provenance, SYNTH_cycle-witness-command
@@ -85,7 +85,7 @@ root        0  -
 -
 
 --- Legend Health ---
-PROCESS  backlog=8 active=0
+PROCESS  backlog=9 active=0
 SYNTH    backlog=4 active=0
 ```
 
@@ -102,3 +102,6 @@ SYNTH    backlog=4 active=0
 - Tests, build, and status all pass after the doctrine and scaffolding
   changes, so the release-shaping work did not break the existing CLI
   contract.
+- The branch tip also includes the later backlog capture
+  `PROCESS_yaml-frontmatter-schema`, which is why the current status
+  output shows `inbox 1`.
