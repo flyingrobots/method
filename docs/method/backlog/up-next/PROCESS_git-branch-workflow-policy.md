@@ -42,3 +42,7 @@ What this surfaced:
   branches, and direct-maintenance cases.
 - The policy should remain forge-agnostic at the core, even if a repo
   uses GitHub or tools like Doghouse in practice.
+- A likely rule from recent practice: close the cycle packet on the
+  branch before review (design, tests, playback, retro, witness), then
+  do repo-level ship sync such as `BEARING.md` and `CHANGELOG.md` on
+  `main` after merge.
