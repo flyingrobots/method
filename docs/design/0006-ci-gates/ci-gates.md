@@ -1,5 +1,48 @@
 # CI Gates
 
+Source backlog item: `docs/method/backlog/asap/PROCESS_ci-gates.md`
+Legend: PROCESS
+
+## Sponsors
+
+- Human: TBD
+- Agent: TBD
+
+## Hill
+
+TBD
+
+## Playback Questions
+
+### Human
+
+- [ ] TBD
+
+### Agent
+
+- [ ] TBD
+
+## Accessibility and Assistive Reading
+
+- Linear truth / reduced-complexity posture: TBD
+- Non-visual or alternate-reading expectations: TBD
+
+## Localization and Directionality
+
+- Locale / wording / formatting assumptions: TBD
+- Logical direction / layout assumptions: TBD
+
+## Agent Inspectability and Explainability
+
+- What must be explicit and deterministic for agents: TBD
+- What must be attributable, evidenced, or governed: TBD
+
+## Non-goals
+
+- [ ] TBD
+
+## Backlog Context
+
 METHOD should not rely on a human remembering to run tests before
 push or merge. Add a minimal CI workflow that runs the repo's actual
 truth surfaces on `push` and `pull_request`: build, test, and any
