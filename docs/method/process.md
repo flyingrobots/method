@@ -1,6 +1,6 @@
 # Process
 
-METHOD cycles run as a calm pull-design-test-playback-retro loop.
+METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loop.
 
 ## Rules
 
@@ -12,6 +12,10 @@ METHOD cycles run as a calm pull-design-test-playback-retro loop.
 - If a claimed result cannot be reproduced, it is not done.
 - Drift is checked explicitly at close, not hand-waved after the fact.
 - Backlog maintenance happens at cycle boundaries, not continuously.
+- Repo-level ship surfaces such as `BEARING.md` and `CHANGELOG.md`
+  reflect merged `main` state, not branch-local closeout state.
+- Review visibility is currently outside METHOD's repo-native
+  coordination surface; branch and PR context carry it for now.
 
 ## Default Loop
 
@@ -24,4 +28,7 @@ METHOD cycles run as a calm pull-design-test-playback-retro loop.
    linearized, localized, or agent-facing paths when the hill claims
    them. A purely observational artifact may support the witness, but
    it does not satisfy done on its own.
-6. Close the cycle with a retro in `docs/method/retro/<cycle>/`.
+6. Close the cycle packet with a retro in `docs/method/retro/<cycle>/`.
+7. Review the complete cycle packet on a branch or PR.
+8. After merge, update repo-level ship surfaces on `main` such as
+   `BEARING.md`, `CHANGELOG.md`, and release notes when relevant.

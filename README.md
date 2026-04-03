@@ -71,6 +71,7 @@ docs/
     legends/                        named domains
     retro/<cycle>/<task>.md         retrospectives
     graveyard/                      rejected ideas
+    guide.md                        operator advice and non-doctrinal practice notes
     process.md                      how cycles run
     release.md                      how releases work
   design/
@@ -246,9 +247,7 @@ in one sentence, the cycle is too big. Split it.
    localization, or agent-facing explainability, witness those paths
    too.
 
-5. **PR -> main** - review until merge.
-
-6. **Close** - merge. Retro in `docs/method/retro/<cycle>/`.
+5. **Close** - write the retro and witness packet on the branch.
 
    - Drift check (mandatory). Undocumented drift is the only true
      failure mode.
@@ -256,8 +255,20 @@ in one sentence, the cycle is too big. Split it.
    - Cool ideas to `cool-ideas/`.
    - Backlog maintenance.
 
+   Closing the cycle packet does not mean `main` has accepted it yet.
+   Review-stage visibility is not yet a repo-native METHOD query.
+   Branch and PR context carry that state for now.
+
+6. **PR / review** - review the full cycle packet until merge or
+   rejection.
+
+7. **Ship sync on `main`** - after merge, update repo-level ship
+   surfaces such as `docs/BEARING.md`, `CHANGELOG.md`, and release
+   notes when the cycle changes them.
+
    Releases happen when externally meaningful behavior changes. Not
-   every cycle is a release. Update CHANGELOG and README regardless.
+   every cycle is a release. Ship sync only happens on merged `main`
+   state, not branch-local closeout state.
 
 ### Disagreement at playback
 
@@ -279,10 +290,12 @@ does the witness answer the playback questions or not?
 
 ### Outcomes
 
-- **Hill met** - merge, close.
-- **Partial** - merge what is honest. Retro explains the gap.
+- **Hill met** - close the packet, review it, merge it, then ship sync.
+- **Partial** - close the packet honestly, merge only what is honest,
+  and let the retro explain the gap.
 - **Not met** - cycle still concludes. Write the retro. A failed
-  cycle with a good retro beats a successful one with no learnings.
+  cycle with a good retro beats a successful one with no learnings. A
+  failed cycle does not need to merge to end honestly.
 
 Every cycle ends with a retro. Success is not required.
 
@@ -299,7 +312,7 @@ ceremonies. The mechanism is passive legibility.
 If you can answer these questions by reading the repo, you do not need
 a standup:
 
-- What is everyone working on? -> `method status`
+- What is actively open in this workspace? -> `method status`
 - What is committed? -> each design doc names its sponsors and hill
 - What is next? -> `ls docs/method/backlog/asap/`
 - What failed and why? -> `ls docs/method/retro/`
@@ -307,6 +320,10 @@ a standup:
 
 If any of these are unclear, the docs are incomplete. Fix the docs,
 not the process.
+
+Review state is not yet part of METHOD's repo-native coordination
+surface. For now it rides on branch and PR context outside the core
+filesystem queries.
 
 ### BEARING.md
 
@@ -322,9 +339,9 @@ cycle boundaries - not mid-cycle. It answers three questions:
 `BEARING.md` is a signpost, not a status report. It summarizes
 direction; it does not create commitments, replace backlog items, or
 record decisions that belong in design docs, retros, or the backlog.
-It is written by whoever closes a cycle. On a solo project, that is
-you. On a team, it is whoever merged last. No scheduling, no rotation,
-no process. It updates as a side effect of doing the work.
+It is updated during ship sync after merge. On a solo project, that is
+usually you. On a team, it is whoever merges last or owns the ship
+sync. No scheduling, no rotation, no process.
 
 If the bearing drifts without anyone noticing, that is the signal to
 talk - not a meeting, just a conversation. The drift itself is the
@@ -360,8 +377,9 @@ to resurrect something, you must address the note.
 idea -> inbox/ -> cool-ideas/ -> up-next/ -> asap/
   -> design/<cycle>/  (committed)
   -> RED -> GREEN -> playback (witness)
-  -> retro/<cycle>/
-  -> release (when meaningful)
+  -> retro/<cycle>/   (cycle packet closed)
+  -> PR/review -> main
+  -> ship sync (BEARING / CHANGELOG / release when meaningful)
       - or ->
   -> graveyard/
 ```
@@ -395,6 +413,18 @@ Core commands:
 | `method close [cycle]` | Write a retro and create its `witness/` directory. |
 | `method drift [cycle]` | Check active cycle playback questions against test descriptions. |
 | `method status` | Summarize backlog lanes, active cycles, and legend load. |
+
+Repo-local CI currently uses GitHub Actions as a host adapter through
+`.github/workflows/ci.yml`. The first cut stays narrow and explicit:
+
+```bash
+npm ci
+npm run build
+npm test
+```
+
+The workflow currently runs on `ubuntu-24.04` for Node `22`.
+That is repo truth for this host, not METHOD doctrine for every forge.
 
 METHOD may be used alongside other tools, but they are sidecars, not
 doctrine. If a repo uses GitHub pull requests and review bots, an
