@@ -42,7 +42,7 @@ state of the system without replacing the underlying files.
 
 ## Current state
 
-METHOD is no longer only doctrine. Three cycles are already closed:
+METHOD is no longer only doctrine. Four cycles are already closed:
 
 - `0001-method-cli` established a real CLI for `init`, `inbox`, `pull`,
   `close`, and `status`.
@@ -50,14 +50,17 @@ METHOD is no longer only doctrine. Three cycles are already closed:
   first-class closeout rule.
 - `0003-readme-revision` rewrote the README around clearer doctrine and
   added `docs/BEARING.md`.
+- `0004-readme-and-vision-refresh` made the current signpost posture
+  explicit in the README and added this bounded `docs/VISION.md`
+  summary.
 
 The repo is now organized under two working legends:
 
 - `PROCESS` for METHOD's own mechanics.
 - `SYNTH` for repo self-description, signposts, and provenance shape.
 
-The current active design is `0004-readme-and-vision-refresh`, which is
-dogfooding METHOD's own signpost-generation posture on this repo.
+There are currently no active cycles. The next likely pull remains
+`PROCESS_drift-detector`.
 
 ## Signposts
 

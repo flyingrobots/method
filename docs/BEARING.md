@@ -5,16 +5,18 @@ replace backlog items, design docs, retros, or CLI status.
 
 ## Where are we going?
 
-Current priority: design and pull `drift-detector`.
+Current priority: design and pull `PROCESS_drift-detector`.
 
 ## What just shipped?
 
-`0003-readme-revision` - the README now has stronger structure,
-coordination language, and an explicit reproducibility gate.
+`0004-readme-and-vision-refresh` - the README now names the repo's
+current legends and signposts, and `docs/VISION.md` exists as a bounded
+executive summary.
 
 ## What feels wrong?
 
-- `drift-detector` is clearly next, but its exact scope is not yet
-  designed.
-- `BEARING.md` is new and still needs repeated real use to prove it is
-  helping rather than becoming decorative.
+- `docs/VISION.md` is still manual dogfood. The protocol and tooling for
+  generating it cleanly are not built yet.
+- The artifact-history versus semantic-provenance split is clearer than
+  before, but still only lives in backlog ideas rather than repo
+  tooling.
