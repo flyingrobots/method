@@ -163,6 +163,216 @@ describe('method CLI', () => {
     expect(exitCode).toBe(1);
     expect(stderr.output.toLowerCase()).toContain('drift check');
   });
+
+  it('Can I run the detector and get a concise list of playback questions that have no matching test evidence, with the design file and question text called out directly?', async () => {
+    const root = createTempRoot();
+    await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    writeDesignDoc(root, {
+      cycleName: '0001-drift-detector',
+      slug: 'drift-detector',
+      title: 'Drift Detector',
+      body: [
+        'Legend: PROCESS',
+        '',
+        '## Playback Questions',
+        '',
+        '### Human',
+        '',
+        '- [ ] Can I see the missing evidence?',
+        '',
+        '### Agent',
+        '',
+        '- [ ] Does the detector report exact files?',
+      ].join('\n'),
+    });
+    writeWorkspaceTest(
+      root,
+      'tests/drift-clean.test.ts',
+      [
+        "it('Can I see the missing evidence?', () => {});",
+        "it('Does the detector report exact files?', () => {});",
+      ].join('\n'),
+    );
+
+    const stdout = new MemoryWriter();
+    const exitCode = await runCli(['drift'], { cwd: root, stdout, stderr: new MemoryWriter() });
+
+    expect(exitCode).toBe(0);
+    expect(stdout.output).toContain('No playback-question drift found.');
+    expect(stdout.output).toContain('Scanned 1 active cycle');
+    expect(stdout.output).toContain('2 playback question');
+  });
+
+  it('When the detector cannot prove a match, does it fail honestly instead of pretending semantic certainty?', async () => {
+    const root = createTempRoot();
+    await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    writeDesignDoc(root, {
+      cycleName: '0001-drift-detector',
+      slug: 'drift-detector',
+      title: 'Drift Detector',
+      body: [
+        'Legend: PROCESS',
+        '',
+        '## Playback Questions',
+        '',
+        '### Human',
+        '',
+        '- [ ] Can I see a concise drift report?',
+        '',
+        '### Agent',
+        '',
+        '- [ ] Does a near miss still count as unmatched?',
+      ].join('\n'),
+    });
+    writeWorkspaceTest(
+      root,
+      'tests/drift-near-miss.test.ts',
+      [
+        "it('Can I see a concise status report?', () => {});",
+        "it('Does a near miss still count as unmatched eventually?', () => {});",
+      ].join('\n'),
+    );
+
+    const stdout = new MemoryWriter();
+    const exitCode = await runCli(['drift'], { cwd: root, stdout, stderr: new MemoryWriter() });
+
+    expect(exitCode).toBe(2);
+    expect(stdout.output).toContain('Playback-question drift found.');
+    expect(stdout.output).toContain('docs/design/0001-drift-detector/drift-detector.md');
+    expect(stdout.output).toContain('Human: Can I see a concise drift report?');
+    expect(stdout.output).toContain('Agent: Does a near miss still count as unmatched?');
+    expect(stdout.output).toContain('No exact normalized test description match found');
+  });
+
+  it('Are the extraction and matching rules explicit enough that I can reproduce the detector\'s findings from committed markdown and test files alone?', async () => {
+    const root = createTempRoot();
+    await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    writeDesignDoc(root, {
+      cycleName: '0001-drift-detector',
+      slug: 'drift-detector',
+      title: 'Drift Detector',
+      body: [
+        'Legend: PROCESS',
+        '',
+        '## Playback Questions',
+        '',
+        '### Human',
+        '',
+        '- [ ] Can I parse wrapped playback',
+        '      questions from markdown?',
+        '',
+        '### Agent',
+        '',
+        '- [ ] Do exact normalized test descriptions satisfy the detector?',
+      ].join('\n'),
+    });
+    writeWorkspaceTest(
+      root,
+      'tests/drift-matching.test.ts',
+      [
+        "it('Can I parse wrapped playback questions from markdown?', () => {});",
+        "it('Do exact normalized test descriptions satisfy the detector?', () => {});",
+      ].join('\n'),
+    );
+
+    const stdout = new MemoryWriter();
+    const exitCode = await runCli(['drift'], {
+      cwd: root,
+      stdout,
+      stderr: new MemoryWriter(),
+    });
+
+    expect(exitCode).toBe(0);
+    expect(stdout.output).toContain('No playback-question drift found.');
+    expect(stdout.output).toContain('2 playback question');
+  });
+
+  it('Does the detector return stable output and exit semantics that can be consumed in automation without a model in the loop?', async () => {
+    const root = createTempRoot();
+    await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+
+    const helpStdout = new MemoryWriter();
+    const helpExitCode = await runCli(['help', 'drift'], {
+      cwd: root,
+      stdout: helpStdout,
+      stderr: new MemoryWriter(),
+    });
+
+    writeDesignDoc(root, {
+      cycleName: '0001-drift-detector',
+      slug: 'drift-detector',
+      title: 'Drift Detector',
+      body: [
+        'Legend: PROCESS',
+        '',
+        '## Playback Questions',
+        '',
+        '### Human',
+        '',
+        '- [ ] Does the detector return stable output?',
+        '',
+        '### Agent',
+        '',
+        '- [ ] Does the detector return stable exit semantics?',
+      ].join('\n'),
+    });
+
+    const cleanStdout = new MemoryWriter();
+    writeWorkspaceTest(
+      root,
+      'tests/drift-exit-codes.test.ts',
+      [
+        "it('Does the detector return stable output?', () => {});",
+        "it('Does the detector return stable exit semantics?', () => {});",
+      ].join('\n'),
+    );
+    const cleanExitCode = await runCli(['drift'], {
+      cwd: root,
+      stdout: cleanStdout,
+      stderr: new MemoryWriter(),
+    });
+
+    const driftRoot = createTempRoot();
+    await runCli(['init'], { cwd: driftRoot, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    writeDesignDoc(driftRoot, {
+      cycleName: '0001-drift-detector',
+      slug: 'drift-detector',
+      title: 'Drift Detector',
+      body: [
+        'Legend: PROCESS',
+        '',
+        '## Playback Questions',
+        '',
+        '### Human',
+        '',
+        '- [ ] Does drift return a distinct exit code?',
+      ].join('\n'),
+    });
+
+    const driftStdout = new MemoryWriter();
+    const driftExitCode = await runCli(['drift'], {
+      cwd: driftRoot,
+      stdout: driftStdout,
+      stderr: new MemoryWriter(),
+    });
+
+    const errorStderr = new MemoryWriter();
+    const errorExitCode = await runCli(['drift', 'missing-cycle'], {
+      cwd: driftRoot,
+      stdout: new MemoryWriter(),
+      stderr: errorStderr,
+    });
+
+    expect(helpExitCode).toBe(0);
+    expect(helpStdout.output).toContain('Usage: method drift [cycle]');
+    expect(helpStdout.output).toContain('Check active cycle playback questions against test descriptions.');
+    expect(cleanExitCode).toBe(0);
+    expect(cleanStdout.output).toContain('No playback-question drift found.');
+    expect(driftExitCode).toBe(2);
+    expect(driftStdout.output).toContain('Playback-question drift found.');
+    expect(errorExitCode).toBe(1);
+    expect(errorStderr.output).toContain('Could not find active cycle');
+  });
 });
 
 function expectFile(root: string, relativePath: string): void {
@@ -171,4 +381,23 @@ function expectFile(root: string, relativePath: string): void {
 
 function readFile(root: string, relativePath: string): string {
   return readFileSync(join(root, relativePath), 'utf8');
+}
+
+function writeDesignDoc(
+  root: string,
+  options: { cycleName: string; slug: string; title: string; body: string },
+): void {
+  const designDir = join(root, 'docs/design', options.cycleName);
+  mkdirSync(designDir, { recursive: true });
+  writeFileSync(
+    join(designDir, `${options.slug}.md`),
+    `# ${options.title}\n\n${options.body}\n`,
+    'utf8',
+  );
+}
+
+function writeWorkspaceTest(root: string, relativePath: string, body: string): void {
+  const path = join(root, relativePath);
+  mkdirSync(join(path, '..'), { recursive: true });
+  writeFileSync(path, `${body}\n`, 'utf8');
 }
