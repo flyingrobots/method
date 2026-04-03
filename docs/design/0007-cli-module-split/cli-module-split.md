@@ -1,5 +1,48 @@
 # CLI Module Split
 
+Source backlog item: `docs/method/backlog/asap/PROCESS_cli-module-split.md`
+Legend: PROCESS
+
+## Sponsors
+
+- Human: TBD
+- Agent: TBD
+
+## Hill
+
+TBD
+
+## Playback Questions
+
+### Human
+
+- [ ] TBD
+
+### Agent
+
+- [ ] TBD
+
+## Accessibility and Assistive Reading
+
+- Linear truth / reduced-complexity posture: TBD
+- Non-visual or alternate-reading expectations: TBD
+
+## Localization and Directionality
+
+- Locale / wording / formatting assumptions: TBD
+- Logical direction / layout assumptions: TBD
+
+## Agent Inspectability and Explainability
+
+- What must be explicit and deterministic for agents: TBD
+- What must be attributable, evidenced, or governed: TBD
+
+## Non-goals
+
+- [ ] TBD
+
+## Backlog Context
+
 `src/cli.ts` is carrying too many concerns at once: command parsing,
 workspace logic, file discovery, markdown extraction, normalization,
 and the drift algorithm all live together. Split the CLI into smaller
