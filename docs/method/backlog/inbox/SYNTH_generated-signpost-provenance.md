@@ -56,5 +56,5 @@ What this surfaced:
 - Full session context is valuable, but should probably live in a
   linked witness or provenance artifact rather than bloating the
   signpost body.
-- METHOD should define which provenance fields are mandatory and which
-  are optional for generated docs.
+- METHOD now defines which provenance fields are mandatory and which
+  are optional for generated docs via the contract table above.
