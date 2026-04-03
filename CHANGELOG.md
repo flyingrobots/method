@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Clarified that METHOD is forge-agnostic doctrine rather than a
+  GitHub-specific PR workflow, and noted Draft Punks Doghouse as an
+  optional operator-side aid when wrangling PR review state.
 - Clarified legend coverage opt-in behavior and generated-signpost
   provenance wording, and expanded docs tests to catch cross-platform
   personal path leaks and empty-legend failures more clearly.
