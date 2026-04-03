@@ -290,6 +290,7 @@ describe('METHOD docs', () => {
     expect(workflow).toContain('runs-on: ubuntu-24.04');
     expect(workflow).toContain('timeout-minutes: 10');
     expect(workflow).toContain('actions/checkout@v4');
+    expect(workflow).toContain('persist-credentials: false');
     expect(workflow).toContain('actions/setup-node@v4');
     expect(workflow).toContain('node-version: 22');
     expect(workflow).toContain('cache: npm');

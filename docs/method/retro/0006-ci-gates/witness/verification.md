@@ -22,6 +22,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -71,7 +73,7 @@ METHOD Status  <REPO_ROOT>
 --- Backlog ---
 inbox       1  PROCESS_retro-conversational-closeout
 asap        2  PROCESS_cli-module-split, SYNTH_generated-signpost-provenance
-up-next     4  PROCESS_behavior-spike-convention, PROCESS_git-branch-workflow-policy, PROCESS_system-style-javascript-adoption, SYNTH_executive-summary-protocol
+up-next     5  PROCESS_behavior-spike-convention, PROCESS_git-branch-workflow-policy, PROCESS_library-api-surface, PROCESS_system-style-javascript-adoption, SYNTH_executive-summary-protocol
 cool-ideas  4  PROCESS_drift-near-miss-hints, PROCESS_legend-audit-and-assignment, PROCESS_review-config-hardening, SYNTH_artifact-history-and-semantic-provenance
 bad-code    0  -
 root        0  -
@@ -80,7 +82,7 @@ root        0  -
 -
 
 --- Legend Health ---
-PROCESS  backlog=8 active=0
+PROCESS  backlog=9 active=0
 SYNTH    backlog=3 active=0
 ```
 
