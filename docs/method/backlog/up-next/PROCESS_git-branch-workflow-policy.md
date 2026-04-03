@@ -34,6 +34,11 @@ Questions this policy should answer:
   conventions that the repo did not choose?
 - How should this policy relate to optional sidecars like Draft Punks
   Doghouse without making METHOD itself a forge-specific system?
+- What should happen when a new backlog-worthy idea appears after a
+  cycle packet is already closed on a review branch?
+- When should a late backlog capture stay on the active PR branch with
+  refreshed witness/retro truth, and when should it be peeled onto a
+  follow-on branch to keep review scope tight?
 
 What this surfaced:
 
@@ -46,3 +51,10 @@ What this surfaced:
   branch before review (design, tests, playback, retro, witness), then
   do repo-level ship sync such as `BEARING.md` and `CHANGELOG.md` on
   `main` after merge.
+- Late backlog captures are honest and should be committed promptly, but
+  they can also broaden PR scope and make a closed cycle's witness stale
+  if the branch-local repo truth changes.
+- The branch policy should say how to choose between:
+  - keeping the capture on the active branch and refreshing the witness
+  - moving it to a follow-on branch so the current PR stays narrowly
+    scoped

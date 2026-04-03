@@ -18,6 +18,12 @@ What this surfaced:
   faithful to METHOD's requirement that done-claims be reproducible.
 - The command should package evidence, not invent it. It would point to
   rerunnable proof rather than becoming a substitute for that proof.
+- It may also need a refresh mode: when a branch-local follow-up change
+  alters repo-visible truth after closeout, the witness packet can drift
+  even if the core cycle work is still correct.
+- A good witness tool should help regenerate or refresh branch-tip
+  verification without pretending that later backlog captures or review
+  follow-ups never happened.
 - This still feels like a cool idea, not core doctrine, until METHOD
   has clearer boundaries around artifact history, closeout flow, and
   any future API surface.
