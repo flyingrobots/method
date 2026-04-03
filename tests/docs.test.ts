@@ -96,6 +96,7 @@ describe('METHOD docs', () => {
     expect(readme).not.toContain('5. **PR -> main** - review until merge.');
     expect(readme).not.toContain('6. **Close** - merge. Retro in `docs/method/retro/<cycle>/`.');
     expect(readme).toContain('It is updated during ship sync after merge.');
+    expect(readme).toContain('-> PR/review -> main');
     expect(process).toContain('METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loop.');
     expect(process).toContain('6. Close the cycle packet with a retro in `docs/method/retro/<cycle>/`.');
     expect(process).toContain('7. Review the complete cycle packet on a branch or PR.');
@@ -287,6 +288,7 @@ describe('METHOD docs', () => {
     expect(workflow).toContain('permissions:');
     expect(workflow).toContain('contents: read');
     expect(workflow).toContain('runs-on: ubuntu-24.04');
+    expect(workflow).toContain('timeout-minutes: 10');
     expect(workflow).toContain('actions/checkout@v4');
     expect(workflow).toContain('actions/setup-node@v4');
     expect(workflow).toContain('node-version: 22');

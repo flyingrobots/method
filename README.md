@@ -378,7 +378,7 @@ idea -> inbox/ -> cool-ideas/ -> up-next/ -> asap/
   -> design/<cycle>/  (committed)
   -> RED -> GREEN -> playback (witness)
   -> retro/<cycle>/   (cycle packet closed)
-  -> PR -> main
+  -> PR/review -> main
   -> ship sync (BEARING / CHANGELOG / release when meaningful)
       - or ->
   -> graveyard/

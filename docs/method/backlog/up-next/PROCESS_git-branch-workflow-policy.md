@@ -18,7 +18,7 @@ Session context:
   conventions that did not actually come from METHOD.
 - At the same time, the repo has a clear stance that METHOD is not a
   GitHub workflow or a PR cockpit. So whatever policy exists should be
-  git-aware and forge-aware, but not forge-dependent doctrine.
+  forge-agnostic at the core, with forge-aware adapters.
 
 Questions this policy should answer:
 
