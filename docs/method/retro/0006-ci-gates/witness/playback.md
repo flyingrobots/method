@@ -46,8 +46,8 @@ Yes.
 `.github/workflows/ci.yml` commits all of the first-cut contract:
 
 - triggers: `push`, `pull_request`
-- runtime: `ubuntu-latest`
-- Node version: `22`
+- runtime: `ubuntu-24.04`
+- Node versions: `18`, `22`
 - install mode: `npm ci`
 - executed commands: `npm run build`, `npm test`
 
@@ -58,10 +58,11 @@ to reconstruct the CI behavior.
 
 Yes.
 
-The workflow does not add linting, release automation, matrix builds,
-or extra status commands. It runs exactly the install/build/test
-surface that the repo currently treats as truth, and the local witness
-re-runs those same commands directly.
+The workflow does not add linting, release automation, multi-OS
+coverage, or extra status commands. It runs the install/build/test
+surface that the repo currently treats as truth, covering the support
+floor and current dev line only, and the local witness re-runs those
+same commands directly.
 
 ## Outcome
 

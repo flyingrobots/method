@@ -256,6 +256,8 @@ in one sentence, the cycle is too big. Split it.
    - Backlog maintenance.
 
    Closing the cycle packet does not mean `main` has accepted it yet.
+   Review-stage visibility currently lives in the branch and the closed
+   cycle packet. `method status` does not yet model that state.
 
 6. **PR / review** - review the full cycle packet until merge or
    rejection.
@@ -310,7 +312,8 @@ ceremonies. The mechanism is passive legibility.
 If you can answer these questions by reading the repo, you do not need
 a standup:
 
-- What is everyone working on? -> `method status`
+- What is actively open in this workspace? -> `method status`
+- What is under review? -> the branch and its closed cycle packet
 - What is committed? -> each design doc names its sponsors and hill
 - What is next? -> `ls docs/method/backlog/asap/`
 - What failed and why? -> `ls docs/method/retro/`
@@ -318,6 +321,9 @@ a standup:
 
 If any of these are unclear, the docs are incomplete. Fix the docs,
 not the process.
+
+`method status` currently models open cycles in the working tree. It
+does not collapse branch-level review state into one summary yet.
 
 ### BEARING.md
 
@@ -417,8 +423,8 @@ npm run build
 npm test
 ```
 
-That workflow is repo truth for this host, not METHOD doctrine for
-every forge.
+The workflow currently runs on `ubuntu-24.04` for Node `18` and `22`.
+That is repo truth for this host, not METHOD doctrine for every forge.
 
 METHOD may be used alongside other tools, but they are sidecars, not
 doctrine. If a repo uses GitHub pull requests and review bots, an

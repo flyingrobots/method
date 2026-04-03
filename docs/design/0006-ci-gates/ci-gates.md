@@ -75,8 +75,8 @@ files.
 - [ ] Adding linting, formatting, or broader quality gates beyond the
       current build/test truth surfaces.
 - [ ] Adding release, publish, or package-version automation.
-- [ ] Adding a multi-version or multi-OS matrix. First cut should use a
-      single Node runtime.
+- [ ] Adding a multi-OS matrix or a broader runtime matrix than the
+      support floor and current dev line.
 - [ ] Generalizing CI across every forge or turning GitHub Actions into
       METHOD doctrine. This cycle is a repo-local adapter for this repo.
 - [ ] Hardening CodeRabbit config or broader PR-review workflow policy.
@@ -85,8 +85,8 @@ files.
 ## Decisions To Make
 
 - Which Node version the workflow should run in for the first cut.
-  Single-version CI is enough here, but the chosen version must be
-  stated explicitly.
+  Final choice: run the support floor (`18`) and current dev line
+  (`22`) explicitly.
 - Whether the workflow should run any METHOD-specific smoke command
   beyond build/test, or whether `npm run build` and `npm test` are the
   full first-cut contract.

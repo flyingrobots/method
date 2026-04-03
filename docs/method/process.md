@@ -1,6 +1,6 @@
 # Process
 
-METHOD cycles run as a calm pull-design-test-playback-retro loop.
+METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loop.
 
 ## Rules
 
@@ -14,6 +14,8 @@ METHOD cycles run as a calm pull-design-test-playback-retro loop.
 - Backlog maintenance happens at cycle boundaries, not continuously.
 - Repo-level ship surfaces such as `BEARING.md` and `CHANGELOG.md`
   reflect merged `main` state, not branch-local closeout state.
+- Review visibility currently rides on branch state and the closed
+  cycle packet; `method status` tracks open workspace cycles only.
 
 ## Default Loop
 

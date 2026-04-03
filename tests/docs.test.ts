@@ -88,13 +88,19 @@ describe('METHOD docs', () => {
     expect(readme).toContain('5. **Close** - write the retro and witness packet on the branch.');
     expect(readme).toContain('6. **PR / review** - review the full cycle packet until merge or');
     expect(readme).toContain('7. **Ship sync on `main`** - after merge, update repo-level ship');
+    expect(readme).toContain('`method status` does not yet model that state.');
+    expect(readme).toContain('What is actively open in this workspace? -> `method status`');
+    expect(readme).toContain('What is under review? -> the branch and its closed cycle packet');
+    expect(readme).toContain('does not collapse branch-level review state into one summary yet.');
     expect(readme).not.toContain('5. **PR -> main** - review until merge.');
     expect(readme).not.toContain('6. **Close** - merge. Retro in `docs/method/retro/<cycle>/`.');
     expect(readme).toContain('It is updated during ship sync after merge.');
+    expect(process).toContain('METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loop.');
     expect(process).toContain('6. Close the cycle packet with a retro in `docs/method/retro/<cycle>/`.');
     expect(process).toContain('7. Review the complete cycle packet on a branch or PR.');
     expect(process).toContain('8. After merge, update repo-level ship surfaces on `main` such as');
     expect(process).toContain('reflect merged `main` state, not branch-local closeout state.');
+    expect(process).toContain('Review visibility currently rides on branch state and the closed');
   });
 
   it('keeps METHOD distinct from forge-specific PR tooling', () => {
@@ -277,9 +283,12 @@ describe('METHOD docs', () => {
     expect(workflow).toContain('name: CI');
     expect(workflow).toContain('push:');
     expect(workflow).toContain('pull_request:');
+    expect(workflow).toContain('runs-on: ubuntu-24.04');
+    expect(workflow).toContain('strategy:');
+    expect(workflow).toContain('node-version: [18, 22]');
     expect(workflow).toContain('actions/checkout@v4');
     expect(workflow).toContain('actions/setup-node@v4');
-    expect(workflow).toMatch(/node-version:\s*["']?\d+["']?/u);
+    expect(workflow).toContain('node-version: ${{ matrix.node-version }}');
     expect(workflow).toContain('cache: npm');
     expect(workflow).toContain('npm ci');
     expect(workflow).toContain('npm run build');
@@ -291,6 +300,8 @@ describe('METHOD docs', () => {
 
     expect(readme).toContain('.github/workflows/ci.yml');
     expect(readme).toContain('GitHub Actions');
+    expect(readme).toContain('ubuntu-24.04');
+    expect(readme).toContain('Node `18` and `22`');
     expect(readme).toContain('npm ci');
     expect(readme).toContain('npm run build');
     expect(readme).toContain('npm test');
