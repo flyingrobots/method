@@ -5,18 +5,18 @@ replace backlog items, design docs, retros, or CLI status.
 
 ## Where are we going?
 
-Current priority: design and pull `PROCESS_drift-detector`.
+Current priority: pull `SYNTH_generated-signpost-provenance` and turn
+generated-signpost metadata into a clearer repo contract.
 
 ## What just shipped?
 
-`0004-readme-and-vision-refresh` - the README now names the repo's
-current legends and signposts, and `docs/VISION.md` exists as a bounded
-executive summary.
+`0005-drift-detector` - the CLI now checks active-cycle playback
+questions against committed test descriptions before closeout.
 
 ## What feels wrong?
 
-- `docs/VISION.md` is still manual dogfood. The protocol and tooling for
-  generating it cleanly are not built yet.
-- The artifact-history versus semantic-provenance split is clearer than
-  before, but still only lives in backlog ideas rather than repo
-  tooling.
+- `method drift` is intentionally narrow: active cycles only, exact
+  normalized test-description matching, and no witness/signpost drift
+  yet.
+- `docs/VISION.md` is still manual dogfood, and generated-file markers
+  plus regeneration guidance are not part of the contract yet.

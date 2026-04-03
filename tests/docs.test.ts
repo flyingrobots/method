@@ -10,6 +10,17 @@ function readRepoFile(relativePath: string): string {
   return readFileSync(resolve(REPO_ROOT, relativePath), 'utf8');
 }
 
+function readBacklogDoc(filename: string): string {
+  const match = walkMarkdownFiles('docs/method/backlog')
+    .find((relativePath) => relativePath.endsWith(`/${filename}`));
+
+  if (match === undefined) {
+    throw new Error(`Could not find backlog doc ${filename}`);
+  }
+
+  return readRepoFile(match);
+}
+
 function legendCodes(): string[] {
   return readdirSync(resolve(REPO_ROOT, 'docs/method/legends'))
     .filter((entry) => entry.endsWith('.md'))
@@ -110,9 +121,9 @@ describe('METHOD docs', () => {
   });
 
   it('records synthesis protocol and provenance contract details in backlog docs', () => {
-    const protocol = readRepoFile('docs/method/backlog/inbox/SYNTH_executive-summary-protocol.md');
-    const provenance = readRepoFile('docs/method/backlog/inbox/SYNTH_generated-signpost-provenance.md');
-    const legendAudit = readRepoFile('docs/method/backlog/inbox/PROCESS_legend-audit-and-assignment.md');
+    const protocol = readBacklogDoc('SYNTH_executive-summary-protocol.md');
+    const provenance = readBacklogDoc('SYNTH_generated-signpost-provenance.md');
+    const legendAudit = readBacklogDoc('PROCESS_legend-audit-and-assignment.md');
 
     expect(protocol).toContain('## Protocol Specification');
     expect(protocol).toContain('### Phase 1: Inventory');
@@ -147,6 +158,7 @@ describe('METHOD docs', () => {
   it('sanitizes personal absolute paths from committed verification witnesses', () => {
     const readmeRevisionVerification = readRepoFile('docs/method/retro/0003-readme-revision/witness/verification.md');
     const visionRefreshVerification = readRepoFile('docs/method/retro/0004-readme-and-vision-refresh/witness/verification.md');
+    const driftDetectorVerification = readRepoFile('docs/method/retro/0005-drift-detector/witness/verification.md');
 
     const personalPathPatterns = [
       '/Users/',
@@ -159,6 +171,7 @@ describe('METHOD docs', () => {
     for (const pattern of personalPathPatterns) {
       expect(readmeRevisionVerification).not.toContain(pattern);
       expect(visionRefreshVerification).not.toContain(pattern);
+      expect(driftDetectorVerification).not.toContain(pattern);
     }
   });
 
@@ -219,5 +232,11 @@ describe('METHOD docs', () => {
     expect(vision).toContain('## Legends');
     expect(vision).toContain('## Roadmap');
     expect(vision).toContain('## Open questions');
+  });
+
+  it('documents the drift detector in the README tooling section', () => {
+    const readme = readRepoFile('README.md');
+
+    expect(readme).toContain('| `method drift [cycle]` | Check active cycle playback questions against test descriptions. |');
   });
 });
