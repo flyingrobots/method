@@ -83,6 +83,23 @@ Signpost documents live at root or one level into `docs/`. They use
 
 ---
 
+## Signposts
+
+METHOD expects a few bounded repo-level signposts. They summarize the
+state of the repo; they do not create commitments.
+
+| Signpost | Role |
+|----------|------|
+| `README.md` | The operating doctrine and filesystem shape. |
+| `docs/BEARING.md` | Current direction, last shipped cycle, and tensions at cycle boundaries. |
+| `docs/VISION.md` | A bounded executive synthesis grounded in repo-visible sources. |
+
+Generated signposts should carry generation metadata and a source
+manifest. Unless they say otherwise explicitly, they are making
+artifact-history claims, not semantic-provenance claims.
+
+---
+
 ## Backlog
 
 Markdown files. Each describes work worth doing. The filesystem is
@@ -166,6 +183,18 @@ success looks like, and how you know.
 A legend code (`VIZ`, `PROTO`, `TUI`) prefixes backlog filenames so
 that `ls` reveals domain load at a glance. Legends live in
 `docs/method/legends/` as standalone documents.
+
+The current legends in this repo are:
+
+- `PROCESS` - METHOD's own mechanics: cycle discipline, backlog
+  operations, drift detection, and named work patterns.
+- `SYNTH` - repo-wide synthesis and signposts: executive summaries,
+  generated signpost provenance, and the boundary between artifact
+  history and semantic provenance.
+
+Not every METHOD repo needs these exact legends. Legends are local to
+the repo and should reflect the domains that actually organize its
+work.
 
 ---
 

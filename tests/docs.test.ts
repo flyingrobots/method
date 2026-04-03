@@ -34,4 +34,29 @@ describe('METHOD docs', () => {
     expect(bearing).toContain('What just shipped?');
     expect(bearing).toContain('What feels wrong?');
   });
+
+  it('describes the current legends in repo-visible docs', () => {
+    const readme = readRepoFile('README.md');
+    const processLegend = readRepoFile('docs/method/legends/PROCESS.md');
+    const synthLegend = readRepoFile('docs/method/legends/SYNTH.md');
+
+    expect(readme).toContain('`PROCESS`');
+    expect(readme).toContain('`SYNTH`');
+    expect(processLegend).toContain('# Legend: PROCESS');
+    expect(synthLegend).toContain('# Legend: SYNTH');
+  });
+
+  it('ships a VISION signpost with bounded provenance metadata', () => {
+    const vision = readRepoFile('docs/VISION.md');
+
+    expect(vision).toContain('---\n');
+    expect(vision).toContain('title: "METHOD - Executive Summary"');
+    expect(vision).toContain('generated_at:');
+    expect(vision).toContain('generator:');
+    expect(vision).toContain('source_files:');
+    expect(vision).toContain('# METHOD - Executive Summary');
+    expect(vision).toContain('## Legends');
+    expect(vision).toContain('## Roadmap');
+    expect(vision).toContain('## Open questions');
+  });
 });
