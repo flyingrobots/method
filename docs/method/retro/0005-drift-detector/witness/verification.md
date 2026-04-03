@@ -55,6 +55,9 @@ No playback-question drift found.
 Scanned 1 active cycle, 2 playback questions, 2 test descriptions.
 Search basis: exact normalized match in tests/**/*.test.* and tests/**/*.spec.* descriptions.
 
+$ echo $?
+0
+
 $ tmpdir=$(mktemp -d)
 $ mkdir -p "$tmpdir/docs/method/backlog/inbox" "$tmpdir/docs/design/0001-drift-detector" "$tmpdir/tests"
 $ cat > "$tmpdir/docs/design/0001-drift-detector/drift-detector.md" <<'EOF'

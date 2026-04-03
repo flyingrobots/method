@@ -15,6 +15,10 @@
 - Added `method drift [cycle]`, a deterministic first-cut detector that
   compares active-cycle playback questions against exact normalized test
   descriptions and reports unmatched questions with stable exit codes.
+- Hardened `method drift` to ignore commented-out test calls, made the
+  current `tests/`-only discovery scope explicit in help output, and
+  tightened witness/test coverage around clean versus drift-found exit
+  semantics.
 - Added the initial TypeScript `method` CLI using published Bijou packages.
 - Implemented `init`, `inbox`, `pull`, `close`, and `status`.
 - Fixed `method help <command>` so command-specific usage resolves correctly.

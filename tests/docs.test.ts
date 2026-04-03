@@ -11,14 +11,17 @@ function readRepoFile(relativePath: string): string {
 }
 
 function readBacklogDoc(filename: string): string {
-  const match = walkMarkdownFiles('docs/method/backlog')
-    .find((relativePath) => relativePath.endsWith(`/${filename}`));
+  const matches = walkMarkdownFiles('docs/method/backlog')
+    .filter((relativePath) => relativePath.endsWith(`/${filename}`));
 
-  if (match === undefined) {
+  if (matches.length === 0) {
     throw new Error(`Could not find backlog doc ${filename}`);
   }
+  if (matches.length > 1) {
+    throw new Error(`Ambiguous backlog doc ${filename}: ${matches.join(', ')}`);
+  }
 
-  return readRepoFile(match);
+  return readRepoFile(matches[0]);
 }
 
 function legendCodes(): string[] {
@@ -173,6 +176,13 @@ describe('METHOD docs', () => {
       expect(visionRefreshVerification).not.toContain(pattern);
       expect(driftDetectorVerification).not.toContain(pattern);
     }
+  });
+
+  it('proves both clean and drift-found exit codes in the 0005 verification witness', () => {
+    const verification = readRepoFile('docs/method/retro/0005-drift-detector/witness/verification.md');
+
+    expect(verification).toContain('$ echo $?\n0');
+    expect(verification).toContain('$ echo $?\n2');
   });
 
   it('keeps ALL_CAPS markdown docs at approved depths or approved legend paths', () => {
