@@ -28,6 +28,7 @@ type ParsedCommand =
   | { command: 'inbox'; idea: string; legend?: string; title?: string }
   | { command: 'pull'; item: string }
   | { command: 'close'; cycle?: string; driftCheck?: 'yes' | 'no'; outcome?: Outcome }
+  | { command: 'drift'; cycle?: string }
   | { command: 'status' };
 
 type Outcome = 'hill-met' | 'partial' | 'not-met';
@@ -47,6 +48,18 @@ interface Cycle {
   slug: string;
   designDoc: string;
   retroDoc: string;
+}
+
+interface PlaybackQuestion {
+  designDoc: string;
+  sponsor: 'Human' | 'Agent';
+  text: string;
+  normalized: string;
+}
+
+interface DriftReport {
+  exitCode: 0 | 2;
+  output: string;
 }
 
 class MethodError extends Error {}
@@ -105,6 +118,12 @@ export async function runCli(
       return 0;
     }
 
+    if (parsed.command === 'drift') {
+      const report = workspace.detectDrift(parsed.cycle);
+      stdout.write(report.output);
+      return report.exitCode;
+    }
+
     stdout.write(workspace.renderStatus(ctx));
     return 0;
   } catch (error: unknown) {
@@ -144,6 +163,8 @@ function parseCliArgs(argv: readonly string[]): ParsedCommand {
       return parsePullArgs(rest);
     case 'close':
       return parseCloseArgs(rest);
+    case 'drift':
+      return parseDriftArgs(rest);
     case 'status':
       if (rest.length > 0) {
         throw new MethodError('`status` does not take any arguments.');
@@ -251,6 +272,13 @@ function requireOptionValue(args: readonly string[], index: number, optionName: 
   return value;
 }
 
+function parseDriftArgs(args: readonly string[]): ParsedCommand {
+  if (args.length > 1) {
+    throw new MethodError('Usage: method drift [cycle]');
+  }
+  return { command: 'drift', cycle: args[0] };
+}
+
 function parseDriftCheckValue(value: string): 'yes' | 'no' {
   if (value === 'yes' || value === 'no') return value;
   throw new MethodError('`--drift-check` must be `yes` or `no`.');
@@ -277,6 +305,14 @@ function usage(topic?: string): string {
   if (topic === 'status') {
     return 'Usage: method status\n\nShow backlog lanes, active cycles, and legend health.';
   }
+  if (topic === 'drift') {
+    return [
+      'Usage: method drift [cycle]',
+      '',
+      'Check active cycle playback questions against test descriptions in tests/.',
+      'First cut scans tests/**/*.test.* and tests/**/*.spec.* only.',
+    ].join('\n');
+  }
   return [
     'Usage: method <command> [options]',
     '',
@@ -285,6 +321,7 @@ function usage(topic?: string): string {
     '  inbox <idea>                Capture a raw idea in inbox/.',
     '  pull <item>                 Promote a backlog item into a cycle.',
     '  close [cycle]               Write a retro for an active cycle.',
+    '  drift [cycle]               Check active cycle playback questions against tests.',
     '  status                      Show backlog, active cycles, and legend health.',
     '',
     'Run `method help <command>` for command-specific usage.',
@@ -338,7 +375,15 @@ class Workspace {
   }
 
   ensureInitialized(): void {
-    if (!existsSync(resolve(this.root, BACKLOG_DIR, 'inbox'))) {
+    const requiredPaths = [
+      resolve(this.root, 'CHANGELOG.md'),
+      resolve(this.root, BACKLOG_DIR),
+      resolve(this.root, DESIGN_DIR),
+      resolve(this.root, RETRO_DIR),
+      resolve(this.root, 'docs/method/process.md'),
+      resolve(this.root, 'docs/method/release.md'),
+    ];
+    if (requiredPaths.some((path) => !existsSync(path))) {
       throw new MethodError(`${this.root} is not a METHOD workspace. Run \`method init\` first.`);
     }
   }
@@ -368,6 +413,7 @@ class Workspace {
       throw new MethodError(`${relative(this.root, path)} already exists. Use --title to disambiguate.`);
     }
 
+    mkdirSync(resolve(path, '..'), { recursive: true });
     const heading = (title ?? cleanIdea).trim();
     writeFileSync(path, `# ${heading}\n\n${cleanIdea}\n`, 'utf8');
     return path;
@@ -434,6 +480,63 @@ class Workspace {
       'utf8',
     );
     return cycle;
+  }
+
+  detectDrift(cycleName?: string): DriftReport {
+    const cycles = cycleName === undefined ? this.openCycles() : [this.resolveCycle(cycleName)];
+    if (cycles.length === 0) {
+      return {
+        exitCode: 0,
+        output: 'No active cycles found.\n',
+      };
+    }
+
+    const questions = cycles.flatMap((cycle) => extractPlaybackQuestions(cycle.designDoc));
+    const testDescriptions = collectTestDescriptions(this.root);
+    const unmatched = questions.filter((question) =>
+      !testDescriptions.some((description) => normalizeForMatch(description) === question.normalized));
+    const summaryLine = `Scanned ${cycles.length} active cycle${plural(cycles.length)}, ${questions.length} playback question${plural(questions.length)}, ${testDescriptions.length} test description${plural(testDescriptions.length)}.`;
+    const searchBasis = 'Search basis: exact normalized match in tests/**/*.test.* and tests/**/*.spec.* descriptions.';
+
+    if (unmatched.length === 0) {
+      return {
+        exitCode: 0,
+        output: [
+          'No playback-question drift found.',
+          summaryLine,
+          searchBasis,
+          '',
+        ].join('\n'),
+      };
+    }
+
+    const grouped = new Map<string, PlaybackQuestion[]>();
+    for (const question of unmatched) {
+      const current = grouped.get(question.designDoc) ?? [];
+      current.push(question);
+      grouped.set(question.designDoc, current);
+    }
+
+    const findingLines: string[] = [];
+    for (const designDoc of [...grouped.keys()].sort((left, right) => left.localeCompare(right))) {
+      findingLines.push(relative(this.root, designDoc));
+      for (const question of grouped.get(designDoc) ?? []) {
+        findingLines.push(`- ${question.sponsor}: ${question.text}`);
+        findingLines.push('  No exact normalized test description match found.');
+      }
+      findingLines.push('');
+    }
+
+    return {
+      exitCode: 2,
+      output: [
+        'Playback-question drift found.',
+        summaryLine,
+        searchBasis,
+        '',
+        ...findingLines,
+      ].join('\n'),
+    };
   }
 
   renderStatus(ctx: ReturnType<typeof createNodeContext>): string {
@@ -583,6 +686,27 @@ function collectMarkdownFiles(root: string): string[] {
   return files.sort((left, right) => left.localeCompare(right));
 }
 
+function collectTestFiles(root: string): string[] {
+  const testsRoot = resolve(root, 'tests');
+  if (!existsSync(testsRoot)) return [];
+
+  return collectFiles(testsRoot, (name) => /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(name));
+}
+
+function collectFiles(root: string, predicate: (name: string) => boolean): string[] {
+  if (!existsSync(root)) return [];
+  const files: string[] = [];
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
+    const path = resolve(root, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...collectFiles(path, predicate));
+    } else if (entry.isFile() && predicate(entry.name)) {
+      files.push(path);
+    }
+  }
+  return files.sort((left, right) => left.localeCompare(right));
+}
+
 function renderDesignDoc(options: {
   title: string;
   legend?: string;
@@ -713,6 +837,191 @@ function readDesignLegend(path: string): string | undefined {
     return value === 'none' ? undefined : value;
   }
   return undefined;
+}
+
+function collectTestDescriptions(root: string): string[] {
+  const descriptions: string[] = [];
+  for (const file of collectTestFiles(root)) {
+    const contents = stripComments(readFileSync(file, 'utf8'));
+    for (const match of contents.matchAll(/\b(?:it|test)\s*\(\s*(['"`])((?:\\.|(?!\1)[\s\S])*?)\1/gu)) {
+      const description = decodeTestStringLiteral(match[2] ?? '', match[1] ?? '').trim();
+      if (description !== undefined && description.length > 0) {
+        descriptions.push(description);
+      }
+    }
+  }
+  return descriptions;
+}
+
+function extractPlaybackQuestions(path: string): PlaybackQuestion[] {
+  const lines = readFileSync(path, 'utf8').split(/\r?\n/u);
+  const questions: PlaybackQuestion[] = [];
+  let inPlaybackSection = false;
+  let sponsor: 'Human' | 'Agent' | undefined;
+  let pendingLines: string[] = [];
+
+  const flushPending = (): void => {
+    if (sponsor === undefined || pendingLines.length === 0) return;
+    const text = pendingLines.join(' ').replace(/\s+/gu, ' ').trim();
+    if (text.length === 0) return;
+    questions.push({
+      designDoc: path,
+      sponsor,
+      text,
+      normalized: normalizeForMatch(text),
+    });
+    pendingLines = [];
+  };
+
+  for (const line of [...lines, '## End']) {
+    if (!inPlaybackSection) {
+      if (line.trim() === '## Playback Questions') {
+        inPlaybackSection = true;
+      }
+      continue;
+    }
+
+    if (/^## /u.test(line)) {
+      flushPending();
+      break;
+    }
+
+    const sponsorMatch = /^### (Human|Agent)\s*$/u.exec(line.trim());
+    if (sponsorMatch !== null) {
+      flushPending();
+      sponsor = sponsorMatch[1] as 'Human' | 'Agent';
+      continue;
+    }
+
+    const bulletMatch = /^- \[ \] (.+)$/u.exec(line.trim());
+    if (bulletMatch !== null) {
+      flushPending();
+      pendingLines = [bulletMatch[1].trim()];
+      continue;
+    }
+
+    if (pendingLines.length > 0 && line.trim().length > 0) {
+      pendingLines.push(line.trim());
+    }
+  }
+
+  return questions;
+}
+
+function normalizeForMatch(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/gu, ' ');
+}
+
+function plural(count: number): string {
+  return count === 1 ? '' : 's';
+}
+
+function decodeTestStringLiteral(value: string, quoteChar: string): string {
+  return value.replace(/\\([\\'"`nrt])/gu, (_match, escaped: string) => {
+    if (escaped === 'n') return '\n';
+    if (escaped === 'r') return '\r';
+    if (escaped === 't') return '\t';
+    if (escaped === quoteChar) return quoteChar;
+    return escaped;
+  });
+}
+
+function stripComments(value: string): string {
+  let result = '';
+  let index = 0;
+  let state: 'code' | 'single-quote' | 'double-quote' | 'template' | 'line-comment' | 'block-comment' = 'code';
+  let escaped = false;
+
+  while (index < value.length) {
+    const current = value[index];
+    const next = value[index + 1];
+
+    if (state === 'line-comment') {
+      if (current === '\n' || current === '\r') {
+        result += current;
+        state = 'code';
+      } else {
+        result += ' ';
+      }
+      index += 1;
+      continue;
+    }
+
+    if (state === 'block-comment') {
+      if (current === '*' && next === '/') {
+        result += '  ';
+        index += 2;
+        state = 'code';
+        continue;
+      }
+
+      result += current === '\n' || current === '\r' ? current : ' ';
+      index += 1;
+      continue;
+    }
+
+    if (state === 'single-quote' || state === 'double-quote' || state === 'template') {
+      result += current;
+
+      if (escaped) {
+        escaped = false;
+      } else if (current === '\\') {
+        escaped = true;
+      } else if (
+        (state === 'single-quote' && current === '\'')
+        || (state === 'double-quote' && current === '"')
+        || (state === 'template' && current === '`')
+      ) {
+        state = 'code';
+      }
+
+      index += 1;
+      continue;
+    }
+
+    if (current === '/' && next === '/') {
+      result += '  ';
+      index += 2;
+      state = 'line-comment';
+      continue;
+    }
+
+    if (current === '/' && next === '*') {
+      result += '  ';
+      index += 2;
+      state = 'block-comment';
+      continue;
+    }
+
+    if (current === '\'') {
+      state = 'single-quote';
+      result += current;
+      index += 1;
+      continue;
+    }
+
+    if (current === '"') {
+      state = 'double-quote';
+      result += current;
+      index += 1;
+      continue;
+    }
+
+    if (current === '`') {
+      state = 'template';
+      result += current;
+      index += 1;
+      continue;
+    }
+
+    result += current;
+    index += 1;
+  }
+
+  return result;
 }
 
 function slugify(value: string): string {

@@ -12,6 +12,17 @@
   out stale backlog duplicates, and expanded docs tests to catch
   provenance drift, signpost-depth mistakes, path leaks, and legend
   hygiene regressions.
+- Added `method drift [cycle]`, a deterministic first-cut detector that
+  compares active-cycle playback questions against exact normalized test
+  descriptions and reports unmatched questions with stable exit codes.
+- Hardened `method drift` to ignore commented-out test calls, made the
+  current `tests/`-only discovery scope explicit in help output, and
+  tightened witness/test coverage around clean versus drift-found exit
+  semantics.
+- Tightened drift parser helpers so quoted test descriptions decode
+  consistently across delimiters, removed unnecessary workspace setup
+  from `help drift` test coverage, and made workspace detection tolerate
+  clone-like repos with missing empty backlog lanes.
 - Added the initial TypeScript `method` CLI using published Bijou packages.
 - Implemented `init`, `inbox`, `pull`, `close`, and `status`.
 - Fixed `method help <command>` so command-specific usage resolves correctly.

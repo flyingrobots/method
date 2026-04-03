@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -10,6 +10,20 @@ function readRepoFile(relativePath: string): string {
   return readFileSync(resolve(REPO_ROOT, relativePath), 'utf8');
 }
 
+function readBacklogDoc(filename: string): string {
+  const matches = walkMarkdownFiles('docs/method/backlog')
+    .filter((relativePath) => relativePath.endsWith(`/${filename}`));
+
+  if (matches.length === 0) {
+    throw new Error(`Could not find backlog doc ${filename}`);
+  }
+  if (matches.length > 1) {
+    throw new Error(`Ambiguous backlog doc ${filename}: ${matches.join(', ')}`);
+  }
+
+  return readRepoFile(matches[0]);
+}
+
 function legendCodes(): string[] {
   return readdirSync(resolve(REPO_ROOT, 'docs/method/legends'))
     .filter((entry) => entry.endsWith('.md'))
@@ -18,7 +32,12 @@ function legendCodes(): string[] {
 }
 
 function inboxItemNames(): string[] {
-  return readdirSync(resolve(REPO_ROOT, 'docs/method/backlog/inbox'))
+  const inboxPath = resolve(REPO_ROOT, 'docs/method/backlog/inbox');
+  if (!existsSync(inboxPath)) {
+    return [];
+  }
+
+  return readdirSync(inboxPath)
     .filter((entry) => entry.endsWith('.md'))
     .sort((left, right) => left.localeCompare(right));
 }
@@ -110,9 +129,9 @@ describe('METHOD docs', () => {
   });
 
   it('records synthesis protocol and provenance contract details in backlog docs', () => {
-    const protocol = readRepoFile('docs/method/backlog/inbox/SYNTH_executive-summary-protocol.md');
-    const provenance = readRepoFile('docs/method/backlog/inbox/SYNTH_generated-signpost-provenance.md');
-    const legendAudit = readRepoFile('docs/method/backlog/inbox/PROCESS_legend-audit-and-assignment.md');
+    const protocol = readBacklogDoc('SYNTH_executive-summary-protocol.md');
+    const provenance = readBacklogDoc('SYNTH_generated-signpost-provenance.md');
+    const legendAudit = readBacklogDoc('PROCESS_legend-audit-and-assignment.md');
 
     expect(protocol).toContain('## Protocol Specification');
     expect(protocol).toContain('### Phase 1: Inventory');
@@ -147,6 +166,7 @@ describe('METHOD docs', () => {
   it('sanitizes personal absolute paths from committed verification witnesses', () => {
     const readmeRevisionVerification = readRepoFile('docs/method/retro/0003-readme-revision/witness/verification.md');
     const visionRefreshVerification = readRepoFile('docs/method/retro/0004-readme-and-vision-refresh/witness/verification.md');
+    const driftDetectorVerification = readRepoFile('docs/method/retro/0005-drift-detector/witness/verification.md');
 
     const personalPathPatterns = [
       '/Users/',
@@ -159,7 +179,15 @@ describe('METHOD docs', () => {
     for (const pattern of personalPathPatterns) {
       expect(readmeRevisionVerification).not.toContain(pattern);
       expect(visionRefreshVerification).not.toContain(pattern);
+      expect(driftDetectorVerification).not.toContain(pattern);
     }
+  });
+
+  it('proves both clean and drift-found exit codes in the 0005 verification witness', () => {
+    const verification = readRepoFile('docs/method/retro/0005-drift-detector/witness/verification.md');
+
+    expect(verification).toContain('$ echo $?\n0');
+    expect(verification).toContain('$ echo $?\n2');
   });
 
   it('keeps ALL_CAPS markdown docs at approved depths or approved legend paths', () => {
@@ -219,5 +247,11 @@ describe('METHOD docs', () => {
     expect(vision).toContain('## Legends');
     expect(vision).toContain('## Roadmap');
     expect(vision).toContain('## Open questions');
+  });
+
+  it('documents the drift detector in the README tooling section', () => {
+    const readme = readRepoFile('README.md');
+
+    expect(readme).toContain('| `method drift [cycle]` | Check active cycle playback questions against test descriptions. |');
   });
 });

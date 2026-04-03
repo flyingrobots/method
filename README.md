@@ -393,6 +393,7 @@ Core commands:
 | `method inbox "raw idea"` | Capture a backlog note in `inbox/`. |
 | `method pull <item>` | Promote a backlog item into the next numbered cycle. |
 | `method close [cycle]` | Write a retro and create its `witness/` directory. |
+| `method drift [cycle]` | Check active cycle playback questions against test descriptions. |
 | `method status` | Summarize backlog lanes, active cycles, and legend load. |
 
 METHOD may be used alongside other tools, but they are sidecars, not
