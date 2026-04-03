@@ -395,11 +395,24 @@ Core commands:
 | `method close [cycle]` | Write a retro and create its `witness/` directory. |
 | `method status` | Summarize backlog lanes, active cycles, and legend load. |
 
+METHOD may be used alongside other tools, but they are sidecars, not
+doctrine. If a repo uses GitHub pull requests and review bots, an
+operator may use a tool like Draft Punks Doghouse to inspect live
+review state, unresolved threads, and stale approval signals while they
+are in the doghouse. That helps wrangle PR feedback; it does not make
+GitHub review flow part of METHOD's core contract.
+
 ---
 
 ## What this system does not have
 
 No milestones. No velocity. No ticket numbers. No required meetings.
+
+METHOD is not a GitHub workflow, a pull-request cockpit, or a
+forge-specific review protocol. It can live inside repos that use those
+things, but its core contract is backlog discipline, cycle truth, and
+reproducible witnesses at the repo level. Review tools may assist the
+operator; they do not define the method.
 
 The backlog is tiered by lane. Choice within a lane is judgment at
 pull time. Coordination is reading the filesystem. That is enough.
