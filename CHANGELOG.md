@@ -19,6 +19,10 @@
   current `tests/`-only discovery scope explicit in help output, and
   tightened witness/test coverage around clean versus drift-found exit
   semantics.
+- Tightened drift parser helpers so quoted test descriptions decode
+  consistently across delimiters, removed unnecessary workspace setup
+  from `help drift` test coverage, and made workspace detection tolerate
+  clone-like repos with missing empty backlog lanes.
 - Added the initial TypeScript `method` CLI using published Bijou packages.
 - Implemented `init`, `inbox`, `pull`, `close`, and `status`.
 - Fixed `method help <command>` so command-specific usage resolves correctly.
