@@ -49,7 +49,7 @@ describe('METHOD docs', () => {
     const vision = readRepoFile('docs/VISION.md');
     const codes = legendCodes();
 
-    expect(codes.length).toBeGreaterThan(0);
+    expect(codes.length, 'expected at least one legend in docs/method/legends/').toBeGreaterThan(0);
 
     for (const code of codes) {
       const legendDoc = readRepoFile(`docs/method/legends/${code}.md`);
@@ -82,6 +82,14 @@ describe('METHOD docs', () => {
     expect(provenance).toContain('`generated_at`');
     expect(provenance).toContain('`generated_from_commit`');
     expect(provenance).toContain('`witness_ref`');
+    expect(provenance).toContain('METHOD now defines which provenance fields are mandatory');
+    expect(legendAudit).toContain('By default, METHOD allows untagged backlog items.');
+    expect(legendAudit).toContain('`method.config.json`');
+    expect(legendAudit).toContain('`require_legend_coverage`');
+    expect(legendAudit).toContain('`method status`');
+    expect(legendAudit).toContain('`legend-audit`');
+    expect(legendAudit).toContain('define the `PROCESS` and `SYNTH` legends');
+    expect(legendAudit).not.toContain('`graft`');
     expect(legendAudit).not.toContain('`CORE`');
     expect(legendAudit).not.toContain('`WARP`');
   });
@@ -90,8 +98,18 @@ describe('METHOD docs', () => {
     const readmeRevisionVerification = readRepoFile('docs/method/retro/0003-readme-revision/witness/verification.md');
     const visionRefreshVerification = readRepoFile('docs/method/retro/0004-readme-and-vision-refresh/witness/verification.md');
 
-    expect(readmeRevisionVerification).not.toContain('/Users/');
-    expect(visionRefreshVerification).not.toContain('/Users/');
+    const personalPathPatterns = [
+      '/Users/',
+      '/home/',
+      '/root/',
+      '/mnt/',
+      'C:\\Users\\',
+    ];
+
+    for (const pattern of personalPathPatterns) {
+      expect(readmeRevisionVerification).not.toContain(pattern);
+      expect(visionRefreshVerification).not.toContain(pattern);
+    }
   });
 
   it('ships a VISION signpost with bounded provenance metadata and repo-state grounding', () => {
