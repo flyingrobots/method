@@ -50,7 +50,9 @@ The frontmatter carries:
 
 The body also states that it is grounded in artifact history only and
 does not claim semantic provenance, and it points to the witness that
-supports its closed-state claims.
+supports its closed-state claims. The docs tests now check all six
+frontmatter fields with format-aware assertions instead of simple string
+presence.
 
 ### Do the README and `docs/VISION.md` make claims that are mechanically checkable from repo-visible files and commands?
 

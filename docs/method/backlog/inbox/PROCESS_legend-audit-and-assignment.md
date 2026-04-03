@@ -5,8 +5,8 @@ Legend management needs first-class tooling: create legends, assign backlog item
 Session context:
 
 - After generating `graft`'s executive summary, the next move was to
-  define a new `CORE` legend and classify every backlog item under
-  either `CORE` or `WARP`.
+  define a new `PROCESS` legend and classify every backlog item under
+  either `PROCESS` or `SYNTH`.
 - The agent manually created the legend file, renamed more than twenty
   backlog files, audited for unprefixed items, and regenerated
   `VISION.md`.

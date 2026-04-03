@@ -1,8 +1,8 @@
 ---
 title: "METHOD - Executive Summary"
-generated_at: 2026-04-02
+generated_at: 2026-04-02T17:41:54-07:00
 generator: "manual synthesis during cycle 0004-readme-and-vision-refresh"
-generated_from_commit: "bc8ee26e5b4dea02079fbeabfb610873ceb4b65a"
+generated_from_commit: "0e7b57a33c44500b9720502e3bb5bac7b3d58c10"
 provenance_level: artifact_history
 witness_ref: docs/method/retro/0004-readme-and-vision-refresh/witness/verification.md
 source_files:
@@ -70,17 +70,16 @@ There are currently no active cycles. The next likely pull remains
 
 METHOD currently uses three top-level signposts:
 
-- `README.md` for doctrine and structure.
-- `docs/BEARING.md` for direction and tensions at cycle boundaries.
-- `docs/VISION.md` for a bounded executive synthesis.
+- See `README.md` for doctrine and structure.
+- Refer to `docs/BEARING.md` for direction and tensions at cycle boundaries.
+- `docs/VISION.md` is the bounded executive synthesis.
 
 These signposts are summaries, not commitments. Backlog items, design
 docs, witnesses, and retros remain the source of truth.
 
-This summary describes repo state as of commit
-`bc8ee26e5b4dea02079fbeabfb610873ceb4b65a`. The linked witness captures
-the closeout commands that produced the no-active-cycles state it
-reports.
+The linked witness captures the closeout commands that produced the
+no-active-cycles state this summary reports. See frontmatter for the
+specific commit grounding.
 
 ## Legends
 

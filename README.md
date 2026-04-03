@@ -129,8 +129,8 @@ Anything else sits in the backlog root.
 Legend prefix if applicable. No numeric IDs.
 
 ```text
-VIZ_braille-rendering.md
-PROTO_strand-lifecycle.md
+PROCESS_behavior-spike-convention.md
+SYNTH_generated-signpost-provenance.md
 debt-trailer-codec-dts.md
 ```
 
@@ -139,7 +139,7 @@ debt-trailer-codec-dts.md
 When a backlog item is pulled into a cycle, it becomes a design doc:
 
 ```text
-backlog/asap/PROTO_strand-lifecycle.md -> design/<cycle>/strand-lifecycle.md
+backlog/asap/SYNTH_executive-summary-protocol.md -> design/<cycle>/executive-summary-protocol.md
 ```
 
 The backlog file is removed. Work does not live in two places.
@@ -181,7 +181,7 @@ timelines - they are reference frames, not milestones. A legend never
 starts or finishes. It describes what it covers, who cares, what
 success looks like, and how you know.
 
-A legend code (`VIZ`, `PROTO`, `TUI`) prefixes backlog filenames so
+A legend code (for example, `PROCESS` or `SYNTH`) prefixes backlog filenames so
 that `ls` reveals domain load at a glance. Legends live in
 `docs/method/legends/` as standalone documents.
 
@@ -412,6 +412,6 @@ pull time. Coordination is reading the filesystem. That is enough.
 |------------|---------|------|
 | `ALL_CAPS.md` | `VISION.md`, `BEARING.md` | Signpost - root or `docs/` |
 | `lowercase.md` | `doctrine.md` | Everything else |
-| `<LEGEND>_<name>.md` | `VIZ_braille.md` | Backlog with legend |
+| `<LEGEND>_<name>.md` | `SYNTH_executive-summary-protocol.md` | Backlog with legend |
 | `<name>.md` | `debt-trailer-codec.md` | Backlog without legend |
 | `<cycle>/` | `0010-strand-speculation/` | Cycle directory |
