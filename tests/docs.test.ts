@@ -254,4 +254,29 @@ describe('METHOD docs', () => {
 
     expect(readme).toContain('| `method drift [cycle]` | Check active cycle playback questions against test descriptions. |');
   });
+
+  it('ships a minimal CI workflow that runs build and test on push and pull requests', () => {
+    const workflow = readRepoFile('.github/workflows/ci.yml');
+
+    expect(workflow).toContain('name: CI');
+    expect(workflow).toContain('push:');
+    expect(workflow).toContain('pull_request:');
+    expect(workflow).toContain('actions/checkout@v4');
+    expect(workflow).toContain('actions/setup-node@v4');
+    expect(workflow).toMatch(/node-version:\s*["']?\d+["']?/u);
+    expect(workflow).toContain('cache: npm');
+    expect(workflow).toContain('npm ci');
+    expect(workflow).toContain('npm run build');
+    expect(workflow).toContain('npm test');
+  });
+
+  it('documents the CI gate in the README tooling section', () => {
+    const readme = readRepoFile('README.md');
+
+    expect(readme).toContain('.github/workflows/ci.yml');
+    expect(readme).toContain('GitHub Actions');
+    expect(readme).toContain('npm ci');
+    expect(readme).toContain('npm run build');
+    expect(readme).toContain('npm test');
+  });
 });
