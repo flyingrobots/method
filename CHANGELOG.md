@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- Added a minimal GitHub Actions CI gate that runs `npm ci`,
+  `npm run build`, and `npm test` on `push` and `pull_request`, pinned
+  to `ubuntu-24.04` with Node `22`.
+- Raised the repo's Node support floor to `>=22` so the documented
+  runtime contract matches the actual toolchain and CI behavior.
+- Clarified the cycle loop so closeout happens on the branch, review
+  happens against the full cycle packet, and ship sync happens on
+  merged `main`.
+- Added practical METHOD guidance in `docs/method/guide.md` and captured
+  follow-on backlog notes for branch workflow policy and conversational
+  retro closeout.
 - Clarified METHOD doctrine and repo coordination: the README now makes
   reproducibility, accessibility, localization, agent explainability,
   disagreement handling, and forge-agnostic boundaries explicit.
