@@ -16,6 +16,7 @@ committed Markdown plus rerunnable checks.
 
 - The done-claim is carried by committed docs and rerunnable command
   output.
-- `docs/VISION.md` explicitly claims artifact-history grounding only.
+- `docs/VISION.md` explicitly claims artifact-history grounding only and
+  identifies the repo state and verification witness that support that
+  claim.
 - No screenshot or one-off observation is carrying the proof.
-

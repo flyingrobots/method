@@ -43,11 +43,14 @@ The frontmatter carries:
 
 - `generated_at`
 - `generator`
+- `generated_from_commit`
 - `provenance_level`
+- `witness_ref`
 - `source_files`
 
 The body also states that it is grounded in artifact history only and
-does not claim semantic provenance.
+does not claim semantic provenance, and it points to the witness that
+supports its closed-state claims.
 
 ### Do the README and `docs/VISION.md` make claims that are mechanically checkable from repo-visible files and commands?
 
@@ -61,4 +64,3 @@ load and confirms the cycle boundary before and after close.
 
 The hill is met. METHOD now has coherent root signposts, a truthful
 legend split, and a bounded executive summary for the repo itself.
-

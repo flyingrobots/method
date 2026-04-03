@@ -44,15 +44,22 @@ root        0  -
 PROCESS  backlog=3 active=0
 SYNTH    backlog=3 active=1
 
-$ rg -n "## Signposts|`PROCESS`|`SYNTH`|docs/VISION.md|generated_at:|source_files:" README.md docs/VISION.md
-README.md:81:## Signposts
-README.md:88:| `docs/VISION.md` | A bounded executive synthesis grounded in repo-visible sources. |
-README.md:163:- `PROCESS` - METHOD's own mechanics: cycle discipline, backlog
-README.md:165:- `SYNTH` - repo-wide synthesis and signposts: executive summaries,
+$ rg -n "## Signposts|`PROCESS`|`SYNTH`|docs/VISION.md|generated_at:|generated_from_commit:|witness_ref:|source_files:" README.md docs/VISION.md
 docs/VISION.md:3:generated_at: 2026-04-02
-docs/VISION.md:6:source_files:
-docs/VISION.md:41:  added `docs/VISION.md`.
-docs/VISION.md:51:- `docs/VISION.md` for a bounded executive synthesis.
+docs/VISION.md:5:generated_from_commit: "bc8ee26e5b4dea02079fbeabfb610873ceb4b65a"
+docs/VISION.md:7:witness_ref: docs/method/retro/0004-readme-and-vision-refresh/witness/verification.md
+docs/VISION.md:8:source_files:
+docs/VISION.md:58:  explicit in the README and added this bounded `docs/VISION.md`
+docs/VISION.md:63:- `PROCESS` for METHOD's own mechanics.
+docs/VISION.md:64:- `SYNTH` for repo self-description, signposts, and provenance shape.
+docs/VISION.md:69:## Signposts
+docs/VISION.md:75:- `docs/VISION.md` for a bounded executive synthesis.
+docs/VISION.md:89:`PROCESS` covers the mechanics of METHOD itself: cycle discipline,
+docs/VISION.md:101:`SYNTH` covers how a METHOD repo understands and explains itself:
+README.md:87:## Signposts
+README.md:96:| `docs/VISION.md` | A bounded executive synthesis grounded in repo-visible sources. |
+README.md:190:- `PROCESS` - METHOD's own mechanics: cycle discipline, backlog
+README.md:192:- `SYNTH` - repo-wide synthesis and signposts: executive summaries,
 
 $ npm run method -- close --drift-check yes --outcome hill-met
 
@@ -88,7 +95,8 @@ SYNTH    backlog=3 active=0
 ## Interpretation
 
 - The README now makes the current signposts and legends explicit.
-- `docs/VISION.md` exists with bounded provenance metadata and a source
-  manifest.
+- `docs/VISION.md` now identifies the repo commit and witness that
+  support its artifact-history claims, plus the source manifest behind
+  the summary.
 - The cycle closed cleanly, leaving `PROCESS_drift-detector` in
   `up-next`.

@@ -78,8 +78,9 @@ docs/
     *.md                            living documents
 ```
 
-Signpost documents live at root or one level into `docs/`. They use
-`ALL_CAPS.md`. Deeper than that, it is not a signpost.
+Repo signposts live at root or one level into `docs/`. `README.md` is
+the standing root exception; every other signpost uses `ALL_CAPS.md`.
+Deeper than that, it is not a signpost.
 
 ---
 

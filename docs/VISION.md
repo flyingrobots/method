@@ -2,7 +2,9 @@
 title: "METHOD - Executive Summary"
 generated_at: 2026-04-02
 generator: "manual synthesis during cycle 0004-readme-and-vision-refresh"
+generated_from_commit: "bc8ee26e5b4dea02079fbeabfb610873ceb4b65a"
 provenance_level: artifact_history
+witness_ref: docs/method/retro/0004-readme-and-vision-refresh/witness/verification.md
 source_files:
   - README.md
   - CHANGELOG.md
@@ -19,6 +21,8 @@ source_files:
   - docs/method/retro/0001-method-cli/method-cli.md
   - docs/method/retro/0002-playback-witness-convention/playback-witness-convention.md
   - docs/method/retro/0003-readme-revision/readme-revision.md
+  - docs/method/retro/0004-readme-and-vision-refresh/readme-and-vision-refresh.md
+  - docs/method/retro/0004-readme-and-vision-refresh/witness/verification.md
   - docs/method/backlog/up-next/PROCESS_drift-detector.md
   - docs/method/backlog/inbox/PROCESS_behavior-spike-convention.md
   - docs/method/backlog/inbox/PROCESS_legend-audit-and-assignment.md
@@ -72,6 +76,11 @@ METHOD currently uses three top-level signposts:
 
 These signposts are summaries, not commitments. Backlog items, design
 docs, witnesses, and retros remain the source of truth.
+
+This summary describes repo state as of commit
+`bc8ee26e5b4dea02079fbeabfb610873ceb4b65a`. The linked witness captures
+the closeout commands that produced the no-active-cycles state it
+reports.
 
 ## Legends
 
