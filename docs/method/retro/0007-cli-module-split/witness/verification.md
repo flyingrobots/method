@@ -59,7 +59,7 @@ $ npm run method -- status
 METHOD Status  <REPO_ROOT>
 
 --- Backlog ---
-inbox       0  -
+inbox       1  PROCESS_release-shaping-and-user-migration-docs
 asap        1  SYNTH_generated-signpost-provenance
 up-next     5  PROCESS_behavior-spike-convention, PROCESS_git-branch-workflow-policy, PROCESS_library-api-surface, PROCESS_system-style-javascript-adoption, SYNTH_executive-summary-protocol
 cool-ideas  6  PROCESS_drift-near-miss-hints, PROCESS_legend-audit-and-assignment, PROCESS_retro-conversational-closeout, PROCESS_review-config-hardening, SYNTH_artifact-history-and-semantic-provenance, SYNTH_cycle-witness-command
@@ -70,7 +70,7 @@ root        0  -
 -
 
 --- Legend Health ---
-PROCESS  backlog=8 active=0
+PROCESS  backlog=9 active=0
 SYNTH    backlog=4 active=0
 ```
 
@@ -80,7 +80,13 @@ SYNTH    backlog=4 active=0
   layout exposes the new boundaries directly.
 - `src/cli.ts` is now a thin entry point, while `Workspace` and the
   drift matcher live in their own runtime-owned modules.
+- `Workspace` still owns internal document scaffolding and markdown
+  traversal in this first cut; the split only moved parsing and
+  drift-specific behavior into dedicated modules.
 - The build, tests, and workspace status commands still pass after the
   split, so the refactor preserved the existing CLI contract.
 - Backlog maintenance was completed during closeout, including moving
   `PROCESS_retro-conversational-closeout` out of `inbox/`.
+- The branch tip also includes the later backlog capture
+  `PROCESS_release-shaping-and-user-migration-docs`, which is why the
+  current status output shows `inbox 1`.

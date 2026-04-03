@@ -17,7 +17,9 @@ Legend: PROCESS
 METHOD keeps the current CLI command surface and behavior, but
 reorganizes the implementation so `src/cli.ts` becomes a thin entry
 point and runtime-owned modules carry argument parsing/help, workspace
-operations, drift detection, and file/text helpers in separate homes.
+operations, and drift detection in separate homes while workspace-local
+document scaffolding stays with the workspace module unless it becomes
+independently meaningful.
 
 ## Playback Questions
 
@@ -63,7 +65,7 @@ operations, drift detection, and file/text helpers in separate homes.
   boundaries and moved responsibilities must be committed in the repo.
   A reviewer should be able to point to a concrete file for CLI entry,
   arg parsing/help text, workspace operations, drift behavior, and the
-  filesystem/text helpers those behaviors use.
+  workspace-local scaffolding those behaviors still depend on.
 - What must be attributable, evidenced, or governed: tests must prove
   the CLI contract still holds after the split. This cycle should not
   hide behavioral changes inside a refactor. If outputs or command
@@ -94,8 +96,10 @@ operations, drift detection, and file/text helpers in separate homes.
     is genuinely shared and still semantically coherent
 - Whether `Workspace` should remain the primary runtime object.
   Current bias: yes. Keep a real runtime-backed workspace type, but make
-  it smaller by moving drift-only logic and generic traversal helpers
-  out of the class.
+  it smaller by moving drift-only logic out of the class first.
+  Workspace-local document scaffolding and markdown traversal may remain
+  in `src/workspace.ts` during this cycle if they stay internal to
+  workspace behavior.
 - How far to take the split in one cycle.
   Current bias: enough to remove the monolith risk now, not a full
   architectural rewrite.

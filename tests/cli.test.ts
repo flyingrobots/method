@@ -453,6 +453,14 @@ describe('method CLI', () => {
     expect(cliSource).not.toContain('function normalizeForMatch');
     expect(cliSource.split(/\r?\n/u).length).toBeLessThan(260);
   });
+
+  it('keeps workspace.ts focused on workspace behavior instead of reabsorbing drift helpers', () => {
+    const workspaceSource = readFileSync(new URL('../src/workspace.ts', import.meta.url), 'utf8');
+
+    expect(workspaceSource).not.toContain('function extractPlaybackQuestions');
+    expect(workspaceSource).not.toContain('function collectTestFiles');
+    expect(workspaceSource).not.toContain('function normalizeForMatch');
+  });
 });
 
 function expectFile(root: string, relativePath: string): void {
