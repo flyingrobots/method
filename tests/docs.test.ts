@@ -81,6 +81,22 @@ describe('METHOD docs', () => {
     expect(readme).not.toContain('What is everyone working on? → `ls docs/design/`');
   });
 
+  it('documents cycle closeout before PR review and ship sync after merge', () => {
+    const readme = readRepoFile('README.md');
+    const process = readRepoFile('docs/method/process.md');
+
+    expect(readme).toContain('5. **Close** - write the retro and witness packet on the branch.');
+    expect(readme).toContain('6. **PR / review** - review the full cycle packet until merge or');
+    expect(readme).toContain('7. **Ship sync on `main`** - after merge, update repo-level ship');
+    expect(readme).not.toContain('5. **PR -> main** - review until merge.');
+    expect(readme).not.toContain('6. **Close** - merge. Retro in `docs/method/retro/<cycle>/`.');
+    expect(readme).toContain('It is updated during ship sync after merge.');
+    expect(process).toContain('6. Close the cycle packet with a retro in `docs/method/retro/<cycle>/`.');
+    expect(process).toContain('7. Review the complete cycle packet on a branch or PR.');
+    expect(process).toContain('8. After merge, update repo-level ship surfaces on `main` such as');
+    expect(process).toContain('reflect merged `main` state, not branch-local closeout state.');
+  });
+
   it('keeps METHOD distinct from forge-specific PR tooling', () => {
     const readme = readRepoFile('README.md');
 
