@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Clarified legend coverage opt-in behavior and generated-signpost
+  provenance wording, and expanded docs tests to catch cross-platform
+  personal path leaks and empty-legend failures more clearly.
 - Sorted the METHOD backlog under the `PROCESS` and `SYNTH` legends and
   added legend docs for both domains.
 - Added `docs/VISION.md` as a bounded executive summary signpost with
