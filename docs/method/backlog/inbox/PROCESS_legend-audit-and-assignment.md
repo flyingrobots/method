@@ -3,10 +3,10 @@
 Legend management needs first-class tooling: create legends, assign
 backlog items to legends, audit for orphaned items, and list items by
 legend and lane. By default, METHOD allows untagged backlog items.
-Repos that want full legend coverage should opt in via
-`method.config.json` with `require_legend_coverage` set to `true`; when
-that flag is enabled, `legend-audit` should report orphaned items and
-`method status` should exit non-zero until coverage is restored.
+One possible repo-level opt-in would be `method.config.json` with
+`require_legend_coverage` set to `true`. If METHOD later implements that
+flag, `legend-audit` could report orphaned items and
+`method status` could exit non-zero until coverage is restored.
 
 Session context:
 
