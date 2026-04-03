@@ -1,5 +1,5 @@
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { afterEach, describe, expect, it } from 'vitest';
 import { runCli } from '../src/cli.js';
@@ -200,7 +200,7 @@ describe('method CLI', () => {
     expect(exitCode).toBe(0);
     expect(stdout.output).toContain('No playback-question drift found.');
     expect(stdout.output).toContain('Scanned 1 active cycle');
-    expect(stdout.output).toContain('2 playback question');
+    expect(stdout.output).toContain('2 playback questions');
   });
 
   it('When the detector cannot prove a match, does it fail honestly instead of pretending semantic certainty?', async () => {
@@ -284,20 +284,12 @@ describe('method CLI', () => {
 
     expect(exitCode).toBe(0);
     expect(stdout.output).toContain('No playback-question drift found.');
-    expect(stdout.output).toContain('2 playback question');
+    expect(stdout.output).toContain('2 playback questions');
   });
 
-  it('Does the detector return stable output and exit semantics that can be consumed in automation without a model in the loop?', async () => {
+  it('ignores commented-out test calls when matching playback questions', async () => {
     const root = createTempRoot();
     await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
-
-    const helpStdout = new MemoryWriter();
-    const helpExitCode = await runCli(['help', 'drift'], {
-      cwd: root,
-      stdout: helpStdout,
-      stderr: new MemoryWriter(),
-    });
-
     writeDesignDoc(root, {
       cycleName: '0001-drift-detector',
       slug: 'drift-detector',
@@ -309,69 +301,71 @@ describe('method CLI', () => {
         '',
         '### Human',
         '',
-        '- [ ] Does the detector return stable output?',
-        '',
-        '### Agent',
-        '',
-        '- [ ] Does the detector return stable exit semantics?',
+        '- [ ] Can I see only runnable tests count as evidence?',
       ].join('\n'),
     });
-
-    const cleanStdout = new MemoryWriter();
     writeWorkspaceTest(
       root,
-      'tests/drift-exit-codes.test.ts',
+      'tests/drift-commented.test.ts',
       [
-        "it('Does the detector return stable output?', () => {});",
-        "it('Does the detector return stable exit semantics?', () => {});",
+        "// it('Can I see only runnable tests count as evidence?', () => {});",
+        "/* test('Can I see only runnable tests count as evidence?', () => {}); */",
       ].join('\n'),
     );
-    const cleanExitCode = await runCli(['drift'], {
-      cwd: root,
-      stdout: cleanStdout,
-      stderr: new MemoryWriter(),
-    });
 
-    const driftRoot = createTempRoot();
-    await runCli(['init'], { cwd: driftRoot, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
-    writeDesignDoc(driftRoot, {
-      cycleName: '0001-drift-detector',
-      slug: 'drift-detector',
-      title: 'Drift Detector',
-      body: [
-        'Legend: PROCESS',
-        '',
-        '## Playback Questions',
-        '',
-        '### Human',
-        '',
-        '- [ ] Does drift return a distinct exit code?',
-      ].join('\n'),
-    });
+    const stdout = new MemoryWriter();
+    const exitCode = await runCli(['drift'], { cwd: root, stdout, stderr: new MemoryWriter() });
 
-    const driftStdout = new MemoryWriter();
-    const driftExitCode = await runCli(['drift'], {
-      cwd: driftRoot,
-      stdout: driftStdout,
-      stderr: new MemoryWriter(),
-    });
+    expect(exitCode).toBe(2);
+    expect(stdout.output).toContain('Playback-question drift found.');
+    expect(stdout.output).toContain('Human: Can I see only runnable tests count as evidence?');
+    expect(stdout.output).toContain('0 test descriptions');
+  });
 
-    const errorStderr = new MemoryWriter();
-    const errorExitCode = await runCli(['drift', 'missing-cycle'], {
-      cwd: driftRoot,
-      stdout: new MemoryWriter(),
-      stderr: errorStderr,
-    });
+  it('Does the detector return stable output and exit semantics that can be consumed in automation without a model in the loop?', async () => {
+    const help = await runDriftHelpScenario();
+    const clean = await runDriftCleanScenario();
+    const drift = await runDriftFoundScenario();
+    const error = await runDriftMissingCycleScenario();
 
-    expect(helpExitCode).toBe(0);
-    expect(helpStdout.output).toContain('Usage: method drift [cycle]');
-    expect(helpStdout.output).toContain('Check active cycle playback questions against test descriptions.');
-    expect(cleanExitCode).toBe(0);
-    expect(cleanStdout.output).toContain('No playback-question drift found.');
-    expect(driftExitCode).toBe(2);
-    expect(driftStdout.output).toContain('Playback-question drift found.');
-    expect(errorExitCode).toBe(1);
-    expect(errorStderr.output).toContain('Could not find active cycle');
+    expect(help.exitCode).toBe(0);
+    expect(clean.exitCode).toBe(0);
+    expect(drift.exitCode).toBe(2);
+    expect(error.exitCode).toBe(1);
+  });
+
+  it('shows help for the drift command', async () => {
+    const { exitCode, stdout } = await runDriftHelpScenario();
+
+    expect(exitCode).toBe(0);
+    expect(stdout.output).toContain('Usage: method drift [cycle]');
+    expect(stdout.output).toContain('Check active cycle playback questions against test descriptions in tests/.');
+    expect(stdout.output).toContain('First cut scans tests/**/*.test.* and tests/**/*.spec.* only.');
+  });
+
+  it('returns exit code 0 when no drift is found', async () => {
+    const { exitCode, stdout } = await runDriftCleanScenario();
+
+    expect(exitCode).toBe(0);
+    expect(stdout.output).toContain('No playback-question drift found.');
+    expect(stdout.output).toContain('2 playback questions');
+    expect(stdout.output).toContain('2 test descriptions');
+  });
+
+  it('returns exit code 2 when drift is found', async () => {
+    const { exitCode, stdout } = await runDriftFoundScenario();
+
+    expect(exitCode).toBe(2);
+    expect(stdout.output).toContain('Playback-question drift found.');
+    expect(stdout.output).toContain('Human: Does drift return a distinct exit code?');
+    expect(stdout.output).toContain('No exact normalized test description match found.');
+  });
+
+  it('returns exit code 1 for operator errors', async () => {
+    const { exitCode, stderr } = await runDriftMissingCycleScenario();
+
+    expect(exitCode).toBe(1);
+    expect(stderr.output).toContain('Could not find active cycle');
   });
 });
 
@@ -398,6 +392,114 @@ function writeDesignDoc(
 
 function writeWorkspaceTest(root: string, relativePath: string, body: string): void {
   const path = join(root, relativePath);
-  mkdirSync(join(path, '..'), { recursive: true });
+  mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, `${body}\n`, 'utf8');
+}
+
+async function runDriftHelpScenario(): Promise<{ exitCode: number; stdout: MemoryWriter }> {
+  const root = createTempRoot();
+  await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+  const stdout = new MemoryWriter();
+  const exitCode = await runCli(['help', 'drift'], {
+    cwd: root,
+    stdout,
+    stderr: new MemoryWriter(),
+  });
+
+  return { exitCode, stdout };
+}
+
+async function runDriftCleanScenario(): Promise<{ exitCode: number; stdout: MemoryWriter }> {
+  const root = createTempRoot();
+  await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+  writeDesignDoc(root, {
+    cycleName: '0001-drift-detector',
+    slug: 'drift-detector',
+    title: 'Drift Detector',
+    body: [
+      'Legend: PROCESS',
+      '',
+      '## Playback Questions',
+      '',
+      '### Human',
+      '',
+      '- [ ] Does the detector return stable output?',
+      '',
+      '### Agent',
+      '',
+      '- [ ] Does the detector return stable exit semantics?',
+    ].join('\n'),
+  });
+  writeWorkspaceTest(
+    root,
+    'tests/drift-exit-codes.test.ts',
+    [
+      "it('Does the detector return stable output?', () => {});",
+      "it('Does the detector return stable exit semantics?', () => {});",
+    ].join('\n'),
+  );
+
+  const stdout = new MemoryWriter();
+  const exitCode = await runCli(['drift'], {
+    cwd: root,
+    stdout,
+    stderr: new MemoryWriter(),
+  });
+
+  return { exitCode, stdout };
+}
+
+async function runDriftFoundScenario(): Promise<{ exitCode: number; stdout: MemoryWriter }> {
+  const root = createTempRoot();
+  await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+  writeDesignDoc(root, {
+    cycleName: '0001-drift-detector',
+    slug: 'drift-detector',
+    title: 'Drift Detector',
+    body: [
+      'Legend: PROCESS',
+      '',
+      '## Playback Questions',
+      '',
+      '### Human',
+      '',
+      '- [ ] Does drift return a distinct exit code?',
+    ].join('\n'),
+  });
+
+  const stdout = new MemoryWriter();
+  const exitCode = await runCli(['drift'], {
+    cwd: root,
+    stdout,
+    stderr: new MemoryWriter(),
+  });
+
+  return { exitCode, stdout };
+}
+
+async function runDriftMissingCycleScenario(): Promise<{ exitCode: number; stderr: MemoryWriter }> {
+  const root = createTempRoot();
+  await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+  writeDesignDoc(root, {
+    cycleName: '0001-drift-detector',
+    slug: 'drift-detector',
+    title: 'Drift Detector',
+    body: [
+      'Legend: PROCESS',
+      '',
+      '## Playback Questions',
+      '',
+      '### Human',
+      '',
+      '- [ ] Does drift target an explicit active cycle?',
+    ].join('\n'),
+  });
+  const stderr = new MemoryWriter();
+  const exitCode = await runCli(['drift', 'missing-cycle'], {
+    cwd: root,
+    stdout: new MemoryWriter(),
+    stderr,
+  });
+
+  return { exitCode, stderr };
 }

@@ -306,7 +306,12 @@ function usage(topic?: string): string {
     return 'Usage: method status\n\nShow backlog lanes, active cycles, and legend health.';
   }
   if (topic === 'drift') {
-    return 'Usage: method drift [cycle]\n\nCheck active cycle playback questions against test descriptions.';
+    return [
+      'Usage: method drift [cycle]',
+      '',
+      'Check active cycle playback questions against test descriptions in tests/.',
+      'First cut scans tests/**/*.test.* and tests/**/*.spec.* only.',
+    ].join('\n');
   }
   return [
     'Usage: method <command> [options]',
@@ -828,10 +833,9 @@ function readDesignLegend(path: string): string | undefined {
 function collectTestDescriptions(root: string): string[] {
   const descriptions: string[] = [];
   for (const file of collectTestFiles(root)) {
-    const contents = readFileSync(file, 'utf8');
+    const contents = stripComments(readFileSync(file, 'utf8'));
     for (const match of contents.matchAll(/\b(?:it|test)\s*\(\s*(['"`])((?:\\.|(?!\1)[\s\S])*?)\1/gu)) {
-      const quote = match[1];
-      const description = decodeTestStringLiteral(match[2] ?? '', quote).trim();
+      const description = decodeTestStringLiteral(match[2] ?? '').trim();
       if (description !== undefined && description.length > 0) {
         descriptions.push(description);
       }
@@ -906,16 +910,108 @@ function plural(count: number): string {
   return count === 1 ? '' : 's';
 }
 
-function decodeTestStringLiteral(value: string, quote: string): string {
+function decodeTestStringLiteral(value: string): string {
   return value.replace(/\\([\\'"`nrt])/gu, (_match, escaped: string) => {
     if (escaped === 'n') return '\n';
     if (escaped === 'r') return '\r';
     if (escaped === 't') return '\t';
-    if (escaped === quote || escaped === '\\' || escaped === '\'' || escaped === '"' || escaped === '`') {
-      return escaped;
-    }
     return escaped;
   });
+}
+
+function stripComments(value: string): string {
+  let result = '';
+  let index = 0;
+  let state: 'code' | 'single-quote' | 'double-quote' | 'template' | 'line-comment' | 'block-comment' = 'code';
+  let escaped = false;
+
+  while (index < value.length) {
+    const current = value[index];
+    const next = value[index + 1];
+
+    if (state === 'line-comment') {
+      if (current === '\n' || current === '\r') {
+        result += current;
+        state = 'code';
+      } else {
+        result += ' ';
+      }
+      index += 1;
+      continue;
+    }
+
+    if (state === 'block-comment') {
+      if (current === '*' && next === '/') {
+        result += '  ';
+        index += 2;
+        state = 'code';
+        continue;
+      }
+
+      result += current === '\n' || current === '\r' ? current : ' ';
+      index += 1;
+      continue;
+    }
+
+    if (state === 'single-quote' || state === 'double-quote' || state === 'template') {
+      result += current;
+
+      if (escaped) {
+        escaped = false;
+      } else if (current === '\\') {
+        escaped = true;
+      } else if (
+        (state === 'single-quote' && current === '\'')
+        || (state === 'double-quote' && current === '"')
+        || (state === 'template' && current === '`')
+      ) {
+        state = 'code';
+      }
+
+      index += 1;
+      continue;
+    }
+
+    if (current === '/' && next === '/') {
+      result += '  ';
+      index += 2;
+      state = 'line-comment';
+      continue;
+    }
+
+    if (current === '/' && next === '*') {
+      result += '  ';
+      index += 2;
+      state = 'block-comment';
+      continue;
+    }
+
+    if (current === '\'') {
+      state = 'single-quote';
+      result += current;
+      index += 1;
+      continue;
+    }
+
+    if (current === '"') {
+      state = 'double-quote';
+      result += current;
+      index += 1;
+      continue;
+    }
+
+    if (current === '`') {
+      state = 'template';
+      result += current;
+      index += 1;
+      continue;
+    }
+
+    result += current;
+    index += 1;
+  }
+
+  return result;
 }
 
 function slugify(value: string): string {
