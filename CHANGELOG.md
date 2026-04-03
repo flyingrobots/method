@@ -2,25 +2,16 @@
 
 ## Unreleased
 
-- Clarified that METHOD is forge-agnostic doctrine rather than a
-  GitHub-specific PR workflow, and noted Draft Punks Doghouse as an
-  optional operator-side aid when wrangling PR review state.
-- Clarified legend coverage opt-in behavior and generated-signpost
-  provenance wording, and expanded docs tests to catch cross-platform
-  personal path leaks and empty-legend failures more clearly.
-- Sorted the METHOD backlog under the `PROCESS` and `SYNTH` legends and
-  added legend docs for both domains.
-- Added `docs/VISION.md` as a bounded executive summary signpost with
-  generation metadata and a source manifest.
-- Extended docs tests to preserve the current legend split and keep the
-  README, `docs/BEARING.md`, and `docs/VISION.md` truthful to the repo.
-- Revised the README structure around stances, design constraints,
-  quality gates, disagreement handling, and coordination.
-- Added `docs/BEARING.md` as a bounded coordination signpost.
-- Strengthened METHOD doctrine so non-reproducible witness artifacts do
-  not satisfy done.
+- Clarified METHOD doctrine and repo coordination: the README now makes
+  reproducibility, accessibility, localization, agent explainability,
+  disagreement handling, and forge-agnostic boundaries explicit.
+- Added bounded repo signposts for direction and executive synthesis:
+  `docs/BEARING.md` and `docs/VISION.md` now summarize repo state with
+  source manifests and artifact-history provenance.
+- Organized current work under the `PROCESS` and `SYNTH` legends, cleaned
+  out stale backlog duplicates, and expanded docs tests to catch
+  provenance drift, signpost-depth mistakes, path leaks, and legend
+  hygiene regressions.
 - Added the initial TypeScript `method` CLI using published Bijou packages.
 - Implemented `init`, `inbox`, `pull`, `close`, and `status`.
 - Fixed `method help <command>` so command-specific usage resolves correctly.
-- Elevated accessibility, localization, and agent explainability into
-  METHOD doctrine and the generated design-doc template.
