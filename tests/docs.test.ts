@@ -287,11 +287,9 @@ describe('METHOD docs', () => {
     expect(workflow).toContain('permissions:');
     expect(workflow).toContain('contents: read');
     expect(workflow).toContain('runs-on: ubuntu-24.04');
-    expect(workflow).toContain('strategy:');
-    expect(workflow).toContain('node-version: [18, 22]');
     expect(workflow).toContain('actions/checkout@v4');
     expect(workflow).toContain('actions/setup-node@v4');
-    expect(workflow).toContain('node-version: ${{ matrix.node-version }}');
+    expect(workflow).toContain('node-version: 22');
     expect(workflow).toContain('cache: npm');
     expect(workflow).toContain('npm ci');
     expect(workflow).toContain('npm run build');
@@ -304,7 +302,7 @@ describe('METHOD docs', () => {
     expect(readme).toContain('.github/workflows/ci.yml');
     expect(readme).toContain('GitHub Actions');
     expect(readme).toContain('ubuntu-24.04');
-    expect(readme).toContain('Node `18` and `22`');
+    expect(readme).toContain('Node `22`');
     expect(readme).toContain('npm ci');
     expect(readme).toContain('npm run build');
     expect(readme).toContain('npm test');

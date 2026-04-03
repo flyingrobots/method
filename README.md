@@ -423,7 +423,7 @@ npm run build
 npm test
 ```
 
-The workflow currently runs on `ubuntu-24.04` for Node `18` and `22`.
+The workflow currently runs on `ubuntu-24.04` for Node `22`.
 That is repo truth for this host, not METHOD doctrine for every forge.
 
 METHOD may be used alongside other tools, but they are sidecars, not

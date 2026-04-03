@@ -9,10 +9,9 @@ Drift check: yes
 This cycle added the repo's first real CI gate. METHOD now ships a
 committed GitHub Actions workflow at `.github/workflows/ci.yml` that
 runs `npm ci`, `npm run build`, and `npm test` on `push` and
-`pull_request`, pinned to `ubuntu-24.04` and covering Node `18` and
-`22`. The README now names that workflow and its command surface
-explicitly so the repo's merge-safety story is no longer dependent on
-operator memory.
+`pull_request`, pinned to `ubuntu-24.04` on Node `22`. The README now
+names that workflow and its command surface explicitly so the repo's
+merge-safety story is no longer dependent on operator memory.
 
 ## Playback Witness
 

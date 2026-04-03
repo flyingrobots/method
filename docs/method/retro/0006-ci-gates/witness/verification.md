@@ -18,10 +18,6 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        node-version: [18, 22]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -29,7 +25,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -47,7 +43,7 @@ README.md:418:`.github/workflows/ci.yml`. The first cut stays narrow and explici
 README.md:421:npm ci
 README.md:422:npm run build
 README.md:423:npm test
-README.md:426:The workflow currently runs on `ubuntu-24.04` for Node `18` and `22`.
+README.md:426:The workflow currently runs on `ubuntu-24.04` for Node `22`.
 
 $ npm test
 
@@ -90,7 +86,7 @@ SYNTH    backlog=3 active=0
 ## Interpretation
 
 - The repo now ships a committed CI workflow for this host.
-- The README names the workflow path, host, supported Node lines, and
+- The README names the workflow path, host, supported runtime, and
   exact commands it runs.
 - The same build/test commands pass locally.
 - The cycle is closed, and the current branch tip also includes one new

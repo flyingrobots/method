@@ -47,7 +47,7 @@ Yes.
 
 - triggers: `push`, `pull_request`
 - runtime: `ubuntu-24.04`
-- Node versions: `18`, `22`
+- Node version: `22`
 - install mode: `npm ci`
 - executed commands: `npm run build`, `npm test`
 
@@ -59,9 +59,9 @@ to reconstruct the CI behavior.
 Yes.
 
 The workflow does not add linting, release automation, multi-OS
-coverage, or extra status commands. It runs the install/build/test
-surface that the repo currently treats as truth, covering the support
-floor and current dev line only, and the local witness re-runs those
+coverage, multi-version coverage, or extra status commands. It runs the
+install/build/test surface that the repo currently treats as truth on
+one explicit supported runtime, and the local witness re-runs those
 same commands directly.
 
 ## Outcome
