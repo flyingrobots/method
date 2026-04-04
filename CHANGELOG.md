@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Added invariants as a first-class METHOD concept: named properties
+  that must remain true across all cycles, defined in
+  `docs/invariants/<name>.md`. Legends now exist to guard invariants,
+  giving them a concrete job beyond organizing attention.
 - Added a minimal GitHub Actions CI gate that runs `npm ci`,
   `npm run build`, and `npm test` on `push` and `pull_request`, pinned
   to `ubuntu-24.04` with Node `22`.

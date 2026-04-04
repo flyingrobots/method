@@ -60,6 +60,8 @@ Witnesses are not victory photos. They are rerunnable proof.
 
 ```text
 docs/
+  invariants/
+    <name>.md                       properties that must remain true
   method/
     backlog/
       inbox/                        raw ideas, anyone, anytime
@@ -183,12 +185,38 @@ Same loop regardless:
 
 ---
 
+## Invariants
+
+A named property that must remain true across all cycles. Invariants
+live in `docs/invariants/<name>.md`. Each one states the property, why
+it matters, and how to check whether it still holds.
+
+Invariants are local to the repo. Each project discovers its own.
+A repo with no invariants yet is normal - they surface as you learn
+what actually breaks when it drifts.
+
+An invariant file should answer:
+
+1. **What must remain true?** - one sentence.
+2. **Why does it matter?** - what breaks if it drifts.
+3. **How do you check?** - the concrete test, query, or inspection.
+
+Invariants give legends their job. A legend without an invariant is
+just an area of attention. A legend guarding an invariant has a
+standing question: did this cycle preserve it?
+
+---
+
 ## Legends
 
 A named domain that spans many cycles. Legends organize attention, not
 timelines - they are reference frames, not milestones. A legend never
-starts or finishes. It describes what it covers, who cares, what
-success looks like, and how you know.
+starts or finishes. It describes what it covers, what invariants it
+guards, what success looks like, and how you know.
+
+A legend's standing playback questions should ask whether its
+invariants held. This is what makes a legend load-bearing: not the
+backlog items it covers, but the properties it protects.
 
 A legend code (for example, `PROCESS` or `SYNTH`) prefixes backlog filenames so
 that `ls` reveals domain load at a glance. Legends live in

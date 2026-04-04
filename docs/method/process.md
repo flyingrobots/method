@@ -11,6 +11,7 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
   explicitly, even if the answer is "not in scope."
 - If a claimed result cannot be reproduced, it is not done.
 - Drift is checked explicitly at close, not hand-waved after the fact.
+  Invariant preservation is part of the drift check.
 - Backlog maintenance happens at cycle boundaries, not continuously.
 - Repo-level ship surfaces such as `BEARING.md` and `CHANGELOG.md`
   reflect merged `main` state, not branch-local closeout state.
