@@ -1,4 +1,6 @@
-# Invariant: Commitment Integrity
+---
+title: "Invariant: Commitment Integrity"
+---
 
 ## What must remain true?
 
@@ -14,7 +16,8 @@ learnings. Quiet retreat generates nothing.
 
 ## How do you check?
 
-- A design doc in `docs/design/<cycle>/` means someone is committed.
+- A design doc in `docs/design/<cycle>/` or a release packet in
+  `docs/method/releases/` means someone is committed.
 - The cycle ends in one of three documented outcomes: hill met,
   partial, or not met. All three produce a retro.
 - No backlog item reappears after being pulled without a new file,

@@ -1,4 +1,6 @@
-# Invariant: Signpost Boundedness
+---
+title: "Invariant: Signpost Boundedness"
+---
 
 ## What must remain true?
 
@@ -16,7 +18,8 @@ decisions and nobody will notice until the contradiction bites.
 ## How do you check?
 
 - `README.md` is the only root-level signpost. All others use
-  `ALL_CAPS.md` and live in `docs/`.
-- No `ALL_CAPS.md` file exists below `docs/`.
+  `ALL_CAPS.md` and live in `docs/` (not nested deeper).
+- No `ALL_CAPS.md` file exists in any subdirectory deeper than one
+  level under `docs/` (e.g., `docs/*/*`).
 - Signpost content uses language like "summarizes" and "reflects,"
   not "we will" or "we commit to."
