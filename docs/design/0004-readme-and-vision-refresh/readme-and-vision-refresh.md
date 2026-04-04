@@ -1,7 +1,10 @@
-# README And VISION Refresh
+---
+title: "README And VISION Refresh"
+legend: SYNTH
+---
 
 Source backlog item: `docs/method/backlog/asap/SYNTH_readme-and-vision-refresh.md`
-Legend: SYNTH
+
 
 ## Sponsors
 

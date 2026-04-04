@@ -1,4 +1,7 @@
-# Retro conversational closeout
+---
+title: "Retro conversational closeout"
+legend: PROCESS
+---
 
 METHOD's `close` flow currently handles the mechanical part of a retro:
 create the retro doc, create `witness/`, and record the outcome. It

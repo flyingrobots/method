@@ -1,4 +1,6 @@
-# Method CLI Playback Witness
+---
+title: "Method CLI Playback Witness"
+---
 
 Date: 2026-04-02
 

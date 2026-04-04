@@ -1,4 +1,6 @@
-# Witness Index
+---
+title: "Witness Index"
+---
 
 This cycle shipped METHOD's first repo-local CI gate. The proof rests
 on committed workflow configuration, committed docs, and rerunnable

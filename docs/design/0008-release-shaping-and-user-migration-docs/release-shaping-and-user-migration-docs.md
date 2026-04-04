@@ -1,7 +1,10 @@
-# Release shaping and user migration docs
+---
+title: "Release shaping and user migration docs"
+legend: PROCESS
+---
 
 Source backlog item: `docs/method/backlog/inbox/PROCESS_release-shaping-and-user-migration-docs.md`
-Legend: PROCESS
+
 
 ## Sponsors
 

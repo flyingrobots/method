@@ -1,3 +1,8 @@
+---
+title: "BEARING"
+legend: none
+---
+
 # BEARING
 
 This signpost summarizes direction. It does not create commitments or
@@ -5,21 +10,23 @@ replace backlog items, design docs, retros, or CLI status.
 
 ## Where are we going?
 
-Current priority: pull `PROCESS_cli-module-split` and turn the CLI
-entry point back into a thin shell around smaller runtime-owned modules.
+Current priority: pull `PROCESS_behavior-spike-convention` to finalize
+the repo's pattern vocabulary, then pivot toward a maintenance cycle 
+to re-evaluate the deep backlog in light of the new system maturity.
 
 ## What just shipped?
 
-`0006-ci-gates` - the repo now has a minimal CI gate on GitHub Actions,
-running `npm ci`, `npm run build`, and `npm test` on `ubuntu-24.04`
-with Node `22`.
+- `0016-system-style-javascript-adoption`: Adopted the "System-Style JS"
+  standard and hardened domain models with Zod.
+- `0015-git-branch-workflow-policy`: Defined branch naming conventions
+  and the "Ship Sync Maneuver."
+- `0014-github-issue-adapter`: Added `method sync github` to project
+  backlog state to GitHub Issues.
 
 ## What feels wrong?
 
-- `src/cli.ts` is still carrying too many concerns at once, which makes
-  review and future cycle work harder than it should be.
-- Generated signposts are still only partially formalized: provenance is
-  defined, but generated-file markers and regeneration guidance are not
-  part of the shipped contract yet.
-- Review state still lives outside METHOD's repo-native coordination
-  surface; branch and PR context carry that truth for now.
+- Backlog lanes are getting deep; we need a maintenance cycle to
+  re-evaluate `cool-ideas` and `up-next` in light of the new MCP/API
+  capabilities.
+- We have the doctrine for "Ship Sync," but the maneuver itself is
+  still manual and error-prone.

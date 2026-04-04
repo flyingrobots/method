@@ -1,4 +1,6 @@
-# Invariant: Signpost Provenance
+---
+title: "Invariant: Signpost Provenance"
+---
 
 ## What must remain true?
 

@@ -1,7 +1,10 @@
-# CLI Module Split
+---
+title: "CLI Module Split"
+legend: PROCESS
+---
 
 Source backlog item: `docs/method/backlog/asap/PROCESS_cli-module-split.md`
-Legend: PROCESS
+
 
 ## Sponsors
 

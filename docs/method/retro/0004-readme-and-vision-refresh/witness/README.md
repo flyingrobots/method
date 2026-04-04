@@ -1,4 +1,6 @@
-# Witness Index
+---
+title: "Witness Index"
+---
 
 This cycle refreshed METHOD's repo-level signposts and dogfooded a
 bounded `docs/VISION.md` for METHOD itself. The proof rests on

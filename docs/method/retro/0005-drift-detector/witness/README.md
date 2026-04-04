@@ -1,4 +1,6 @@
-# Witness Index
+---
+title: "Witness Index"
+---
 
 This cycle shipped the first real `method drift` command. The proof
 rests on committed code, runnable tests, and reproducible CLI runs that

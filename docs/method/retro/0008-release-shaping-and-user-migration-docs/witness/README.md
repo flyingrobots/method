@@ -1,4 +1,6 @@
-# Witness Index
+---
+title: "Witness Index"
+---
 
 This cycle claims doctrinal and scaffolding changes, not a published
 release. The proof rests on committed release docs, the new release

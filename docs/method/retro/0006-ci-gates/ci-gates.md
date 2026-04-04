@@ -1,8 +1,12 @@
-# CI Gates Retro
+---
+title: "CI Gates"
+outcome: hill-met
+drift_check: yes
+---
 
 Design: `docs/design/0006-ci-gates/ci-gates.md`
-Outcome: hill-met
-Drift check: yes
+
+
 
 ## Summary
 

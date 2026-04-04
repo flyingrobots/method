@@ -1,4 +1,7 @@
-# Drift Near-Miss Hints
+---
+title: "Drift Near-Miss Hints"
+legend: PROCESS
+---
 
 Keep exact normalized matching as the authority for `method drift`, but
 explore whether the tool should report near misses as hints when a

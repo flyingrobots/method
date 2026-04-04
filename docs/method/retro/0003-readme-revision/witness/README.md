@@ -1,4 +1,6 @@
-# Witness Index
+---
+title: "Witness Index"
+---
 
 This cycle revised METHOD's root README and introduced the bounded
 `docs/BEARING.md` signpost. The proof rests on reproducible text

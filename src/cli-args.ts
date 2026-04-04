@@ -1,6 +1,5 @@
+import { type Outcome } from './domain.js';
 import { MethodError } from './errors.js';
-
-export type Outcome = 'hill-met' | 'partial' | 'not-met';
 
 export type ParsedCommand =
   | { command: 'help'; topic?: string }
@@ -9,7 +8,9 @@ export type ParsedCommand =
   | { command: 'pull'; item: string }
   | { command: 'close'; cycle?: string; driftCheck?: 'yes' | 'no'; outcome?: Outcome }
   | { command: 'drift'; cycle?: string }
-  | { command: 'status' };
+  | { command: 'status' }
+  | { command: 'mcp' }
+  | { command: 'sync'; adapter: 'github' };
 
 export function parseCliArgs(argv: readonly string[]): ParsedCommand {
   const [command, ...rest] = argv;
@@ -44,6 +45,16 @@ export function parseCliArgs(argv: readonly string[]): ParsedCommand {
         throw new MethodError('`status` does not take any arguments.');
       }
       return { command: 'status' };
+    case 'mcp':
+      if (rest.length > 0) {
+        throw new MethodError('`mcp` does not take any arguments.');
+      }
+      return { command: 'mcp' };
+    case 'sync':
+      if (rest[0] !== 'github') {
+        throw new MethodError('Usage: method sync github');
+      }
+      return { command: 'sync', adapter: 'github' };
     default:
       throw new MethodError(`Unknown command: ${command}`);
   }
@@ -74,6 +85,14 @@ export function usage(topic?: string): string {
     ].join('\n');
   }
 
+  if (topic === 'mcp') {
+    return 'Usage: method mcp\n\nStart an MCP (Model Context Protocol) server on stdio.';
+  }
+
+  if (topic === 'sync') {
+    return 'Usage: method sync github\n\nSynchronize the backlog with GitHub Issues.';
+  }
+
   return [
     'Usage: method <command> [options]',
     '',
@@ -84,6 +103,8 @@ export function usage(topic?: string): string {
     '  close [cycle]               Write a retro for an active cycle.',
     '  drift [cycle]               Check active cycle playback questions against tests.',
     '  status                      Show backlog, active cycles, and legend health.',
+    '  mcp                         Start the MCP server over stdio.',
+    '  sync github                 Sync backlog with GitHub Issues.',
     '',
     'Run `method help <command>` for command-specific usage.',
   ].join('\n');

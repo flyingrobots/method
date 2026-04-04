@@ -1,8 +1,12 @@
-# Playback Witness Convention Retro
+---
+title: "Playback Witness Convention"
+outcome: hill-met
+drift_check: yes
+---
 
 Design: `docs/design/0002-playback-witness-convention/playback-witness-convention.md`
-Outcome: hill-met
-Drift check: yes
+
+
 
 ## Summary
 

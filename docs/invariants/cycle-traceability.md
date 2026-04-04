@@ -1,4 +1,6 @@
-# Invariant: Cycle Traceability
+---
+title: "Invariant: Cycle Traceability"
+---
 
 ## What must remain true?
 

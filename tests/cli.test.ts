@@ -443,7 +443,7 @@ describe('method CLI', () => {
 
   it('keeps behavior-owned modules for arg parsing, workspace behavior, and drift logic', () => {
     expect(existsSync(new URL('../src/cli-args.ts', import.meta.url))).toBe(true);
-    expect(existsSync(new URL('../src/workspace.ts', import.meta.url))).toBe(true);
+    expect(existsSync(new URL('../src/index.ts', import.meta.url))).toBe(true);
     expect(existsSync(new URL('../src/drift.ts', import.meta.url))).toBe(true);
   });
 
@@ -454,15 +454,15 @@ describe('method CLI', () => {
     expect(cliSource).not.toContain('function collectTestFiles');
     expect(cliSource).not.toContain('function extractPlaybackQuestions');
     expect(cliSource).not.toContain('function normalizeForMatch');
-    expect(cliSource.split(/\r?\n/u).length).toBeLessThan(260);
+    expect(cliSource.split(/\r?\n/u).length).toBeLessThan(200);
   });
 
-  it('keeps workspace.ts focused on workspace behavior instead of reabsorbing drift helpers', () => {
-    const workspaceSource = readFileSync(new URL('../src/workspace.ts', import.meta.url), 'utf8');
+  it('keeps index.ts focused on workspace behavior instead of reabsorbing drift helpers', () => {
+    const indexSource = readFileSync(new URL('../src/index.ts', import.meta.url), 'utf8');
 
-    expect(workspaceSource).not.toContain('function extractPlaybackQuestions');
-    expect(workspaceSource).not.toContain('function collectTestFiles');
-    expect(workspaceSource).not.toContain('function normalizeForMatch');
+    expect(indexSource).not.toContain('function extractPlaybackQuestions');
+    expect(indexSource).not.toContain('function collectTestFiles');
+    expect(indexSource).not.toContain('function normalizeForMatch');
   });
 });
 

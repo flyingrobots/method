@@ -33,3 +33,112 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
 7. Review the complete cycle packet on a branch or PR.
 8. After merge, update repo-level ship surfaces on `main` such as
    `BEARING.md`, `CHANGELOG.md`, and release notes when relevant.
+
+## Workflow
+
+METHOD uses Git for distributed coordination but remains forge-agnostic.
+
+### Branch Naming
+
+- **Cycle Branches:** Use the full cycle name: `####-slug` (e.g.,
+  `0015-git-branch-workflow-policy`).
+- **Maintenance Branches:** Use `maint-slug` for low-risk changes that
+  require review (e.g., `maint-fix-typos`).
+- **Triage/Backlog:** Small backlog captures or moves can happen
+  directly on `main` or on a `triage-slug` branch.
+
+### The Cycle Lifecycle
+
+1. **Pull:** Pull the backlog item.
+2. **Branch:** Create a cycle branch from the latest `main`.
+3. **Execute:** Perform the loop (design, tests, act, playback).
+4. **Close:** Run `method close` to write the retro and witness metadata.
+5. **Merge:** Open a PR/Review. Once approved, merge to `main`.
+
+### The Ship Sync Maneuver
+
+After a cycle branch is merged to `main`, the operator (human or agent)
+must perform a **Ship Sync** to update the repo's public signposts:
+
+1. **Sync:** Pull the merged `main` local machine.
+2. **Update BEARING:** Refresh `docs/BEARING.md` to reflect the current
+   priority and recent ships.
+3. **Update CHANGELOG:** Add the changes to `CHANGELOG.md`.
+4. **Refresh VISION:** If significant, run the Executive Summary
+   Protocol to refresh `docs/VISION.md`.
+5. **Commit:** Push these updates directly to `main`.
+
+## System-Style JavaScript
+
+METHOD adopts the "System-Style JavaScript" standard to ensure
+architectural integrity and runtime authority.
+
+### Core Principles
+
+- **Runtime Truth:** Boundary data must be validated at runtime. Use Zod
+  schemas in `src/domain.ts` to define the system's "Domain Forms."
+- **Hexagonal Architecture:** Keep the core domain logic (in `src/index.ts`)
+  clean and separate from presentation adapters (CLI) and
+  infrastructure (filesystem, GitHub API).
+- **Browser-First Portability:** The core domain logic should avoid
+  Node-specific APIs. Use adapters to bridge to Node or Web
+  environments.
+- **Lint is Law:** Strict linting and formatting are enforced to reduce
+  meaningless diff noise and ensure consistent style.
+- **Honest Design:** Don't use "just-in-case" abstractions. Abstractions
+  must buy their way into the repo by proving they reduce complexity or
+  enforce an invariant.
+
+## Special Cycles
+
+### Executive Summary Protocol
+
+A specialized cycle for "reading the repo and summarizing what it is." This protocol ensures that generated signposts like `docs/VISION.md` are reproducible and grounded in artifact history.
+
+#### Phase 1: Inventory
+
+1. Enumerate governing surfaces in precedence order:
+   - `README.md`
+   - repo instructions and `docs/method/process.md`
+   - `docs/method/legends/*.md`
+   - `docs/design/*/`
+   - `docs/method/retro/*/`
+   - backlog lanes in priority order
+   - `docs/method/graveyard/`
+2. Record the exact source list that will ground the synthesis.
+
+#### Phase 2: Read and Synthesize
+
+1. Read the inventoried surfaces in order and extract:
+   - repo identity and doctrine
+   - current state and completed cycles
+   - signposts and their roles
+   - legends and active domain load
+   - roadmap by lane
+   - open questions and current limits
+2. Generate a bounded signpost with required sections:
+   - `Identity`
+   - `Current state`
+   - `Signposts`
+   - `Legends`
+   - `Roadmap`
+   - `Open questions`
+   - `Limits`
+3. Keep this phase read-only. Taxonomy changes, backlog edits, or new legends are follow-up work, not part of synthesis itself.
+
+#### Phase 3: Generate Witness
+
+1. Capture provenance fields for the generated signpost:
+   - generation timestamp
+   - repo commit SHA
+   - source manifest
+   - witness reference
+   - declared provenance level
+2. Store the full session witness outside the signpost body and link to it from the signpost metadata.
+3. Make every repo-state claim traceable either to a cited source file or to the linked verification witness.
+
+#### Phase 4: Verification
+
+1. Run repo tests that validate signpost structure and provenance.
+2. Run `method status` so the summary can be checked against the repo's current visible state.
+3. If the synthesis triggers follow-up maintenance ideas, record them as separate backlog items after the read-only summary is complete.

@@ -1,4 +1,7 @@
-# Cycle Witness Command
+---
+title: "Cycle Witness Command"
+legend: SYNTH
+---
 
 Explore a `method witness` command that can package the rerunnable
 proof for a cycle close: commands run, artifacts produced, playback

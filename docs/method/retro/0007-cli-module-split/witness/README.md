@@ -1,4 +1,6 @@
-# Witness Index
+---
+title: "Witness Index"
+---
 
 This cycle claims a structural refactor, not a new feature. The proof
 rests on committed module boundaries plus rerunnable commands that show

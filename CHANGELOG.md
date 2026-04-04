@@ -2,6 +2,31 @@
 
 ## Unreleased
 
+- Adopted the "System-Style JavaScript" standard as repo doctrine,
+  documenting core principles like runtime truth and hexagonal
+  architecture in `docs/method/process.md`.
+- Hardened domain models in `src/domain.ts` using Zod for runtime
+  validation, ensuring boundary data is honest and core logic is
+  browser-portable.
+- Added a formal Git branch and workflow policy in `docs/method/process.md`,
+  defining naming conventions (`####-slug`, `maint-slug`) and the
+  "Ship Sync Maneuver" for signpost maintenance.
+- Implemented a GitHub Issue Adapter (`method sync github`) that
+  synchronizes backlog items to GitHub issues and persists IDs in
+  YAML frontmatter.
+- Formalized the "Executive Summary Protocol" in `docs/method/process.md`
+  as a repeatable, 4-phase synthesis workflow.
+- Implemented a Model Context Protocol (MCP) server (`method mcp`) to
+  expose METHOD tools to external agents programmatically.
+- Extracted a clean, programmable `Method` API surface in `src/index.ts`,
+  decoupling domain logic from CLI presentation.
+- Standardized YAML frontmatter across all document classes (Design,
+  Retro, Backlog, Signposts) with automated enforcement in the test
+  suite.
+- Refreshed `docs/VISION.md` with trusted provenance metadata and a
+  source manifest covering eight completed cycles.
+- Added a `drift` command to detect playback-question drift in active
+  cycles.
 - Added invariants as a first-class METHOD concept: named properties
   that must remain true across all cycles, defined in
   `docs/invariants/<name>.md`. Legends now exist to guard invariants,

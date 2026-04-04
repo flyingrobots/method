@@ -14,7 +14,9 @@
   },
   "dependencies": {
     "@flyingrobots/bijou": "4.0.0",
-    "@flyingrobots/bijou-node": "4.0.0"
+    "@flyingrobots/bijou-node": "4.0.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

@@ -1,8 +1,12 @@
-# Release shaping and user migration docs Retro
+---
+title: "Release shaping and user migration docs"
+outcome: hill-met
+drift_check: yes
+---
 
 Design: `docs/design/0008-release-shaping-and-user-migration-docs/release-shaping-and-user-migration-docs.md`
-Outcome: hill-met
-Drift check: yes
+
+
 
 ## Summary
 

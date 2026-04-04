@@ -7,26 +7,22 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
-import { headerBox, separator } from '@flyingrobots/bijou';
-import { createNodeContext } from '@flyingrobots/bijou-node';
-import type { Outcome } from './cli-args.js';
+import {
+  BACKLOG_DIR,
+  type BacklogItem,
+  type Cycle,
+  DESIGN_DIR,
+  LANES,
+  type LegendHealth,
+  type Outcome,
+  RETRO_DIR,
+  type WorkspaceStatus,
+} from './domain.js';
 import { detectWorkspaceDrift, type DriftReport } from './drift.js';
 import { MethodError } from './errors.js';
 
-const LANES = ['inbox', 'asap', 'up-next', 'cool-ideas', 'bad-code'] as const;
-const BACKLOG_DIR = 'docs/method/backlog';
-const DESIGN_DIR = 'docs/design';
-const RETRO_DIR = 'docs/method/retro';
 const LEGEND_PATTERN = /^(?<legend>[A-Z][A-Z0-9]*)_(?<slug>.+)$/;
 const CYCLE_PATTERN = /^(?<number>\d{4})-(?<slug>[a-z0-9][a-z0-9-]*)$/;
-
-export interface Cycle {
-  name: string;
-  number: number;
-  slug: string;
-  designDoc: string;
-  retroDoc: string;
-}
 
 export function initWorkspace(root: string): { created: string[] } {
   const directories = [
@@ -192,44 +188,82 @@ export class Workspace {
     return detectWorkspaceDrift(this.root, cycles);
   }
 
-  renderStatus(ctx: ReturnType<typeof createNodeContext>): string {
-    const backlogLines = [
-      ...LANES.map((lane) => {
-        const items = collectMarkdownFiles(resolve(this.root, BACKLOG_DIR, lane));
-        return `${lane.padEnd(10, ' ')} ${String(items.length).padStart(2, ' ')}  ${items.map((item) => fileStem(item)).join(', ') || '-'}`;
-      }),
-      (() => {
-        const rootItems = collectMarkdownFiles(resolve(this.root, BACKLOG_DIR))
-          .filter((file) => dirname(file) === resolve(this.root, BACKLOG_DIR));
-        return `${'root'.padEnd(10, ' ')} ${String(rootItems.length).padStart(2, ' ')}  ${rootItems.map((item) => fileStem(item)).join(', ') || '-'}`;
-      })(),
-    ];
+  status(): WorkspaceStatus {
+    const backlog: WorkspaceStatus['backlog'] = {
+      inbox: [],
+      asap: [],
+      'up-next': [],
+      'cool-ideas': [],
+      'bad-code': [],
+      root: [],
+    };
+
+    for (const lane of LANES) {
+      backlog[lane] = this.collectBacklogItems(resolve(this.root, BACKLOG_DIR, lane), lane);
+    }
+    backlog.root = this.collectBacklogItems(resolve(this.root, BACKLOG_DIR), 'root', false);
 
     const activeCycles = this.openCycles();
-    const cycleLines = activeCycles.length > 0
-      ? activeCycles.map((cycle) => `${cycle.name.padEnd(18, ' ')} ${readHeading(cycle.designDoc) || cycle.slug}`)
-      : ['-'];
+    const legendHealth = this.calculateLegendHealth(activeCycles);
 
-    const legendCounts = this.legendHealth(activeCycles);
-    const legendLines = legendCounts.size > 0
-      ? [...legendCounts.entries()]
-        .sort(([left], [right]) => left.localeCompare(right))
-        .map(([legend, counts]) => `${legend.padEnd(8, ' ')} backlog=${counts.backlog} active=${counts.active}`)
-      : ['-'];
+    return {
+      root: this.root,
+      backlog,
+      activeCycles,
+      legendHealth,
+    };
+  }
 
-    return [
-      `${headerBox('METHOD Status', { detail: this.root, ctx })}`,
-      '',
-      `${separator({ label: 'Backlog', ctx })}`,
-      ...backlogLines,
-      '',
-      `${separator({ label: 'Active Cycles', ctx })}`,
-      ...cycleLines,
-      '',
-      `${separator({ label: 'Legend Health', ctx })}`,
-      ...legendLines,
-      '',
-    ].join('\n');
+  updateFrontmatter(path: string, updates: Record<string, string>): void {
+    const fullPath = resolve(this.root, path);
+    const content = readFileSync(fullPath, 'utf8');
+    let newContent = content;
+
+    if (content.startsWith('---\n')) {
+      const end = content.indexOf('\n---\n', 4);
+      if (end !== -1) {
+        let frontmatter = content.slice(4, end);
+        for (const [key, value] of Object.entries(updates)) {
+          const regex = new RegExp(`^${key}:.*$`, 'mu');
+          if (regex.test(frontmatter)) {
+            frontmatter = frontmatter.replace(regex, `${key}: ${value}`);
+          } else {
+            frontmatter = `${frontmatter}\n${key}: ${value}`;
+          }
+        }
+        newContent = `---\n${frontmatter.trim()}\n---\n${content.slice(end + 5)}`;
+      }
+    } else {
+      let frontmatter = '';
+      for (const [key, value] of Object.entries(updates)) {
+        frontmatter += `${key}: ${value}\n`;
+      }
+      newContent = `---\n${frontmatter.trim()}\n---\n\n${content}`;
+    }
+
+    writeFileSync(fullPath, newContent, 'utf8');
+  }
+
+  readFrontmatter(path: string): Record<string, string> {
+    const fullPath = resolve(this.root, path);
+    const content = readFileSync(fullPath, 'utf8');
+    const result: Record<string, string> = {};
+
+    if (content.startsWith('---\n')) {
+      const end = content.indexOf('\n---\n', 4);
+      if (end !== -1) {
+        const frontmatter = content.slice(4, end);
+        const lines = frontmatter.split('\n');
+        for (const line of lines) {
+          const match = /^([a-z0-9_]+):\s*(.*)$/u.exec(line.trim());
+          if (match !== null) {
+            result[match[1] ?? ''] = (match[2] ?? '').trim();
+          }
+        }
+      }
+    }
+
+    return result;
   }
 
   openCycles(): Cycle[] {
@@ -316,7 +350,28 @@ export class Workspace {
     throw new MethodError(`Could not find active cycle ${JSON.stringify(cycleName)}.`);
   }
 
-  private legendHealth(activeCycles: readonly Cycle[]): Map<string, { backlog: number; active: number }> {
+  private collectBacklogItems(dir: string, lane: WorkspaceStatus['backlog'][string][number]['lane'], recursive = true): BacklogItem[] {
+    if (!existsSync(dir)) {
+      return [];
+    }
+    const files = recursive ? collectMarkdownFiles(dir) : readdirSync(dir, { withFileTypes: true })
+      .filter(e => e.isFile() && e.name.endsWith('.md'))
+      .map(e => resolve(dir, e.name));
+    
+    return files.map(file => {
+      const stem = fileStem(file);
+      const { legend, slug } = splitLegend(stem);
+      return {
+        stem,
+        lane,
+        path: relative(this.root, file),
+        legend,
+        slug
+      };
+    });
+  }
+
+  private calculateLegendHealth(activeCycles: readonly Cycle[]): LegendHealth[] {
     const counts = new Map<string, { backlog: number; active: number }>();
     for (const file of collectMarkdownFiles(resolve(this.root, BACKLOG_DIR))) {
       const { legend } = splitLegend(fileStem(file));
@@ -333,7 +388,12 @@ export class Workspace {
       counts.set(key, current);
     }
 
-    return counts;
+    return [...counts.entries()]
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([legend, counts]) => ({
+        legend,
+        ...counts
+      }));
   }
 }
 
@@ -464,7 +524,7 @@ function splitLegend(stem: string): { legend?: string; slug: string } {
   return { legend: match.groups.legend, slug: match.groups.slug };
 }
 
-function readHeading(path: string): string {
+export function readHeading(path: string): string {
   for (const line of readFileSync(path, 'utf8').split(/\r?\n/u)) {
     if (line.startsWith('# ')) {
       return line.slice(2).trim();
@@ -473,11 +533,22 @@ function readHeading(path: string): string {
   return '';
 }
 
-function readBody(path: string): string {
-  const lines = readFileSync(path, 'utf8').split(/\r?\n/u);
+export function readBody(path: string): string {
+  const content = readFileSync(path, 'utf8');
+  let body = content;
+
+  // Strip YAML frontmatter
+  if (content.startsWith('---\n')) {
+    const end = content.indexOf('\n---\n', 4);
+    if (end !== -1) {
+      body = content.slice(end + 5);
+    }
+  }
+
+  const lines = body.split(/\r?\n/u);
   const bodyLines = lines[0]?.startsWith('# ') ? lines.slice(1) : lines;
-  const body = bodyLines.join('\n').trim();
-  return body.length > 0 ? body : 'TBD';
+  const result = bodyLines.join('\n').trim();
+  return result.length > 0 ? result : 'TBD';
 }
 
 function readDesignLegend(path: string): string | undefined {
