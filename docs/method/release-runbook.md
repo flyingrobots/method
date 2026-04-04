@@ -12,12 +12,12 @@ release doctrine lives in `docs/method/release.md`.
   verify.
 - Never fabricate evidence. Record the exact command, exit code, and
   relevant output on failure.
-- Abort immediately if the working tree is dirty.
-- Abort immediately if `main` is not exactly synced with `origin/main`.
-- Abort immediately if required tools, credentials, signing
-  configuration, CI visibility, or registry visibility are missing.
-- Abort immediately if any required validation or publish verification
-  step fails.
+- Ensure the working tree is clean; abort if dirty.
+- Confirm `main` is exactly synced with `origin/main`; abort if not.
+- Verify required tools, credentials, signing configuration, CI
+  visibility, and registry visibility are available; abort if missing.
+- Ensure every required validation and publish verification step
+  succeeds; abort if any fail.
 
 ## Phase 0: Discovery
 
