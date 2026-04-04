@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Fixed
+
+- Resolved review feedback on PR #5: revised release runbook bullets for 
+  clarity, enforced phase heading order in tests, and clarified 
+  commitment and signpost boundedness invariants.
+
+### Added
+
 - Adopted the "System-Style JavaScript" standard as repo doctrine,
   documenting core principles like runtime truth and hexagonal
   architecture in `docs/method/process.md`.
