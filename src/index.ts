@@ -12,6 +12,7 @@ import {
   type BacklogItem,
   type Cycle,
   DESIGN_DIR,
+  type Lane,
   LANES,
   type LegendHealth,
   type Outcome,
@@ -350,7 +351,7 @@ export class Workspace {
     throw new MethodError(`Could not find active cycle ${JSON.stringify(cycleName)}.`);
   }
 
-  private collectBacklogItems(dir: string, lane: WorkspaceStatus['backlog'][string][number]['lane'], recursive = true): BacklogItem[] {
+  private collectBacklogItems(dir: string, lane: Lane | 'root', recursive = true): BacklogItem[] {
     if (!existsSync(dir)) {
       return [];
     }
