@@ -4,6 +4,14 @@ How a METHOD repo understands and explains itself: executive summaries,
 generated signposts, and the history or provenance that makes those
 artifacts trustworthy.
 
+## Invariants guarded
+
+- [signpost-provenance](../../invariants/signpost-provenance.md) —
+  generated signposts cite their sources and generation context.
+- [signpost-boundedness](../../invariants/signpost-boundedness.md) —
+  signposts live at root or one level into `docs/` and never create
+  commitments.
+
 ## What it covers
 
 - repo-wide synthesis protocols such as `VISION.md`

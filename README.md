@@ -225,10 +225,12 @@ that `ls` reveals domain load at a glance. Legends live in
 The current legends in this repo are:
 
 - `PROCESS` - METHOD's own mechanics: cycle discipline, backlog
-  operations, drift detection, and named work patterns.
+  operations, drift detection, and named work patterns. Guards
+  **cycle-traceability** and **commitment-integrity**.
 - `SYNTH` - repo-wide synthesis and signposts: executive summaries,
   generated signpost provenance, and the boundary between artifact
-  history and semantic provenance.
+  history and semantic provenance. Guards **signpost-provenance** and
+  **signpost-boundedness**.
 
 Not every METHOD repo needs these exact legends. Legends are local to
 the repo and should reflect the domains that actually organize its
