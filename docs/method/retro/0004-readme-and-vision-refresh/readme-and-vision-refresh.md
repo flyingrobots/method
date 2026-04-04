@@ -1,8 +1,12 @@
-# README And VISION Refresh Retro
+---
+title: "README And VISION Refresh"
+outcome: hill-met
+drift_check: yes
+---
 
 Design: `docs/design/0004-readme-and-vision-refresh/readme-and-vision-refresh.md`
-Outcome: hill-met
-Drift check: yes
+
+
 
 ## Summary
 

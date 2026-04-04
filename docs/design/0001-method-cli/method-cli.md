@@ -1,7 +1,10 @@
-# Method CLI
+---
+title: "Method CLI"
+legend: none
+---
 
 Source backlog item: `docs/method/backlog/inbox/method-cli.md`
-Legend: none
+
 
 ## Sponsors
 

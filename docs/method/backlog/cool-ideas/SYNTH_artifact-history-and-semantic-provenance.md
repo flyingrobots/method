@@ -1,4 +1,7 @@
-# Artifact History And Semantic Provenance
+---
+title: "Artifact History And Semantic Provenance"
+legend: SYNTH
+---
 
 Define two provenance levels for METHOD instead of treating everything
 as one generic backend question.

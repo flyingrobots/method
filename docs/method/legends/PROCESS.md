@@ -4,6 +4,14 @@ The mechanics of METHOD itself: cycle discipline, backlog operations,
 drift detection, and named patterns for how work moves through the
 system.
 
+## Invariants guarded
+
+- [cycle-traceability](../../invariants/cycle-traceability.md) —
+  every cycle is discoverable and ends with a retro, regardless of
+  outcome.
+- [commitment-integrity](../../invariants/commitment-integrity.md) —
+  pulled work does not go back to the backlog.
+
 ## What it covers
 
 - cycle design and closeout rules

@@ -1,7 +1,10 @@
-# CI Gates
+---
+title: "CI Gates"
+legend: PROCESS
+---
 
 Source backlog item: `docs/method/backlog/asap/PROCESS_ci-gates.md`
-Legend: PROCESS
+
 
 ## Sponsors
 

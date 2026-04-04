@@ -1,8 +1,12 @@
-# Drift Detector Retro
+---
+title: "Drift Detector"
+outcome: hill-met
+drift_check: yes
+---
 
 Design: `docs/design/0005-drift-detector/drift-detector.md`
-Outcome: hill-met
-Drift check: yes
+
+
 
 ## Summary
 

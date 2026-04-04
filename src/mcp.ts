@@ -1,0 +1,121 @@
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
+import { relative } from 'node:path';
+import { Workspace } from './index.js';
+import type { Outcome } from './domain.js';
+
+export function createMcpServer(cwd: string = process.cwd()) {
+  const server = new Server(
+    { name: 'method', version: '0.1.0' },
+    { capabilities: { tools: {} } }
+  );
+
+  const workspace = new Workspace(cwd);
+
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    return {
+      tools: [
+        {
+          name: 'method_status',
+          description: 'Get the current status of the METHOD workspace (backlog lanes, active cycles, legend health)',
+          inputSchema: { type: 'object', properties: {} },
+        },
+        {
+          name: 'method_inbox',
+          description: 'Capture a new raw idea into the inbox',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              idea: { type: 'string' },
+              legend: { type: 'string' },
+              title: { type: 'string' },
+            },
+            required: ['idea'],
+          },
+        },
+        {
+          name: 'method_pull',
+          description: 'Promote a backlog item into the next numbered cycle',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              item: { type: 'string' },
+            },
+            required: ['item'],
+          },
+        },
+        {
+          name: 'method_drift',
+          description: 'Check active cycle playback questions against tests',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              cycle: { type: 'string' },
+            },
+          },
+        },
+        {
+          name: 'method_close',
+          description: 'Close an active cycle into a retro',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              cycle: { type: 'string' },
+              driftCheck: { type: 'boolean' },
+              outcome: { type: 'string', enum: ['hill-met', 'partial', 'not-met'] },
+            },
+            required: ['driftCheck', 'outcome'],
+          },
+        },
+      ],
+    };
+  });
+
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    workspace.ensureInitialized();
+
+    try {
+      if (request.params.name === 'method_status') {
+        const status = workspace.status();
+        return { content: [{ type: 'text', text: JSON.stringify(status, null, 2) }] };
+      }
+
+      if (request.params.name === 'method_inbox') {
+        const args = request.params.arguments as { idea: string; legend?: string; title?: string };
+        const path = workspace.captureIdea(args.idea, args.legend, args.title);
+        return { content: [{ type: 'text', text: `Captured to ${relative(workspace.root, path)}` }] };
+      }
+
+      if (request.params.name === 'method_pull') {
+        const args = request.params.arguments as { item: string };
+        const cycle = workspace.pullItem(args.item);
+        return { content: [{ type: 'text', text: `Pulled into ${cycle.name}\nDesign: ${relative(workspace.root, cycle.designDoc)}` }] };
+      }
+
+      if (request.params.name === 'method_drift') {
+        const args = request.params.arguments as { cycle?: string } | undefined;
+        const report = workspace.detectDrift(args?.cycle);
+        return {
+          content: [{ type: 'text', text: report.output }],
+          isError: report.exitCode !== 0,
+        };
+      }
+
+      if (request.params.name === 'method_close') {
+        const args = request.params.arguments as { cycle?: string; driftCheck: boolean; outcome: Outcome };
+        const cycle = workspace.closeCycle(args.cycle, args.driftCheck, args.outcome);
+        return { content: [{ type: 'text', text: `Closed ${cycle.name}\nRetro: ${relative(workspace.root, cycle.retroDoc)}` }] };
+      }
+
+      throw new Error(`Unknown tool: ${request.params.name}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      return { content: [{ type: 'text', text: message }], isError: true };
+    }
+  });
+
+  return server;
+}

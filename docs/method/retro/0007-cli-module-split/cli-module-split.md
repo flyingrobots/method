@@ -1,8 +1,12 @@
-# CLI Module Split Retro
+---
+title: "CLI Module Split"
+outcome: hill-met
+drift_check: yes
+---
 
 Design: `docs/design/0007-cli-module-split/cli-module-split.md`
-Outcome: hill-met
-Drift check: yes
+
+
 
 ## Summary
 

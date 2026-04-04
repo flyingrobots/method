@@ -1,4 +1,77 @@
-# Generated Signpost Provenance
+---
+title: "Generated Signpost Provenance"
+legend: SYNTH
+---
+
+Source backlog item: `docs/method/backlog/asap/SYNTH_generated-signpost-provenance.md`
+
+
+## Sponsors
+
+- Human: @james
+- Agent: @gemini-cli
+
+## Hill
+
+Define and enforce a standard YAML frontmatter provenance contract for
+generated METHOD signposts, then use it to refresh `docs/VISION.md` so
+it accurately reflects the state of the repo after eight closed
+cycles.
+
+## Playback Questions
+
+### Human
+
+- [ ] `docs/VISION.md` carries YAML frontmatter matching the defined
+  provenance contract.
+- [ ] The `generator` field identifies this cycle `0009`.
+- [ ] `docs/VISION.md` summary is accurate for the current closed-cycle
+  state (cycles 0001-0008).
+
+### Agent
+
+- [ ] `docs.test.ts` validates that `docs/VISION.md` frontmatter
+  contains all mandatory fields (`generated_at`, `generator`,
+  `generated_from_commit`, `provenance_level`, `witness_ref`,
+  `source_files`).
+- [ ] `docs.test.ts` validates that the `witness_ref` path exists
+  relative to the repo root.
+- [ ] `docs.test.ts` validates that `generated_at` is a valid ISO 8601
+  timestamp.
+
+## Accessibility and Assistive Reading
+
+- Linear truth / reduced-complexity posture: YAML frontmatter provides
+  a structured, predictable header that does not interfere with the
+  markdown body's readability.
+- Non-visual or alternate-reading expectations: Semantic tags in the
+  YAML frontmatter (e.g., `witness_ref`) make it easy for screen
+  readers or agents to find supporting evidence without parsing the
+  body.
+
+## Localization and Directionality
+
+- Locale / wording / formatting assumptions: `generated_at` uses ISO
+  8601 for a locale-agnostic timestamp.
+- Logical direction / layout assumptions: Top-level frontmatter is a
+  standard markdown convention.
+
+## Agent Inspectability and Explainability
+
+- What must be explicit and deterministic for agents: The source files
+  and grounding commit for the synthesis must be explicit.
+- What must be attributable, evidenced, or governed: The link to the
+  session witness (`witness_ref`) provides the "why" and "how" behind
+  the synthesis.
+
+## Non-goals
+
+- [ ] Standardizing frontmatter for *all* METHOD docs (only generated
+  signposts for now).
+- [ ] Automating the generation of this frontmatter (this cycle is about
+  the contract and enforcement).
+
+## Backlog Context
 
 Generated signposts need provenance. Define what metadata a generated VISION/summary doc should carry: generation time, commit, source files, read-order version, origin request, and where the full session witness lives. The signpost should stay readable; the full session context should live in a linked witness artifact, not dumped inline by default.
 

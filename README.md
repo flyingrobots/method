@@ -60,6 +60,8 @@ Witnesses are not victory photos. They are rerunnable proof.
 
 ```text
 docs/
+  invariants/
+    <name>.md                       properties that must remain true
   method/
     backlog/
       inbox/                        raw ideas, anyone, anytime
@@ -70,10 +72,15 @@ docs/
       *.md                          everything else
     legends/                        named domains
     retro/<cycle>/<task>.md         retrospectives
+    releases/vX.Y.Z/                internal release packets
     graveyard/                      rejected ideas
     guide.md                        operator advice and non-doctrinal practice notes
     process.md                      how cycles run
     release.md                      how releases work
+    release-runbook.md              sequential release pre-flight
+  releases/
+    vX.Y.Z.md                       user-facing release notes and migration guides
+    README.md                       release note structure
   design/
     <cycle>/<task>.md               cycle design docs
     *.md                            living documents
@@ -82,6 +89,9 @@ docs/
 Repo signposts live at root or one level into `docs/`. `README.md` is
 the standing root exception; every other signpost uses `ALL_CAPS.md`.
 Deeper than that, it is not a signpost.
+
+Release notes live under `docs/releases/`, and internal release packets
+live under `docs/method/releases/`.
 
 ---
 
@@ -175,12 +185,38 @@ Same loop regardless:
 
 ---
 
+## Invariants
+
+A named property that must remain true across all cycles. Invariants
+live in `docs/invariants/<name>.md`. Each one states the property, why
+it matters, and how to check whether it still holds.
+
+Invariants are local to the repo. Each project discovers its own.
+A repo with no invariants yet is normal - they surface as you learn
+what actually breaks when it drifts.
+
+An invariant file should answer:
+
+1. **What must remain true?** - one sentence.
+2. **Why does it matter?** - what breaks if it drifts.
+3. **How do you check?** - the concrete test, query, or inspection.
+
+Invariants give legends their job. A legend without an invariant is
+just an area of attention. A legend guarding an invariant has a
+standing question: did this cycle preserve it?
+
+---
+
 ## Legends
 
 A named domain that spans many cycles. Legends organize attention, not
 timelines - they are reference frames, not milestones. A legend never
-starts or finishes. It describes what it covers, who cares, what
-success looks like, and how you know.
+starts or finishes. It describes what it covers, what invariants it
+guards, what success looks like, and how you know.
+
+A legend's standing playback questions should ask whether its
+invariants held. This is what makes a legend load-bearing: not the
+backlog items it covers, but the properties it protects.
 
 A legend code (for example, `PROCESS` or `SYNTH`) prefixes backlog filenames so
 that `ls` reveals domain load at a glance. Legends live in
@@ -189,10 +225,12 @@ that `ls` reveals domain load at a glance. Legends live in
 The current legends in this repo are:
 
 - `PROCESS` - METHOD's own mechanics: cycle discipline, backlog
-  operations, drift detection, and named work patterns.
+  operations, drift detection, and named work patterns. Guards
+  **cycle-traceability** and **commitment-integrity**.
 - `SYNTH` - repo-wide synthesis and signposts: executive summaries,
   generated signpost provenance, and the boundary between artifact
-  history and semantic provenance.
+  history and semantic provenance. Guards **signpost-provenance** and
+  **signpost-boundedness**.
 
 Not every METHOD repo needs these exact legends. Legends are local to
 the repo and should reflect the domains that actually organize its

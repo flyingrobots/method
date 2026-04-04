@@ -1,4 +1,6 @@
-# Witness Index
+---
+title: "Witness Index"
+---
 
 This design cycle defined the witness convention itself. The proof is
 therefore document-first and filesystem-visible.

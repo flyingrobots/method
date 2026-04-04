@@ -1,4 +1,7 @@
-# Witness Artifacts
+---
+title: "Witness Artifacts"
+legend: none
+---
 
 Companion guidance for [Playback Witness Convention](./playback-witness-convention.md).
 

@@ -1,4 +1,7 @@
-# Review Config Hardening
+---
+title: "Review Config Hardening"
+legend: PROCESS
+---
 
 Harden repo review configuration so automated review tools understand
 METHOD's actual structure: process docs, design docs, retros, witness

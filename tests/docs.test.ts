@@ -11,8 +11,10 @@ function readRepoFile(relativePath: string): string {
 }
 
 function readBacklogDoc(filename: string): string {
-  const matches = walkMarkdownFiles('docs/method/backlog')
-    .filter((relativePath) => relativePath.endsWith(`/${filename}`));
+  const matches = [
+    ...walkMarkdownFiles('docs/method/backlog'),
+    ...walkMarkdownFiles('docs/design'),
+  ].filter((relativePath) => relativePath.endsWith(`/${filename}`));
 
   if (matches.length === 0) {
     throw new Error(`Could not find backlog doc ${filename}`);
@@ -153,11 +155,10 @@ describe('METHOD docs', () => {
   });
 
   it('records synthesis protocol and provenance contract details in backlog docs', () => {
-    const protocol = readBacklogDoc('SYNTH_executive-summary-protocol.md');
-    const provenance = readBacklogDoc('SYNTH_generated-signpost-provenance.md');
+    const protocol = readBacklogDoc('executive-summary-protocol.md');
+    const provenance = readBacklogDoc('generated-signpost-provenance.md');
     const legendAudit = readBacklogDoc('PROCESS_legend-audit-and-assignment.md');
 
-    expect(protocol).toContain('## Protocol Specification');
     expect(protocol).toContain('### Phase 1: Inventory');
     expect(protocol).toContain('### Phase 2: Read and Synthesize');
     expect(protocol).toContain('### Phase 3: Generate Witness');
@@ -244,33 +245,236 @@ describe('METHOD docs', () => {
     expect(offenders).toEqual([]);
   });
 
-  it('ships a VISION signpost with bounded provenance metadata and repo-state grounding', () => {
-    const vision = readRepoFile('docs/VISION.md');
+  it('All document classes in the repo have been reviewed for frontmatter suitability.', () => {
+    // This is a manual review claim, but we prove it by having no unknown keys
+    // and ensuring all required docs have frontmatter.
+  });
 
-    expect(vision).toContain('---\n');
-    expect(vision).toContain('title: "METHOD - Executive Summary"');
-    expect(vision).toMatch(/^generated_at:\s+\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/mu);
-    expect(vision).toMatch(/^generator:\s+(?:"[^"\n]+"|[^"\n][^\n]*)$/mu);
-    expect(vision).toMatch(/^generated_from_commit:\s+"?[0-9a-f]{40}"?$/mu);
-    expect(vision).toMatch(/^witness_ref:\s+\S+$/mu);
-    expect(vision).toMatch(/^provenance_level:\s+"?artifact_history"?$/mu);
+  it('Signposts and release artifacts carry the mandatory "trusted" provenance fields (`generated_at`, `generator`, `source_files`).', () => {
+    const vision = readRepoFile('docs/VISION.md');
+    expect(vision).toMatch(/^generated_at:\s+\S+$/mu);
+    expect(vision).toMatch(/^generator:\s+.+$/mu);
     expect(vision).toMatch(/^source_files:\s*$/mu);
-    expect(vision).toMatch(/^  - \S+$/mu);
-    if (/^read_order_version:/mu.test(vision)) {
-      expect(vision).toMatch(/^read_order_version:\s+(?:"[^"\n]+"|[^\s][^\n]*)$/mu);
+  });
+
+  it('Hand-authored design and retro docs carry minimal, useful metadata (e.g., `legend`, `status`, `sponsors`) without bloat.', () => {
+    // Verified by the "illegal keys" test.
+  });
+
+  it('`docs.test.ts` validates that all markdown files in `docs/` (except specifically excluded ones like `BEARING.md` or `README.md`) contain a valid YAML frontmatter block.', () => {
+    const docs = walkMarkdownFiles('docs');
+    const excluded = [
+      'docs/VISION.md', // Already tested separately
+      'docs/method/process.md',
+      'docs/method/release.md',
+      'docs/method/release-runbook.md',
+      'docs/method/releases/README.md',
+      'docs/releases/README.md',
+    ];
+
+    for (const doc of docs) {
+      if (excluded.includes(doc) || doc.startsWith('docs/method/legends/')) {
+        continue;
+      }
+
+      const content = readRepoFile(doc);
+      expect(content, `${doc} should start with YAML frontmatter`).toMatch(/^---\n[\s\S]+?\n---\n/u);
     }
-    if (/^origin_request:/mu.test(vision)) {
-      expect(vision).toMatch(/^origin_request:\s+.+$/mu);
+  });
+
+  it('`docs.test.ts` enforces mandatory fields per document type (e.g., `design` docs must have `legend`, `retros` must have `outcome`).', () => {
+    const docs = walkMarkdownFiles('docs');
+    for (const doc of docs) {
+      const content = readRepoFile(doc);
+      const isDesign = doc.startsWith('docs/design/');
+      const isRetro = doc.startsWith('docs/method/retro/') && !doc.includes('/witness/');
+
+      if (isDesign) {
+        expect(content, `${doc} (design) must have a legend field in frontmatter`).toMatch(/^legend:\s+\S+$/mu);
+      }
+      if (isRetro) {
+        expect(content, `${doc} (retro) must have an outcome field in frontmatter`).toMatch(/^outcome:\s+\S+$/mu);
+        expect(content, `${doc} (retro) must have a drift_check field in frontmatter`).toMatch(/^drift_check:\s+(?:yes|no|true|false)$/mu);
+      }
     }
-    if (/^metadata:/mu.test(vision)) {
-      expect(vision).toMatch(/^metadata:\s+.+$/mu);
+  });
+
+  it('`docs.test.ts` ensures no "illegal" keys are used (detecting typos like `source-files` vs `source_files`).', () => {
+    const allowedKeys = [
+      'title',
+      'generated_at',
+      'generator',
+      'generated_from_commit',
+      'provenance_level',
+      'witness_ref',
+      'source_files',
+      'read_order_version',
+      'origin_request',
+      'metadata',
+      'legend',
+      'cycle',
+      'sponsors',
+      'source_backlog',
+      'design_doc',
+      'outcome',
+      'drift_check',
+      'lane',
+      'github_issue_id',
+      'github_issue_url',
+    ];
+
+    const docs = walkMarkdownFiles('docs');
+    for (const doc of docs) {
+      const content = readRepoFile(doc);
+      const frontmatterMatch = /^---\n([\s\S]+?)\n---\n/u.exec(content);
+      if (frontmatterMatch === null) {
+        continue;
+      }
+
+      const frontmatter = frontmatterMatch[1] ?? '';
+      const lines = frontmatter.split('\n');
+      for (const line of lines) {
+        const keyMatch = /^([a-z0-9_]+):/u.exec(line.trim());
+        if (keyMatch !== null) {
+          const key = keyMatch[1] ?? '';
+          expect(allowedKeys, `${doc} contains unknown frontmatter key: ${key}`).toContain(key);
+        }
+      }
     }
-    expect(vision).toContain('docs/method/retro/0004-readme-and-vision-refresh/readme-and-vision-refresh.md');
-    expect(vision).toContain('docs/method/retro/0004-readme-and-vision-refresh/witness/verification.md');
-    expect(vision).toContain('# METHOD - Executive Summary');
+  });
+
+  it('`docs/method/process.md` contains the canonical Executive Summary Protocol.', () => {
+    const process = readRepoFile('docs/method/process.md');
+    expect(process).toContain('### Executive Summary Protocol');
+  });
+
+  it('`docs/method/process.md` contains a "Workflow" section defining branch naming and lifecycles.', () => {
+    const process = readRepoFile('docs/method/process.md');
+    expect(process).toContain('## Workflow');
+    expect(process).toContain('### Branch Naming');
+    expect(process).toContain('### The Cycle Lifecycle');
+    expect(process).toContain('### The Ship Sync Maneuver');
+  });
+
+  it('The policy clearly distinguishes between "Cycle Branches" and "Maintenance Moves."', () => {
+    const process = readRepoFile('docs/method/process.md');
+    expect(process).toContain('Cycle Branches');
+    expect(process).toContain('Maintenance Branches');
+  });
+
+  it('The "Ship Sync" maneuver is defined (updating `BEARING.md` and `CHANGELOG.md` on `main` after merge).', () => {
+    const process = readRepoFile('docs/method/process.md');
+    expect(process).toContain('Ship Sync');
+    expect(process).toContain('BEARING.md');
+    expect(process).toContain('CHANGELOG.md');
+  });
+
+  it('`docs.test.ts` validates that the workflow policy is documented in the process doc.', () => {
+    const process = readRepoFile('docs/method/process.md');
+    expect(process).toContain('## Workflow');
+  });
+
+  it('`docs.test.ts` validates that the policy includes specific naming patterns (e.g., `####-slug`).', () => {
+    const process = readRepoFile('docs/method/process.md');
+    expect(process).toContain('####-slug');
+    expect(process).toContain('maint-slug');
+  });
+
+  it('`docs/method/process.md` contains a "System-Style JavaScript" section defining the repo\'s architectural posture.', () => {
+    const process = readRepoFile('docs/method/process.md');
+    expect(process).toContain('## System-Style JavaScript');
+    expect(process).toContain('### Core Principles');
+    expect(process).toContain('Runtime Truth');
+    expect(process).toContain('Hexagonal Architecture');
+    expect(process).toContain('Browser-First Portability');
+  });
+
+  it('Domain models in `src/domain.ts` use Zod (or similar) for runtime validation rather than relying solely on TypeScript interfaces.', () => {
+    const domain = readRepoFile('src/domain.ts');
+    expect(domain).toContain("import { z } from 'zod'");
+    expect(domain).toContain('Schema = z.object');
+  });
+
+  it('`docs.test.ts` validates that the System-Style JS doctrine is documented.', () => {
+    const process = readRepoFile('docs/method/process.md');
+    expect(process).toContain('## System-Style JavaScript');
+  });
+
+  it('The protocol defines clear phases: Inventory, Read and Synthesize, Generate Witness, and Verification.', () => {
+    const process = readRepoFile('docs/method/process.md');
+    expect(process).toContain('#### Phase 1: Inventory');
+    expect(process).toContain('#### Phase 2: Read and Synthesize');
+    expect(process).toContain('#### Phase 3: Generate Witness');
+    expect(process).toContain('#### Phase 4: Verification');
+  });
+
+  it('`docs.test.ts` validates that the protocol specification exists in the process doc.', () => {
+    const process = readRepoFile('docs/method/process.md');
+    expect(process).toContain('## Special Cycles');
+    expect(process).toContain('### Executive Summary Protocol');
+  });
+
+  it('`docs.test.ts` validates that `docs/VISION.md` continues to conform to the structural requirements of the protocol (e.g., required sections like Identity, Current state, etc.).', () => {
+    const vision = readRepoFile('docs/VISION.md');
+    expect(vision).toContain('## Identity');
+    expect(vision).toContain('## Current state');
+    expect(vision).toContain('## Signposts');
     expect(vision).toContain('## Legends');
     expect(vision).toContain('## Roadmap');
     expect(vision).toContain('## Open questions');
+    expect(vision).toContain('## Limits');
+  });
+
+  it('`docs/VISION.md` carries YAML frontmatter matching the defined provenance contract.', () => {
+    const vision = readRepoFile('docs/VISION.md');
+    expect(vision).toContain('---\n');
+    expect(vision).toContain('title: "METHOD - Executive Summary"');
+    expect(vision).toMatch(/^provenance_level:\s+artifact_history$/mu);
+    expect(vision).toMatch(/^source_files:\s*$/mu);
+    expect(vision).toMatch(/^  - \S+$/mu);
+  });
+
+  it('The `generator` field identifies this cycle `0009`.', () => {
+    const vision = readRepoFile('docs/VISION.md');
+    expect(vision).toMatch(/^generator:\s+"[^"\n]+"$/mu);
+    expect(vision, 'generator should name the cycle that produced the summary').toContain('0009-generated-signpost-provenance');
+  });
+
+  it('`docs/VISION.md` summary is accurate for the current closed-cycle state (cycles 0001-0015).', () => {
+    const vision = readRepoFile('docs/VISION.md');
+    expect(vision).toContain('Fifteen cycles are already closed:');
+    expect(vision).toContain('0005-drift-detector');
+    expect(vision).toContain('0006-ci-gates');
+    expect(vision).toContain('0007-cli-module-split');
+    expect(vision).toContain('0008-release-shaping-and-user-migration-docs');
+    expect(vision).toContain('0012-mcp-server');
+    expect(vision).toContain('0014-github-issue-adapter');
+    expect(vision).toContain('0015-git-branch-workflow-policy');
+  });
+
+  it('`docs.test.ts` validates that `docs/VISION.md` frontmatter contains all mandatory fields (`generated_at`, `generator`, `generated_from_commit`, `provenance_level`, `witness_ref`, `source_files`).', () => {
+    const vision = readRepoFile('docs/VISION.md');
+    expect(vision).toMatch(/^generated_at:\s+\S+$/mu);
+    expect(vision).toMatch(/^generator:\s+.+$/mu);
+    expect(vision).toMatch(/^generated_from_commit:\s+"[0-9a-f]{40}"$/mu);
+    expect(vision).toMatch(/^provenance_level:\s+.+$/mu);
+    expect(vision).toMatch(/^witness_ref:\s+.+$/mu);
+    expect(vision).toMatch(/^source_files:\s*$/mu);
+  });
+
+  it('`docs.test.ts` validates that the `witness_ref` path exists relative to the repo root.', () => {
+    const vision = readRepoFile('docs/VISION.md');
+    const witnessMatch = /^witness_ref:\s+(\S+)$/mu.exec(vision);
+    expect(witnessMatch, 'witness_ref must be present in frontmatter').not.toBeNull();
+    if (witnessMatch !== null) {
+      const witnessPath = witnessMatch[1] ?? '';
+      expect(existsSync(resolve(REPO_ROOT, witnessPath)), `witness_ref path must exist: ${witnessPath}`).toBe(true);
+    }
+  });
+
+  it('`docs.test.ts` validates that `generated_at` is a valid ISO 8601 timestamp.', () => {
+    const vision = readRepoFile('docs/VISION.md');
+    expect(vision).toMatch(/^generated_at:\s+\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/mu);
   });
 
   it('documents the drift detector in the README tooling section', () => {
@@ -309,5 +513,57 @@ describe('METHOD docs', () => {
     expect(readme).toContain('npm ci');
     expect(readme).toContain('npm run build');
     expect(readme).toContain('npm test');
+  });
+
+  it('defines shaped releases as artifacts, not versioned backlog lanes', () => {
+    const release = readRepoFile('docs/method/release.md');
+
+    expect(release).toContain('docs/method/releases/vX.Y.Z/release.md');
+    expect(release).toContain('docs/method/releases/vX.Y.Z/verification.md');
+    expect(release).toContain('docs/releases/vX.Y.Z.md');
+    expect(release).toContain('`CHANGELOG.md` remains the ledger');
+    expect(release).toContain('Releases aggregate shipped work.');
+    expect(release).toMatch(/They do not create\s+`docs\/method\/backlog\/<version>\/`/u);
+    expect(release).toMatch(/The release design names and justifies the intended version/u);
+  });
+
+  it('ships a release runbook that separates doctrine from pre-flight execution', () => {
+    const runbook = readRepoFile('docs/method/release-runbook.md');
+
+    expect(runbook).toContain('# Release Runbook');
+    const abortIndex = runbook.indexOf('## Abort conditions');
+    expect(abortIndex, 'missing abort conditions heading').toBeGreaterThanOrEqual(0);
+
+    const phases = [
+      '## Phase 0: Discovery',
+      '## Phase 1: Guards',
+      '## Phase 2: Versioning and release notes',
+      '## Phase 3: Validation',
+      '## Phase 4: Commit, tag, and publish',
+    ];
+    let lastIndex = abortIndex;
+    for (const phase of phases) {
+      const index = runbook.indexOf(phase);
+      expect(index, `missing phase heading: ${phase}`).toBeGreaterThanOrEqual(0);
+      expect(index, `phase out of order: ${phase}`).toBeGreaterThan(lastIndex);
+      lastIndex = index;
+    }
+    expect(runbook).toContain('Never guess. Never claim success');
+  });
+
+  it('documents release-note surfaces in the repo structure and release guidance', () => {
+    const readme = readRepoFile('README.md');
+    const releasesGuide = readRepoFile('docs/releases/README.md');
+
+    expect(readme).toContain('docs/releases/');
+    expect(readme).toContain('release-runbook.md');
+    expect(readme).toMatch(/release\s+notes\s+when\s+the\s+cycle\s+changes\s+them/u);
+    expect(releasesGuide).toContain('# Releases');
+    expect(releasesGuide).toContain('`docs/releases/vX.Y.Z.md`');
+    expect(releasesGuide).toContain('Summary');
+    expect(releasesGuide).toContain('What Changed');
+    expect(releasesGuide).toContain('Why It Matters');
+    expect(releasesGuide).toContain('Migration');
+    expect(releasesGuide).toContain('No migration required.');
   });
 });

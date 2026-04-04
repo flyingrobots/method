@@ -1,7 +1,10 @@
-# Drift Detector
+---
+title: "Drift Detector"
+legend: PROCESS
+---
 
 Source backlog item: `docs/method/backlog/up-next/PROCESS_drift-detector.md`
-Legend: PROCESS
+
 
 ## Sponsors
 

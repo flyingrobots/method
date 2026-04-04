@@ -1,4 +1,6 @@
-# Guide
+---
+title: "Guide"
+---
 
 This document holds practical advice for working in a METHOD repo. It
 is intentionally lighter than doctrine in `README.md` or

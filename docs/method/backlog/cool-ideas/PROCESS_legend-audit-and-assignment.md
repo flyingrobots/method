@@ -1,4 +1,7 @@
-# Legend Audit And Assignment
+---
+title: "Legend Audit And Assignment"
+legend: PROCESS
+---
 
 Legend management needs first-class tooling: create legends, assign
 backlog items to legends, audit for orphaned items, and list items by

@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
-import type { Cycle } from './workspace.js';
+import type { Cycle } from './domain.js';
 
 interface PlaybackQuestion {
   designDoc: string;

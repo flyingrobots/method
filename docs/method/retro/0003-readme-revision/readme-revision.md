@@ -1,8 +1,12 @@
-# README Revision Retro
+---
+title: "README Revision"
+outcome: hill-met
+drift_check: yes
+---
 
 Design: `docs/design/0003-readme-revision/readme-revision.md`
-Outcome: hill-met
-Drift check: yes
+
+
 
 ## Summary
 

@@ -1,4 +1,6 @@
-# Method CLI Verification Witness
+---
+title: "Method CLI Verification Witness"
+---
 
 Date: 2026-04-02
 

@@ -1,7 +1,10 @@
-# README Revision
+---
+title: "README Revision"
+legend: none
+---
 
 Source backlog item: `docs/method/backlog/asap/readme-revision.md`
-Legend: none
+
 
 ## Sponsors
 

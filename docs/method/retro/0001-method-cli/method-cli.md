@@ -1,8 +1,12 @@
-# Method CLI Retro
+---
+title: "Method CLI"
+outcome: hill-met
+drift_check: yes
+---
 
 Design: `docs/design/0001-method-cli/method-cli.md`
-Outcome: hill-met
-Drift check: yes
+
+
 
 ## Summary
 

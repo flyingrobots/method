@@ -1,7 +1,10 @@
-# Playback Witness Convention
+---
+title: "Playback Witness Convention"
+legend: none
+---
 
 Source backlog item: `docs/method/backlog/asap/playback-witness-convention.md`
-Legend: none
+
 
 ## Sponsors
 
