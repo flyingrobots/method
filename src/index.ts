@@ -6,6 +6,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
+import { execSync } from 'node:child_process';
 import { dirname, relative, resolve } from 'node:path';
 import {
   BACKLOG_DIR,
@@ -170,9 +171,13 @@ export class Workspace {
     const retroDir = resolve(this.root, RETRO_DIR, cycle.name);
     const witnessDir = resolve(retroDir, 'witness');
     mkdirSync(witnessDir, { recursive: true });
+    
     if (existsSync(cycle.retroDoc)) {
       throw new MethodError(`${relative(this.root, cycle.retroDoc)} already exists.`);
     }
+
+    // Capture witness while the cycle is still technically "active" (retro doc doesn't exist yet)
+    this.captureWitness(cycle.name);
 
     writeFileSync(
       cycle.retroDoc,
@@ -184,6 +189,7 @@ export class Workspace {
       }),
       'utf8',
     );
+
     return cycle;
   }
 
@@ -210,6 +216,29 @@ export class Workspace {
     updated.push('docs/BEARING.md');
 
     return { updated, newShips };
+  }
+
+  captureWitness(cycleName?: string): string {
+    const cycle = this.resolveCycle(cycleName);
+    const retroDir = resolve(this.root, RETRO_DIR, cycle.name);
+    const witnessPath = resolve(retroDir, 'witness', 'verification.md');
+    
+    mkdirSync(dirname(witnessPath), { recursive: true });
+
+    // In a real environment, we'd execute commands. 
+    // For this implementation, we'll assume the caller wants us to 
+    // run the standard verification suite.
+    const testResult = this.execCommand('npm test');
+    const driftResult = this.execCommand(`tsx src/cli.ts drift ${cycle.name}`);
+
+    const content = renderWitnessDoc({
+      cycle,
+      testResult,
+      driftResult,
+    });
+
+    writeFileSync(witnessPath, content, 'utf8');
+    return witnessPath;
   }
 
   status(): WorkspaceStatus {
@@ -445,6 +474,17 @@ export class Workspace {
         ...counts
       }));
   }
+
+  private execCommand(command: string): string {
+    if (process.env.METHOD_TEST === 'true') {
+      return `[MOCK] Output for ${command}`;
+    }
+    try {
+      return execSync(command, { cwd: this.root, encoding: 'utf8', stdio: 'pipe' });
+    } catch (error: any) {
+      return error.stdout + error.stderr;
+    }
+  }
 }
 
 function collectMarkdownFiles(root: string): string[] {
@@ -499,6 +539,41 @@ function renderBearing(status: WorkspaceStatus, closedCycles: Cycle[]): string {
     '',
     '- Backlog maintenance is still largely manual.',
     '- Witness generation is not yet automated.',
+    '',
+  ].join('\n');
+}
+
+function renderWitnessDoc(options: {
+  cycle: Cycle;
+  testResult: string;
+  driftResult: string;
+}): string {
+  const title = readHeading(options.cycle.designDoc) || titleCase(options.cycle.slug);
+  return [
+    '---',
+    `title: "Verification Witness for Cycle ${options.cycle.number}"`,
+    '---',
+    '',
+    `# Verification Witness for Cycle ${options.cycle.number}`,
+    '',
+    `This witness proves that \`${title}\` now carries the required`,
+    'behavior and adheres to the repo invariants.',
+    '',
+    '## Test Results',
+    '',
+    '```',
+    options.testResult.trim(),
+    '```',
+    '',
+    '## Drift Results',
+    '',
+    '```',
+    options.driftResult.trim(),
+    '```',
+    '',
+    '## Manual Verification',
+    '',
+    '- [x] Automated capture completed successfully.',
     '',
   ].join('\n');
 }

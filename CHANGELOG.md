@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Automated Witness Capture (0020-automated-witness-capture)
 - Config Management (0019-config-management)
 - Method Cli (0001-method-cli)
 - Playback Witness Convention (0002-playback-witness-convention)
