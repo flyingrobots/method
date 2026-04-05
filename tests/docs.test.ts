@@ -369,7 +369,13 @@ describe('METHOD docs', () => {
     expect(process).toContain('CHANGELOG.md');
   });
 
-  it('`docs.test.ts` validates that the workflow policy is documented in the process doc.', () => {
+  it('docs/method/process.md contains the branching and commitment rules.', () => {
+    const process = readRepoFile('docs/method/process.md');
+    expect(process).toContain('cycles/<cycle_name>');
+    expect(process).toContain('stage and commit all modified files');
+  });
+
+  it('docs.test.ts validates that the workflow policy is documented in the process doc.', () => {
     const process = readRepoFile('docs/method/process.md');
     expect(process).toContain('## Workflow');
   });
@@ -398,6 +404,39 @@ describe('METHOD docs', () => {
   it('`docs.test.ts` validates that the System-Style JS doctrine is documented.', () => {
     const process = readRepoFile('docs/method/process.md');
     expect(process).toContain('## System-Style JavaScript');
+  });
+
+  it('`docs/method/process.md` contains a "Behavior Spikes" section under "Special Cycles".', () => {
+    const process = readRepoFile('docs/method/process.md');
+    expect(process).toContain('## Special Cycles');
+    expect(process).toContain('### Behavior Spikes');
+  });
+
+  it('The convention defines a clear lifecycle: Capture, Execute, Witness, and Retire.', () => {
+    const process = readRepoFile('docs/method/process.md');
+    expect(process).toContain('#### Phase 1: Capture');
+    expect(process).toContain('#### Phase 2: Execute');
+    expect(process).toContain('#### Phase 3: Witness');
+    expect(process).toContain('#### Phase 4: Retire');
+  });
+
+  it('The distinction between a spike (temporary proof) and a graveyard item (abandoned work) is explicit.', () => {
+    const process = readRepoFile('docs/method/process.md');
+    expect(process).toContain('move artifacts to `docs/method/graveyard/`');
+    expect(process).toContain('replace the spike with a formal design cycle');
+  });
+
+  it('`docs.test.ts` validates that the "Behavior Spikes" section exists in the process doc.', () => {
+    const process = readRepoFile('docs/method/process.md');
+    expect(process).toContain('### Behavior Spikes');
+  });
+
+  it('`docs.test.ts` validates that the lifecycle phases (Capture, Execute, Witness, Retire) are documented.', () => {
+    const process = readRepoFile('docs/method/process.md');
+    expect(process).toContain('#### Phase 1: Capture');
+    expect(process).toContain('#### Phase 2: Execute');
+    expect(process).toContain('#### Phase 3: Witness');
+    expect(process).toContain('#### Phase 4: Retire');
   });
 
   it('The protocol defines clear phases: Inventory, Read and Synthesize, Generate Witness, and Verification.', () => {
@@ -440,9 +479,9 @@ describe('METHOD docs', () => {
     expect(vision, 'generator should name the cycle that produced the summary').toContain('0009-generated-signpost-provenance');
   });
 
-  it('`docs/VISION.md` summary is accurate for the current closed-cycle state (cycles 0001-0015).', () => {
+  it('`docs/VISION.md` summary is accurate for the current closed-cycle state (cycles 0001-0019).', () => {
     const vision = readRepoFile('docs/VISION.md');
-    expect(vision).toContain('Fifteen cycles are already closed:');
+    expect(vision).toContain('Nineteen cycles are already closed:');
     expect(vision).toContain('0005-drift-detector');
     expect(vision).toContain('0006-ci-gates');
     expect(vision).toContain('0007-cli-module-split');
@@ -450,6 +489,9 @@ describe('METHOD docs', () => {
     expect(vision).toContain('0012-mcp-server');
     expect(vision).toContain('0014-github-issue-adapter');
     expect(vision).toContain('0015-git-branch-workflow-policy');
+    expect(vision).toContain('0017-behavior-spike-convention');
+    expect(vision).toContain('0018-ship-sync-automation');
+    expect(vision).toContain('0019-config-management');
   });
 
   it('`docs.test.ts` validates that `docs/VISION.md` frontmatter contains all mandatory fields (`generated_at`, `generator`, `generated_from_commit`, `provenance_level`, `witness_ref`, `source_files`).', () => {

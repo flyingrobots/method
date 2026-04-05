@@ -1,10 +1,10 @@
 ---
 title: "METHOD - Executive Summary"
-generated_at: 2026-04-04T11:55:00-07:00
+generated_at: 2026-04-04T19:30:00-07:00
 generator: "manual synthesis following Executive Summary Protocol (Cycle 0013)"
-generated_from_commit: "8ea719437d23b9c1703b69390706fb4c8046e9a9"
+generated_from_commit: "d67318723b07585b7ee5dc6e59be592898ab4418"
 provenance_level: artifact_history
-witness_ref: docs/method/retro/0015-git-branch-workflow-policy/witness/verification.md
+witness_ref: docs/method/retro/0019-config-management/witness/verification.md
 source_files:
   - README.md
   - CHANGELOG.md
@@ -27,6 +27,10 @@ source_files:
   - docs/design/0013-executive-summary-protocol/executive-summary-protocol.md
   - docs/design/0014-github-issue-adapter/github-issue-adapter.md
   - docs/design/0015-git-branch-workflow-policy/git-branch-workflow-policy.md
+  - docs/design/0016-system-style-javascript-adoption/system-style-javascript-adoption.md
+  - docs/design/0017-behavior-spike-convention/behavior-spike-convention.md
+  - docs/design/0018-ship-sync-automation/ship-sync-automation.md
+  - docs/design/0019-config-management/config-management.md
 ---
 
 # METHOD - Executive Summary
@@ -45,17 +49,18 @@ state of the system without replacing the underlying files.
 ## Current state
 
 METHOD has evolved from pure doctrine into a formal, programmable system.
-Fifteen cycles are already closed:
+Nineteen cycles are already closed:
 
 - **CLI Foundations (0001-0004, 0007):** Established the CLI, witness
   conventions, and separated the module structure.
 - **Enforcement (0005-0006):** Added the `drift` command and CI gates.
-- **Maturity (0008-0011):** Formalized releases, metadata contracts, and
-  extracted a clean, programmable `Method` API.
+- **Maturity (0008-0011, 0016, 0019):** Formalized releases, metadata
+  contracts, extracted a clean API, adopted System-Style JS, and
+  implemented a formal configuration system.
 - **Connectivity (0012, 0014):** Implemented an MCP server and a GitHub
   Issue synchronization adapter.
-- **Workflow (0013, 0015):** Formalized the Executive Summary Protocol
-  and Git branch/workflow doctrine.
+- **Workflow (0013, 0015, 0017-0018):** Formalized the Executive Summary
+  Protocol, Git branch doctrine, Behavior Spikes, and Ship Sync automation.
 
 The repo is organized under two legends:
 - `PROCESS`: Workflow mechanics, adapters, and system architecture.
@@ -73,8 +78,7 @@ The repo is organized under two legends:
 Covers cycle discipline, backlog movement, adapters (GitHub, MCP), and
 named patterns (spikes, workflow).
 - **Active:** None.
-- **Up-next:** `PROCESS_system-style-javascript-adoption`,
-  `PROCESS_behavior-spike-convention`.
+- **Up-next:** `SYNTH_automated-witness-capture`.
 
 ### SYNTH
 Covers repo self-description, signposts, and provenance level.
@@ -87,13 +91,11 @@ Covers repo self-description, signposts, and provenance level.
 - None.
 
 ### Up-next
-- **PROCESS_system-style-javascript-adoption:** Align internal
-  architecture with the "System-Style JS" standard.
-- **PROCESS_behavior-spike-convention:** Formalize how temporary
-  spikes are documented and retired.
+- **SYNTH_automated-witness-capture:** Automate terminal and test
+  evidence recording leveraging the API/MCP.
 
 ### Inbox
-- None.
+- **PROCESS_github-issue-adapter (Follow-up):** Two-way synchronization.
 
 ## Open questions
 

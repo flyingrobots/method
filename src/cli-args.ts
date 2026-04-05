@@ -10,7 +10,7 @@ export type ParsedCommand =
   | { command: 'drift'; cycle?: string }
   | { command: 'status' }
   | { command: 'mcp' }
-  | { command: 'sync'; adapter: 'github' };
+  | { command: 'sync'; adapter: 'github' | 'ship' };
 
 export function parseCliArgs(argv: readonly string[]): ParsedCommand {
   const [command, ...rest] = argv;
@@ -51,10 +51,10 @@ export function parseCliArgs(argv: readonly string[]): ParsedCommand {
       }
       return { command: 'mcp' };
     case 'sync':
-      if (rest[0] !== 'github') {
-        throw new MethodError('Usage: method sync github');
+      if (rest[0] !== 'github' && rest[0] !== 'ship') {
+        throw new MethodError('Usage: method sync github|ship');
       }
-      return { command: 'sync', adapter: 'github' };
+      return { command: 'sync', adapter: rest[0] };
     default:
       throw new MethodError(`Unknown command: ${command}`);
   }
@@ -90,7 +90,7 @@ export function usage(topic?: string): string {
   }
 
   if (topic === 'sync') {
-    return 'Usage: method sync github\n\nSynchronize the backlog with GitHub Issues.';
+    return 'Usage: method sync github|ship\n\nSynchronize the backlog with GitHub Issues or perform a Ship Sync.';
   }
 
   return [
@@ -104,7 +104,7 @@ export function usage(topic?: string): string {
     '  drift [cycle]               Check active cycle playback questions against tests.',
     '  status                      Show backlog, active cycles, and legend health.',
     '  mcp                         Start the MCP server over stdio.',
-    '  sync github                 Sync backlog with GitHub Issues.',
+    '  sync github|ship            Sync backlog with GitHub Issues or perform Ship Sync.',
     '',
     'Run `method help <command>` for command-specific usage.',
   ].join('\n');

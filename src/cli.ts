@@ -91,14 +91,14 @@ export async function runCli(
 
     if (parsed.command === 'sync') {
       if (parsed.adapter === 'github') {
-        const token = process.env.GITHUB_TOKEN;
-        const repoFull = process.env.GITHUB_REPO;
+        const token = workspace.config.github_token;
+        const repoFull = workspace.config.github_repo;
 
         if (!token) {
-          throw new Error('GITHUB_TOKEN environment variable is required for GitHub sync.');
+          throw new Error('GitHub token is required for sync. Provide it via GITHUB_TOKEN or .method.json.');
         }
         if (!repoFull || !repoFull.includes('/')) {
-          throw new Error('GITHUB_REPO environment variable (owner/repo) is required for GitHub sync.');
+          throw new Error('GitHub repo (owner/repo) is required for sync. Provide it via GITHUB_REPO or .method.json.');
         }
 
         const [owner, repo] = repoFull.split('/');
@@ -119,6 +119,20 @@ export async function runCli(
           } else if (result.issue) {
             stdout.write(`${alert(`Synced ${result.path} to GitHub Issue #${result.issue.number}`, { variant: 'success', ctx })}\n`);
           }
+        }
+        return 0;
+      }
+
+      if (parsed.adapter === 'ship') {
+        const result = workspace.shipSync();
+        for (const path of result.updated) {
+          stdout.write(`${alert(`Updated ${path}`, { variant: 'success', ctx })}\n`);
+        }
+        for (const cycle of result.newShips) {
+          stdout.write(`- Shipped ${cycle.name}\n`);
+        }
+        if (result.newShips.length === 0) {
+          stdout.write('No new ships found.\n');
         }
         return 0;
       }

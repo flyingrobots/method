@@ -2,14 +2,36 @@
 
 ## Unreleased
 
+- Config Management (0019-config-management)
+- Method Cli (0001-method-cli)
+- Playback Witness Convention (0002-playback-witness-convention)
+- Readme Revision (0003-readme-revision)
+- Readme And Vision Refresh (0004-readme-and-vision-refresh)
+- Drift Detector (0005-drift-detector)
+- Ci Gates (0006-ci-gates)
+- Cli Module Split (0007-cli-module-split)
+- Release Shaping And User Migration Docs (0008-release-shaping-and-user-migration-docs)
+- Generated Signpost Provenance (0009-generated-signpost-provenance)
+- Yaml Frontmatter Schema (0010-yaml-frontmatter-schema)
+- Library API Surface (0011-library-api-surface)
+- MCP Server (0012-mcp-server)
+- Executive Summary Protocol (0013-executive-summary-protocol)
+- GitHub issue adapter (0014-github-issue-adapter)
+- Git branch workflow policy (0015-git-branch-workflow-policy)
+- System-Style JavaScript Adoption (0016-system-style-javascript-adoption)
+- Behavior Spike Convention (0017-behavior-spike-convention)
+- Ship Sync Automation (0018-ship-sync-automation)
 ### Fixed
 
 - Resolved review feedback on PR #5: revised release runbook bullets for 
   clarity, enforced phase heading order in tests, and clarified 
   commitment and signpost boundedness invariants.
 
-### Added
+## Unreleased
 
+- Formalized the "Behavior Spike" convention in `docs/method/process.md`,
+  defining a 4-phase lifecycle (Capture, Execute, Witness, Retire) for
+  temporary implementations.
 - Adopted the "System-Style JavaScript" standard as repo doctrine,
   documenting core principles like runtime truth and hexagonal
   architecture in `docs/method/process.md`.
