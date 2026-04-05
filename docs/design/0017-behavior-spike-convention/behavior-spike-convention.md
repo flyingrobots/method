@@ -10,8 +10,8 @@ Legend: PROCESS
 
 ## Sponsors
 
-- Human: @james
-- Agent: @gemini-cli
+- Human: Repository Operator
+- Agent: System Automator
 
 ## Hill
 

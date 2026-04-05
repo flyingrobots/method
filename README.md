@@ -7,7 +7,8 @@ A backlog, a loop, and honest bookkeeping.
 ### Stances
 
 **The agent and the human sit at the same table.** They see different
-things. Both are named in every design. Both must agree before work
+things. Both are named in every design as abstract roles (e.g., 
+"Repository Operator", "System Architect"). Both must agree before work 
 ships.
 
 **Default to building the agent surface first** - it is the foundation
@@ -157,7 +158,7 @@ The backlog file is removed. Work does not live in two places.
 
 ### Commitment
 
-Pull it and you own it - "you" meaning the named sponsors (human and
+Pull it and you own it - "you" meaning the named sponsor roles (human and
 agent) in the design doc. It does not go back.
 
 - **Finish** - hill met.

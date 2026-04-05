@@ -8,8 +8,8 @@ Source backlog item: `docs/method/backlog/asap/SYNTH_generated-signpost-provenan
 
 ## Sponsors
 
-- Human: @james
-- Agent: @gemini-cli
+- Human: Repository Operator
+- Agent: System Automator
 
 ## Hill
 

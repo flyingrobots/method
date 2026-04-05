@@ -140,6 +140,21 @@ describe('METHOD docs', () => {
     }
   });
 
+  it('enforces sponsor abstractness in design documents', () => {
+    const designs = walkMarkdownFiles('docs/design');
+    for (const designPath of designs) {
+      const content = readRepoFile(designPath);
+      const sponsorsMatch = /## Sponsors\n\n- Human: (?<human>.*)\n- Agent: (?<agent>.*)/u.exec(content);
+      if (sponsorsMatch?.groups !== undefined) {
+        const { human, agent } = sponsorsMatch.groups;
+        expect(human, `${designPath} human sponsor should be a role, not a literal name`).not.toMatch(/^@/u);
+        expect(agent, `${designPath} agent sponsor should be a role, not a literal name`).not.toMatch(/^@/u);
+        expect(human, `${designPath} human sponsor should not be TBD`).not.toBe('TBD');
+        expect(agent, `${designPath} agent sponsor should not be TBD`).not.toBe('TBD');
+      }
+    }
+  });
+
   it('keeps this repo inbox aligned with the current legend split', () => {
     const untaggedItems = inboxItemNames().filter((entry) => !/^(PROCESS|SYNTH)_/u.test(entry));
 

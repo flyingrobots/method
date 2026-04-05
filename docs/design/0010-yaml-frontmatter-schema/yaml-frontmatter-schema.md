@@ -8,8 +8,8 @@ Source backlog item: `docs/method/backlog/inbox/PROCESS_yaml-frontmatter-schema.
 
 ## Sponsors
 
-- Human: @james
-- Agent: @gemini-cli
+- Human: Repository Operator
+- Agent: System Automator
 
 ## Hill
 
