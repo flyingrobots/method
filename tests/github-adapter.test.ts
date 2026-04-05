@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -163,6 +163,11 @@ describe('GitHub Adapter Two-way Sync', () => {
     await adapter.pullBacklog();
 
     // Verify file was moved to graveyard
-    expect(readFileSync(join(root, 'docs/method/graveyard/FEAT_closed.md'), 'utf8')).toBeDefined();
+    const graveyardPath = join(root, 'docs/method/graveyard/FEAT_closed.md');
+    const inboxPath = join(root, 'docs/method/backlog/inbox/FEAT_closed.md');
+    
+    expect(existsSync(graveyardPath), 'file should exist in graveyard').toBe(true);
+    expect(existsSync(inboxPath), 'file should no longer exist in inbox').toBe(false);
+    expect(readFileSync(graveyardPath, 'utf8')).toContain('Closed Item');
   });
 });

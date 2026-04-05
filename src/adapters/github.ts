@@ -1,5 +1,6 @@
 import { resolve } from 'node:path';
 import { readBody, readHeading, type Workspace } from '../index.js';
+import { type WorkspaceStatus } from '../domain.js';
 
 export interface GitHubIssue {
   id: number;
@@ -61,7 +62,7 @@ export class GitHubAdapter {
     return results;
   }
 
-  private getAllBacklogItems(status: any) {
+  private getAllBacklogItems(status: WorkspaceStatus) {
     return [
       ...status.backlog.inbox,
       ...status.backlog.asap,

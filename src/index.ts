@@ -333,7 +333,9 @@ export class Workspace {
     }
 
     const title = readHeading(fullPath);
-    const newContent = `${frontmatter}\n# ${title}\n\n${newBody.trim()}\n`;
+    const newContent = frontmatter 
+      ? `${frontmatter}\n# ${title}\n\n${newBody.trim()}\n`
+      : `# ${title}\n\n${newBody.trim()}\n`;
     writeFileSync(fullPath, newContent, 'utf8');
   }
 
@@ -357,7 +359,7 @@ export class Workspace {
     const targetPath = resolve(targetDir, fileName);
     
     if (fullPath === targetPath) {
-      return path;
+      return relative(this.root, targetPath);
     }
 
     if (existsSync(targetPath)) {

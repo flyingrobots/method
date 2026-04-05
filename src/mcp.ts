@@ -152,8 +152,11 @@ export function createMcpServer(cwd: string = process.cwd()) {
         const token = workspace.config.github_token;
         const repoFull = workspace.config.github_repo;
 
-        if (!token || !repoFull || !repoFull.includes('/')) {
-          throw new Error('GitHub configuration missing in .method.json or environment.');
+        if (!token) {
+          throw new Error('GitHub token missing in .method.json or environment.');
+        }
+        if (!repoFull || !repoFull.includes('/')) {
+          throw new Error('GitHub repo invalid; must be owner/repo in .method.json or environment.');
         }
 
         const [owner, repo] = repoFull.split('/');
