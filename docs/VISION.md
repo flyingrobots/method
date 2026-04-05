@@ -1,10 +1,10 @@
 ---
 title: "METHOD - Executive Summary"
-generated_at: 2026-04-04T19:30:00-07:00
+generated_at: 2026-04-04T20:20:00-07:00
 generator: "manual synthesis following Executive Summary Protocol (Cycle 0013)"
-generated_from_commit: "d67318723b07585b7ee5dc6e59be592898ab4418"
+generated_from_commit: "644e40a9205213ba4d3db5b233c7042ea1ba687e"
 provenance_level: artifact_history
-witness_ref: docs/method/retro/0019-config-management/witness/verification.md
+witness_ref: docs/method/retro/0020-automated-witness-capture/witness/verification.md
 source_files:
   - README.md
   - CHANGELOG.md
@@ -31,6 +31,7 @@ source_files:
   - docs/design/0017-behavior-spike-convention/behavior-spike-convention.md
   - docs/design/0018-ship-sync-automation/ship-sync-automation.md
   - docs/design/0019-config-management/config-management.md
+  - docs/design/0020-automated-witness-capture/automated-witness-capture.md
 ---
 
 # METHOD - Executive Summary
@@ -49,7 +50,7 @@ state of the system without replacing the underlying files.
 ## Current state
 
 METHOD has evolved from pure doctrine into a formal, programmable system.
-Nineteen cycles are already closed:
+Twenty cycles are already closed:
 
 - **CLI Foundations (0001-0004, 0007):** Established the CLI, witness
   conventions, and separated the module structure.
@@ -59,8 +60,9 @@ Nineteen cycles are already closed:
   implemented a formal configuration system.
 - **Connectivity (0012, 0014):** Implemented an MCP server and a GitHub
   Issue synchronization adapter.
-- **Workflow (0013, 0015, 0017-0018):** Formalized the Executive Summary
-  Protocol, Git branch doctrine, Behavior Spikes, and Ship Sync automation.
+- **Workflow (0013, 0015, 0017-0018, 0020):** Formalized the Executive
+  Summary Protocol, Git branch doctrine, Behavior Spikes, Ship Sync
+  automation, and Automated Witness Capture.
 
 The repo is organized under two legends:
 - `PROCESS`: Workflow mechanics, adapters, and system architecture.
@@ -78,7 +80,7 @@ The repo is organized under two legends:
 Covers cycle discipline, backlog movement, adapters (GitHub, MCP), and
 named patterns (spikes, workflow).
 - **Active:** None.
-- **Up-next:** `SYNTH_automated-witness-capture`.
+- **Up-next:** `PROCESS_two-way-github-sync`.
 
 ### SYNTH
 Covers repo self-description, signposts, and provenance level.
@@ -91,17 +93,17 @@ Covers repo self-description, signposts, and provenance level.
 - None.
 
 ### Up-next
-- **SYNTH_automated-witness-capture:** Automate terminal and test
-  evidence recording leveraging the API/MCP.
+- **PROCESS_two-way-github-sync:** Support syncing comments and labels
+  back to the filesystem backlog.
 
 ### Inbox
-- **PROCESS_github-issue-adapter (Follow-up):** Two-way synchronization.
+- None.
 
 ## Open questions
 
-- Should METHOD support two-way synchronization with GitHub (comments)?
-- How much automated assistance should the CLI provide for "Ship Sync"?
-- Where is the line between a "Method Tool" and a "System Feature"?
+- Should METHOD support visual screenshot capture in witnesses?
+- How much domain logic should move from `src/index.ts` to legend-specific
+  adapters?
 
 ## Limits
 

@@ -58,6 +58,8 @@ describe('MCP Server', () => {
     expect(toolNames).toContain('method_pull');
     expect(toolNames).toContain('method_close');
     expect(toolNames).toContain('method_drift');
+    expect(toolNames).toContain('method_sync_ship');
+    expect(toolNames).toContain('method_capture_witness');
 
     vi.restoreAllMocks();
   });
@@ -107,6 +109,11 @@ describe('MCP Server', () => {
     // Check status again
     const statusAfterPull = await callToolHandler({ params: { name: 'method_status', arguments: {} } });
     expect(statusAfterPull.content[0].text).toContain('0001-test-idea-from-mcp');
+
+    // Call method_capture_witness
+    const captureResult = await callToolHandler({ params: { name: 'method_capture_witness', arguments: { cycle: '0001-test-idea-from-mcp' } } });
+    expect(captureResult.isError).toBeFalsy();
+    expect(captureResult.content[0].text).toContain('Captured witness to docs/method/retro/0001-test-idea-from-mcp/witness/verification.md');
 
     vi.restoreAllMocks();
   });

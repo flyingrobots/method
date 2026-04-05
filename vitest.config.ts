@@ -4,5 +4,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    env: {
+      METHOD_TEST: 'true',
+    },
   },
 });

@@ -75,6 +75,16 @@ export function createMcpServer(cwd: string = process.cwd()) {
           description: 'Perform the Ship Sync maneuver (update CHANGELOG.md and BEARING.md)',
           inputSchema: { type: 'object', properties: {} },
         },
+        {
+          name: 'method_capture_witness',
+          description: 'Automate terminal evidence capture for a cycle',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              cycle: { type: 'string' },
+            },
+          },
+        },
       ],
     };
   });
@@ -123,6 +133,12 @@ export function createMcpServer(cwd: string = process.cwd()) {
           result.newShips.length === 0 ? 'No new ships.' : '',
         ].join('\n');
         return { content: [{ type: 'text', text }] };
+      }
+
+      if (request.params.name === 'method_capture_witness') {
+        const args = request.params.arguments as { cycle?: string } | undefined;
+        const path = workspace.captureWitness(args?.cycle);
+        return { content: [{ type: 'text', text: `Captured witness to ${relative(workspace.root, path)}` }] };
       }
 
       throw new Error(`Unknown tool: ${request.params.name}`);
