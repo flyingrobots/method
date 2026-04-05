@@ -17,6 +17,11 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
   reflect merged `main` state, not branch-local closeout state.
 - Review visibility is currently outside METHOD's repo-native
   coordination surface; branch and PR context carry it for now.
+- All cycle work must be done on a branch named `cycles/<cycle_name>`.
+- Once a full cycle is complete (after the retro), the operator must
+  push the branch and open a PR to the target branch (usually `main`).
+- Agents must stage and commit all modified files at the end of each turn
+  to maintain a transparent and recoverable session history.
 
 ## Default Loop
 
@@ -142,3 +147,31 @@ A specialized cycle for "reading the repo and summarizing what it is." This prot
 1. Run repo tests that validate signpost structure and provenance.
 2. Run `method status` so the summary can be checked against the repo's current visible state.
 3. If the synthesis triggers follow-up maintenance ideas, record them as separate backlog items after the read-only summary is complete.
+
+### Behavior Spikes
+
+A specialized cycle for temporary implementations that exist to prove behavior, buy clarity, or surface stack constraints.
+
+#### Phase 1: Capture
+
+1. Record the goal, stack constraints, and the "why" in a backlog item.
+2. Explicitly tag the item as a `SPIKE` (e.g., `SPIKE_my-experiment`).
+
+#### Phase 2: Execute
+
+1. Build the minimum implementation necessary to prove the behavior.
+2. Don't worry about production-grade hardening, but keep the core
+   honest.
+
+#### Phase 3: Witness
+
+1. Produce a playback witness (transcript, demo, test results) that
+   proves the behavior was achieved or the constraint was identified.
+2. Close the cycle with a retro explaining what was learned and whether
+   the approach should be adopted, adapted, or retired.
+
+#### Phase 4: Retire
+
+1. Honestly discard or replace the implementation.
+2. If retired, move artifacts to `docs/method/graveyard/`.
+3. If adopted, replace the spike with a formal design cycle.

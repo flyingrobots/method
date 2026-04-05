@@ -19,6 +19,7 @@ import {
   RETRO_DIR,
   type WorkspaceStatus,
 } from './domain.js';
+import { loadConfig, type Config } from './config.js';
 import { detectWorkspaceDrift, type DriftReport } from './drift.js';
 import { MethodError } from './errors.js';
 
@@ -71,9 +72,11 @@ export function initWorkspace(root: string): { created: string[] } {
 
 export class Workspace {
   readonly root: string;
+  readonly config: Config;
 
   constructor(root: string) {
     this.root = root;
+    this.config = loadConfig(root);
   }
 
   ensureInitialized(): void {
@@ -189,6 +192,26 @@ export class Workspace {
     return detectWorkspaceDrift(this.root, cycles);
   }
 
+  shipSync(): { updated: string[]; newShips: Cycle[] } {
+    const changelogPath = resolve(this.root, 'CHANGELOG.md');
+    const bearingPath = resolve(this.root, 'docs/BEARING.md');
+    const status = this.status();
+    const closedCycles = this.allCycles().filter((cycle) => existsSync(cycle.retroDoc));
+    
+    const newShips = this.findNewShips(closedCycles);
+    const updated: string[] = [];
+
+    if (newShips.length > 0) {
+      this.updateChangelog(changelogPath, newShips);
+      updated.push('CHANGELOG.md');
+    }
+
+    writeFileSync(bearingPath, renderBearing(status, closedCycles), 'utf8');
+    updated.push('docs/BEARING.md');
+
+    return { updated, newShips };
+  }
+
   status(): WorkspaceStatus {
     const backlog: WorkspaceStatus['backlog'] = {
       inbox: [],
@@ -269,6 +292,32 @@ export class Workspace {
 
   openCycles(): Cycle[] {
     return this.allCycles().filter((cycle) => existsSync(cycle.designDoc) && !existsSync(cycle.retroDoc));
+  }
+
+  private findNewShips(closedCycles: Cycle[]): Cycle[] {
+    const changelogPath = resolve(this.root, 'CHANGELOG.md');
+    if (!existsSync(changelogPath)) {
+      return closedCycles;
+    }
+    const content = readFileSync(changelogPath, 'utf8');
+    return closedCycles.filter((cycle) => !content.includes(`- ${cycle.name}:`) && !content.includes(`(${cycle.name})`));
+  }
+
+  private updateChangelog(path: string, newShips: Cycle[]): void {
+    const content = readFileSync(path, 'utf8');
+    const lines = content.split('\n');
+    const unreleasedIndex = lines.findIndex((line) => line.startsWith('## Unreleased'));
+    if (unreleasedIndex === -1) {
+      return;
+    }
+
+    const newEntries = newShips.map((cycle) => {
+      const title = readHeading(cycle.designDoc) || titleCase(cycle.slug);
+      return `- ${title} (${cycle.name})`;
+    });
+
+    lines.splice(unreleasedIndex + 2, 0, ...newEntries);
+    writeFileSync(path, lines.join('\n'), 'utf8');
   }
 
   private resolveBacklogItem(item: string): string {
@@ -414,6 +463,44 @@ function collectMarkdownFiles(root: string): string[] {
   }
 
   return files.sort((left, right) => left.localeCompare(right));
+}
+
+function renderBearing(status: WorkspaceStatus, closedCycles: Cycle[]): string {
+  const latestShips = [...closedCycles].reverse().slice(0, 3);
+  const nextUp = [...status.backlog.asap, ...status.backlog['up-next']].slice(0, 2);
+
+  const priority = nextUp.length > 0 ? nextUp.map(i => `\`${i.stem}\``).join(' or ') : 'TBD';
+
+  const shipLines = latestShips.map(cycle => {
+    const title = readHeading(cycle.designDoc) || titleCase(cycle.slug);
+    return `- \`${cycle.name}\`: ${title}`;
+  });
+
+  return [
+    '---',
+    'title: "BEARING"',
+    'legend: none',
+    '---',
+    '',
+    '# BEARING',
+    '',
+    'This signpost summarizes direction. It does not create commitments or',
+    'replace backlog items, design docs, retros, or CLI status.',
+    '',
+    '## Where are we going?',
+    '',
+    `Current priority: pull ${priority} to continue the system's maturity.`,
+    '',
+    '## What just shipped?',
+    '',
+    ...shipLines,
+    '',
+    '## What feels wrong?',
+    '',
+    '- Backlog maintenance is still largely manual.',
+    '- Witness generation is not yet automated.',
+    '',
+  ].join('\n');
 }
 
 function renderDesignDoc(options: {

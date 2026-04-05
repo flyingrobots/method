@@ -70,6 +70,11 @@ export function createMcpServer(cwd: string = process.cwd()) {
             required: ['driftCheck', 'outcome'],
           },
         },
+        {
+          name: 'method_sync_ship',
+          description: 'Perform the Ship Sync maneuver (update CHANGELOG.md and BEARING.md)',
+          inputSchema: { type: 'object', properties: {} },
+        },
       ],
     };
   });
@@ -108,6 +113,16 @@ export function createMcpServer(cwd: string = process.cwd()) {
         const args = request.params.arguments as { cycle?: string; driftCheck: boolean; outcome: Outcome };
         const cycle = workspace.closeCycle(args.cycle, args.driftCheck, args.outcome);
         return { content: [{ type: 'text', text: `Closed ${cycle.name}\nRetro: ${relative(workspace.root, cycle.retroDoc)}` }] };
+      }
+
+      if (request.params.name === 'method_sync_ship') {
+        const result = workspace.shipSync();
+        const text = [
+          `Updated: ${result.updated.join(', ')}`,
+          ...result.newShips.map((c) => `- Shipped ${c.name}`),
+          result.newShips.length === 0 ? 'No new ships.' : '',
+        ].join('\n');
+        return { content: [{ type: 'text', text }] };
       }
 
       throw new Error(`Unknown tool: ${request.params.name}`);
