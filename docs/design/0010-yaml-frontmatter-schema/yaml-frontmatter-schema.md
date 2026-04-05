@@ -8,8 +8,8 @@ Source backlog item: `docs/method/backlog/inbox/PROCESS_yaml-frontmatter-schema.
 
 ## Sponsors
 
-- Human: Repository Operator
-- Agent: System Automator
+- Human: Backlog Operator
+- Agent: Sync Automator
 
 ## Hill
 

@@ -7,8 +7,8 @@ A backlog, a loop, and honest bookkeeping.
 ### Stances
 
 **The agent and the human sit at the same table.** They see different
-things. Both are named in every design as abstract roles (e.g., 
-"Repository Operator", "System Architect"). Both must agree before work 
+things. Both are named in every design as abstract roles (e.g.,
+"Repository Operator", "System Architect"). Both must agree before work
 ships.
 
 **Default to building the agent surface first** - it is the foundation

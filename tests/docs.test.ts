@@ -142,15 +142,31 @@ describe('METHOD docs', () => {
 
   it('enforces sponsor abstractness in design documents', () => {
     const designs = walkMarkdownFiles('docs/design');
+    const literalNames = /^(Gemini|Claude|James|Bard|GPT|GPT-\d+|@.*)$/i;
+    const singleCapitalizedWord = /^[A-Z][a-z]+$/u;
+
     for (const designPath of designs) {
       const content = readRepoFile(designPath);
-      const sponsorsMatch = /## Sponsors\n\n- Human: (?<human>.*)\n- Agent: (?<agent>.*)/u.exec(content);
+      if (!content.includes('## Sponsors')) continue;
+
+      const sponsorsMatch = /## Sponsors\n\n- Human: (?<human>[\s\S]*?)\n- Agent: (?<agent>[\s\S]*?)(?=\n\n##|$)/u.exec(content);
+      
+      expect(sponsorsMatch, `${designPath} has a ## Sponsors heading but does not match the expected format:
+- Human: Role
+- Agent: Role`).not.toBeNull();
+
       if (sponsorsMatch?.groups !== undefined) {
-        const { human, agent } = sponsorsMatch.groups;
-        expect(human, `${designPath} human sponsor should be a role, not a literal name`).not.toMatch(/^@/u);
-        expect(agent, `${designPath} agent sponsor should be a role, not a literal name`).not.toMatch(/^@/u);
-        expect(human, `${designPath} human sponsor should not be TBD`).not.toBe('TBD');
-        expect(agent, `${designPath} agent sponsor should not be TBD`).not.toBe('TBD');
+        const human = (sponsorsMatch.groups.human ?? '').trim();
+        const agent = (sponsorsMatch.groups.agent ?? '').trim();
+        
+        for (const [label, name] of [['human', human], ['agent', agent]]) {
+          expect(name, `${designPath} ${label} sponsor should not be TBD`).not.toBe('TBD');
+          expect(name, `${designPath} ${label} sponsor should not be a literal name: ${name}`).not.toMatch(literalNames);
+          
+          if (!name.includes(' ') && !name.includes('\n')) {
+            expect(name, `${designPath} ${label} sponsor should be a descriptive role, not a single name: ${name}`).not.toMatch(singleCapitalizedWord);
+          }
+        }
       }
     }
   });

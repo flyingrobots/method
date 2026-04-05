@@ -77,10 +77,16 @@ export class GitHubAdapter {
       const frontmatter = this.workspace.readFrontmatter(relativePath);
       const fullPath = resolve(this.workspace.root, relativePath);
       const title = readHeading(fullPath);
-      const body = readBody(fullPath);
+      let body = readBody(fullPath);
 
-      if (frontmatter.github_issue_id === undefined) {
-        // Fallback to creation if ID is missing
+      // Strip local GitHub Comments block if present to avoid mirroring them back
+      const commentHeader = '## GitHub Comments';
+      if (body.includes(commentHeader)) {
+        body = body.split(commentHeader)[0]?.trim() ?? body;
+      }
+
+      if (frontmatter.github_issue_id === undefined || !/^\d+$/u.test(frontmatter.github_issue_id)) {
+        // Fallback to creation if ID is missing or invalid
         const issue = await this.createIssue(title, body);
         this.workspace.updateFrontmatter(relativePath, {
           github_issue_id: String(issue.number),
@@ -106,7 +112,7 @@ export class GitHubAdapter {
   async pullItem(relativePath: string): Promise<GitHubSyncResult> {
     try {
       const frontmatter = this.workspace.readFrontmatter(relativePath);
-      if (frontmatter.github_issue_id === undefined) {
+      if (frontmatter.github_issue_id === undefined || !/^\d+$/u.test(frontmatter.github_issue_id)) {
         return { path: relativePath, skipped: true, action: 'skip' };
       }
 

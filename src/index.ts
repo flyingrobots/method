@@ -8,7 +8,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { execSync } from 'node:child_process';
-import { dirname, relative, resolve } from 'node:path';
+import { basename, dirname, relative, resolve } from 'node:path';
 import {
   BACKLOG_DIR,
   type BacklogItem,
@@ -344,9 +344,14 @@ export class Workspace {
     }
 
     const fileName = basename(fullPath);
-    const targetDir = targetLane === 'graveyard' 
-      ? resolve(this.root, 'docs/method/graveyard')
-      : resolve(this.root, BACKLOG_DIR, targetLane);
+    let targetDir: string;
+    if (targetLane === 'graveyard') {
+      targetDir = resolve(this.root, 'docs/method/graveyard');
+    } else if (targetLane === 'root') {
+      targetDir = resolve(this.root, BACKLOG_DIR);
+    } else {
+      targetDir = resolve(this.root, BACKLOG_DIR, targetLane);
+    }
     
     mkdirSync(targetDir, { recursive: true });
     const targetPath = resolve(targetDir, fileName);
@@ -783,10 +788,6 @@ function titleCase(value: string): string {
     .filter((part) => part.length > 0)
     .map((part) => `${part[0].toUpperCase()}${part.slice(1)}`)
     .join(' ');
-}
-
-function basename(path: string): string {
-  return path.split('/').at(-1) ?? path;
 }
 
 function fileStem(path: string): string {

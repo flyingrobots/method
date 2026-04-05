@@ -109,16 +109,21 @@ export async function runCli(
           repo: repo!,
         });
 
+        if (!parsed.push && !parsed.pull) {
+          stderr.write(`${alert('No sync direction specified. Use --push and/or --pull.', { variant: 'error', ctx })}\n`);
+          return 1;
+        }
+
         if (parsed.push) {
           const results = await adapter.pushBacklog();
           for (const result of results) {
             if (result.skipped) continue;
             if (result.error) {
               stderr.write(`${alert(`Error pushing ${result.path}: ${result.error}`, { variant: 'error', ctx })}\n`);
-            } else if (result.action === 'create') {
-              stdout.write(`${alert(`Created GitHub Issue #${result.issue?.number} for ${result.path}`, { variant: 'success', ctx })}\n`);
-            } else if (result.action === 'push') {
-              stdout.write(`${alert(`Updated GitHub Issue #${result.issue?.number} from ${result.path}`, { variant: 'success', ctx })}\n`);
+            } else if (result.action === 'create' || result.action === 'push') {
+              const issueLabel = result.issue?.number ?? '<unknown>';
+              const verb = result.action === 'create' ? 'Created' : 'Updated';
+              stdout.write(`${alert(`${verb} GitHub Issue #${issueLabel} for ${result.path}`, { variant: 'success', ctx })}\n`);
             }
           }
         }
@@ -130,7 +135,8 @@ export async function runCli(
             if (result.error) {
               stderr.write(`${alert(`Error pulling ${result.path}: ${result.error}`, { variant: 'error', ctx })}\n`);
             } else if (result.action === 'pull') {
-              stdout.write(`${alert(`Pulled remote changes from GitHub Issue #${result.issue?.number} into ${result.path}`, { variant: 'success', ctx })}\n`);
+              const issueLabel = result.issue?.number ?? '<unknown>';
+              stdout.write(`${alert(`Pulled remote changes from GitHub Issue #${issueLabel} into ${result.path}`, { variant: 'success', ctx })}\n`);
             }
           }
         }

@@ -25,8 +25,8 @@
 - Ship Sync Automation (0018-ship-sync-automation)
 ### Fixed
 
-- Resolved review feedback on PR #5: revised release runbook bullets for 
-  clarity, enforced phase heading order in tests, and clarified 
+- Resolved review feedback on PR #5: revised release runbook bullets for
+  clarity, enforced phase heading order in tests, and clarified
   commitment and signpost boundedness invariants.
 
 ## Unreleased

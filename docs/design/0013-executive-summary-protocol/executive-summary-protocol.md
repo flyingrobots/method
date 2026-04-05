@@ -10,8 +10,8 @@ Legend: SYNTH
 
 ## Sponsors
 
-- Human: Repository Operator
-- Agent: System Automator
+- Human: Backlog Operator
+- Agent: Sync Automator
 
 ## Hill
 

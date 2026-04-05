@@ -10,35 +10,41 @@ Legend: PROCESS
 
 ## Sponsors
 
-- Human: Repository Operator
-- Agent: System Automator
+- Human: Backlog Operator
+- Agent: Sync Automator
 
 ## Hill
 
 Extend the GitHub adapter to support full two-way synchronization between
-the local filesystem and GitHub Issues. The filesystem remains the 
-authority; the adapter will:
-1. **Push**: Update existing GitHub issues if the local title or body has 
-   changed since the last sync.
-2. **Pull**: Update local backlog items with remote labels, status 
+the local filesystem and GitHub Issues. The filesystem remains the
+authority for local content; the adapter will:
+1. **Push**: Update existing GitHub issues if the local title or body has
+   changed since the last sync. (This is the default action for 
+   `sync github`).
+2. **Pull**: Update local backlog items with remote labels, status
    (Open/Closed), and top-level comments to keep the local context rich.
+
+If both `--push` and `--pull` are provided, they run sequentially: 
+local changes are pushed first, then remote updates are pulled.
 
 ## Playback Questions
 
 ### Human
 
-- [ ] `method sync github --push` (or default) updates the title and 
+- [ ] `method sync github --push` (or default) updates the title and
   description of an existing GitHub issue if the local file changes.
-- [ ] `method sync github --pull` updates local backlog files with data 
+- [ ] `method sync github --pull` updates local backlog files with data
   from GitHub (labels, status, comments).
+- [ ] `method sync github --push --pull` runs both operations 
+  sequentially (Push then Pull).
 - [ ] Local files reflect GitHub status (e.g., if an issue is closed on
   GitHub, the local file is updated or moved).
 
 ### Agent
 
-- [ ] `GitHubAdapter.pushBacklog()` and `GitHubAdapter.pullBacklog()` are 
+- [ ] `GitHubAdapter.pushBacklog()` and `GitHubAdapter.pullBacklog()` are
   implemented and tested with mocks.
-- [ ] `tests/github-adapter.test.ts` proves that both remote-to-local and 
+- [ ] `tests/github-adapter.test.ts` proves that both remote-to-local and
   local-to-remote updates work correctly.
 
 ## Accessibility and Assistive Reading
@@ -63,7 +69,8 @@ authority; the adapter will:
 ## Non-goals
 
 - [ ] Real-time sync (this remains a manual command-triggered move).
-- [ ] Conflicts resolution (filesystem always wins if both changed).
+- [ ] Conflicts resolution (filesystem wins for title/body content on 
+  push; metadata like labels and comments are enriched on pull).
 
 ## Backlog Context
 

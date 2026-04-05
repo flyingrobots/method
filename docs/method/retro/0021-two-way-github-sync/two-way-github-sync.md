@@ -13,11 +13,11 @@ Drift check: yes
 ## Summary
 
 This cycle delivered full two-way synchronization for the GitHub adapter.
-The `GitHubAdapter` now supports both `push` (updating remote issues 
-from local changes) and `pull` (updating local docs with remote labels, 
-comments, and status). The `method sync github` command was enhanced 
-with `--push` and `--pull` flags, and the MCP server now exposes a 
-`method_sync_github` tool. This ensures the filesystem remains the 
+The `GitHubAdapter` now supports both `push` (updating remote issues
+from local changes) and `pull` (updating local docs with remote labels,
+comments, and status). The `method sync github` command was enhanced
+with `--push` and `--pull` flags, and the MCP server now exposes a
+`method_sync_github` tool. This ensures the filesystem remains the
 authority while benefiting from the rich context of the GitHub forge.
 
 ## Playback Witness
@@ -30,7 +30,7 @@ authority while benefiting from the rich context of the GitHub forge.
 
 ## New Debt
 
-- Comment synchronization is additive-only and uses a simple string 
+- Comment synchronization is additive-only and uses a simple string
   check to avoid duplicates; it does not track individual comment IDs.
 
 ## Cool Ideas

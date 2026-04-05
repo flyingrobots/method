@@ -165,12 +165,4 @@ describe('GitHub Adapter Two-way Sync', () => {
     // Verify file was moved to graveyard
     expect(readFileSync(join(root, 'docs/method/graveyard/FEAT_closed.md'), 'utf8')).toBeDefined();
   });
-
-  it('`GitHubAdapter.pushBacklog()` and `GitHubAdapter.pullBacklog()` are implemented and tested with mocks.', () => {
-    // Proved by the tests above.
-  });
-
-  it('`tests/github-adapter.test.ts` proves that both remote-to-local and local-to-remote updates work correctly.', () => {
-    // Proved by the tests above.
-  });
 });

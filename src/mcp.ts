@@ -1,10 +1,8 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { relative } from 'node:path';
 import { Workspace } from './index.js';
+import { GitHubAdapter } from './adapters/github.js';
 import type { Outcome } from './domain.js';
 
 export function createMcpServer(cwd: string = process.cwd()) {
@@ -167,16 +165,41 @@ export function createMcpServer(cwd: string = process.cwd()) {
         });
 
         const log: string[] = [];
+        let hasError = false;
+
         if (push) {
           const results = await adapter.pushBacklog();
-          log.push(...results.filter(r => !r.skipped).map(r => `${r.action === 'create' ? 'Created' : 'Updated'} GitHub Issue #${r.issue?.number} from ${r.path}`));
-        }
-        if (pull) {
-          const results = await adapter.pullBacklog();
-          log.push(...results.filter(r => !r.skipped).map(r => `Pulled remote changes from GitHub Issue #${r.issue?.number} into ${r.path}`));
+          for (const r of results) {
+            if (r.skipped) continue;
+            if (r.error) {
+              log.push(`Error pushing ${r.path}: ${r.error}`);
+              hasError = true;
+            } else {
+              const issueLabel = r.issue?.number ?? '<unknown>';
+              const verb = r.action === 'create' ? 'Created' : 'Updated';
+              log.push(`${verb} GitHub Issue #${issueLabel} for ${r.path}`);
+            }
+          }
         }
 
-        return { content: [{ type: 'text', text: log.join('\n') || 'No changes.' }] };
+        if (pull) {
+          const results = await adapter.pullBacklog();
+          for (const r of results) {
+            if (r.skipped) continue;
+            if (r.error) {
+              log.push(`Error pulling ${r.path}: ${r.error}`);
+              hasError = true;
+            } else {
+              const issueLabel = r.issue?.number ?? '<unknown>';
+              log.push(`Pulled remote changes from GitHub Issue #${issueLabel} into ${r.path}`);
+            }
+          }
+        }
+
+        return { 
+          content: [{ type: 'text', text: log.join('\n') || 'No changes.' }],
+          isError: hasError,
+        };
       }
 
       if (request.params.name === 'method_capture_witness') {

@@ -53,15 +53,25 @@ export function parseCliArgs(argv: readonly string[]): ParsedCommand {
       return { command: 'mcp' };
     case 'sync':
       if (rest[0] === 'github') {
-        const push = rest.includes('--push');
-        const pull = rest.includes('--pull');
+        const flags = rest.slice(1);
+        const allowedFlags = ['--push', '--pull'];
+        for (const flag of flags) {
+          if (!allowedFlags.includes(flag)) {
+            throw new MethodError(`Unknown sync github option: ${flag}\n\n${usage('sync')}`);
+          }
+        }
+        const push = flags.includes('--push');
+        const pull = flags.includes('--pull');
         const finalPush = push || (!push && !pull);
         return { command: 'sync', adapter: 'github', push: finalPush, pull };
       }
       if (rest[0] === 'ship') {
+        if (rest.length > 1) {
+          throw new MethodError(`\`sync ship\` does not take any arguments.\n\n${usage('sync')}`);
+        }
         return { command: 'sync', adapter: 'ship' };
       }
-      throw new MethodError('Usage: method sync github|ship');
+      throw new MethodError(`Usage: method sync github|ship\n\n${usage('sync')}`);
     default:
       throw new MethodError(`Unknown command: ${command}`);
   }
