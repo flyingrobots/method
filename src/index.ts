@@ -3,6 +3,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  renameSync,
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
@@ -317,6 +318,49 @@ export class Workspace {
     }
 
     return result;
+  }
+
+  updateBody(path: string, newBody: string): void {
+    const fullPath = resolve(this.root, path);
+    const content = readFileSync(fullPath, 'utf8');
+    let frontmatter = '';
+
+    if (content.startsWith('---\n')) {
+      const end = content.indexOf('\n---\n', 4);
+      if (end !== -1) {
+        frontmatter = content.slice(0, end + 5);
+      }
+    }
+
+    const title = readHeading(fullPath);
+    const newContent = `${frontmatter}\n# ${title}\n\n${newBody.trim()}\n`;
+    writeFileSync(fullPath, newContent, 'utf8');
+  }
+
+  moveBacklogItem(path: string, targetLane: Lane | 'graveyard'): string {
+    const fullPath = resolve(this.root, path);
+    if (!existsSync(fullPath)) {
+      throw new MethodError(`Backlog item not found: ${path}`);
+    }
+
+    const fileName = basename(fullPath);
+    const targetDir = targetLane === 'graveyard' 
+      ? resolve(this.root, 'docs/method/graveyard')
+      : resolve(this.root, BACKLOG_DIR, targetLane);
+    
+    mkdirSync(targetDir, { recursive: true });
+    const targetPath = resolve(targetDir, fileName);
+    
+    if (fullPath === targetPath) {
+      return path;
+    }
+
+    if (existsSync(targetPath)) {
+      throw new MethodError(`Destination already exists: ${relative(this.root, targetPath)}`);
+    }
+
+    renameSync(fullPath, targetPath);
+    return relative(this.root, targetPath);
   }
 
   openCycles(): Cycle[] {
@@ -708,7 +752,7 @@ export function readBody(path: string): string {
     }
   }
 
-  const lines = body.split(/\r?\n/u);
+  const lines = body.trim().split(/\r?\n/u);
   const bodyLines = lines[0]?.startsWith('# ') ? lines.slice(1) : lines;
   const result = bodyLines.join('\n').trim();
   return result.length > 0 ? result : 'TBD';

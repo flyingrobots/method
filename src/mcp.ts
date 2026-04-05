@@ -76,6 +76,17 @@ export function createMcpServer(cwd: string = process.cwd()) {
           inputSchema: { type: 'object', properties: {} },
         },
         {
+          name: 'method_sync_github',
+          description: 'Synchronize backlog with GitHub Issues',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              push: { type: 'boolean', description: 'Update GitHub issues with local changes (default: true)' },
+              pull: { type: 'boolean', description: 'Update local backlog with GitHub changes' },
+            },
+          },
+        },
+        {
           name: 'method_capture_witness',
           description: 'Automate terminal evidence capture for a cycle',
           inputSchema: {
@@ -133,6 +144,39 @@ export function createMcpServer(cwd: string = process.cwd()) {
           result.newShips.length === 0 ? 'No new ships.' : '',
         ].join('\n');
         return { content: [{ type: 'text', text }] };
+      }
+
+      if (request.params.name === 'method_sync_github') {
+        const args = request.params.arguments as { push?: boolean; pull?: boolean } | undefined;
+        const push = args?.push || (!args?.push && !args?.pull);
+        const pull = args?.pull || false;
+
+        const token = workspace.config.github_token;
+        const repoFull = workspace.config.github_repo;
+
+        if (!token || !repoFull || !repoFull.includes('/')) {
+          throw new Error('GitHub configuration missing in .method.json or environment.');
+        }
+
+        const [owner, repo] = repoFull.split('/');
+        const adapter = new GitHubAdapter({
+          workspace,
+          token,
+          owner: owner!,
+          repo: repo!,
+        });
+
+        const log: string[] = [];
+        if (push) {
+          const results = await adapter.pushBacklog();
+          log.push(...results.filter(r => !r.skipped).map(r => `${r.action === 'create' ? 'Created' : 'Updated'} GitHub Issue #${r.issue?.number} from ${r.path}`));
+        }
+        if (pull) {
+          const results = await adapter.pullBacklog();
+          log.push(...results.filter(r => !r.skipped).map(r => `Pulled remote changes from GitHub Issue #${r.issue?.number} into ${r.path}`));
+        }
+
+        return { content: [{ type: 'text', text: log.join('\n') || 'No changes.' }] };
       }
 
       if (request.params.name === 'method_capture_witness') {

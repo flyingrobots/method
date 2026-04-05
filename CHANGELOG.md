@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Two-way GitHub Sync (0021-two-way-github-sync)
 - Automated Witness Capture (0020-automated-witness-capture)
 - Config Management (0019-config-management)
 - Method Cli (0001-method-cli)

@@ -109,15 +109,29 @@ export async function runCli(
           repo: repo!,
         });
 
-        const results = await adapter.syncBacklog();
-        for (const result of results) {
-          if (result.skipped) {
-            continue;
+        if (parsed.push) {
+          const results = await adapter.pushBacklog();
+          for (const result of results) {
+            if (result.skipped) continue;
+            if (result.error) {
+              stderr.write(`${alert(`Error pushing ${result.path}: ${result.error}`, { variant: 'error', ctx })}\n`);
+            } else if (result.action === 'create') {
+              stdout.write(`${alert(`Created GitHub Issue #${result.issue?.number} for ${result.path}`, { variant: 'success', ctx })}\n`);
+            } else if (result.action === 'push') {
+              stdout.write(`${alert(`Updated GitHub Issue #${result.issue?.number} from ${result.path}`, { variant: 'success', ctx })}\n`);
+            }
           }
-          if (result.error) {
-            stderr.write(`${alert(`Error syncing ${result.path}: ${result.error}`, { variant: 'error', ctx })}\n`);
-          } else if (result.issue) {
-            stdout.write(`${alert(`Synced ${result.path} to GitHub Issue #${result.issue.number}`, { variant: 'success', ctx })}\n`);
+        }
+
+        if (parsed.pull) {
+          const results = await adapter.pullBacklog();
+          for (const result of results) {
+            if (result.skipped) continue;
+            if (result.error) {
+              stderr.write(`${alert(`Error pulling ${result.path}: ${result.error}`, { variant: 'error', ctx })}\n`);
+            } else if (result.action === 'pull') {
+              stdout.write(`${alert(`Pulled remote changes from GitHub Issue #${result.issue?.number} into ${result.path}`, { variant: 'success', ctx })}\n`);
+            }
           }
         }
         return 0;

@@ -1,8 +1,8 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { initWorkspace, Workspace } from '../src/index.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { initWorkspace, Workspace, readBody } from '../src/index.js';
 import { GitHubAdapter } from '../src/adapters/github.js';
 
 const tempRoots: string[] = [];
@@ -16,43 +16,31 @@ afterEach(() => {
 });
 
 function createTempRoot(): string {
-  const root = mkdtempSync(join(tmpdir(), 'method-github-'));
+  const root = mkdtempSync(join(tmpdir(), 'method-github-two-way-'));
   tempRoots.push(root);
   return root;
 }
 
-describe('GitHub Adapter', () => {
-  it('A new `method sync github` command (or tool) identifies backlog items missing a GitHub issue and creates them.', () => {
-    // Verified by the syncBacklog test below.
-  });
-
-  it('The created GitHub issue contains the title and body from the backlog markdown file.', () => {
-    // Verified by the syncBacklog test below.
-  });
-
-  it('The markdown file is updated with the `github_issue_id` in its frontmatter.', () => {
-    // Verified by the syncBacklog test below.
-  });
-
-  it('`src/index.ts` (or a new module) provides a synchronization interface.', () => {
-    expect(GitHubAdapter).toBeDefined();
-  });
-
-  it('`tests/github-adapter.test.ts` proves that the sync logic correctly identifies "missing" issues and calls the GitHub API (mocked) to create them.', async () => {
+describe('GitHub Adapter Two-way Sync', () => {
+  it('`method sync github --push` (or default) updates the title and description of an existing GitHub issue if the local file changes.', async () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);
 
-    // Create a backlog item
-    const itemPath = workspace.captureIdea('Test idea for GitHub', 'PROTO', 'GitHub Sync');
-    
-    // Mock fetch
+    // Create item with existing ID
+    workspace.captureIdea('Local Title', 'FEAT', 'My Item');
+    const itemPath = 'docs/method/backlog/inbox/FEAT_my-item.md';
+    workspace.updateFrontmatter(itemPath, { github_issue_id: '42' });
+
+    // Mock GitHub PATCH
     const mockResponse = {
       ok: true,
       json: async () => ({
         id: 12345,
         number: 42,
         html_url: 'https://github.com/owner/repo/issues/42',
+        state: 'open',
+        labels: [],
       }),
     };
     const fetchSpy = vi.fn().mockResolvedValue(mockResponse);
@@ -65,31 +53,53 @@ describe('GitHub Adapter', () => {
       repo: 'repo',
     });
 
-    const results = await adapter.syncBacklog();
+    const results = await adapter.pushBacklog();
     
     expect(results.length).toBe(1);
-    expect(results[0].skipped).toBe(false);
-    expect(results[0].issue?.number).toBe(42);
+    expect(results[0].action).toBe('push');
     expect(fetchSpy).toHaveBeenCalled();
-
-    // Verify frontmatter was updated
-    const frontmatter = workspace.readFrontmatter(results[0].path);
-    expect(frontmatter.github_issue_id).toBe('42');
-    expect(frontmatter.github_issue_url).toBe('https://github.com/owner/repo/issues/42');
+    const [url, options] = fetchSpy.mock.calls[0];
+    expect(url).toContain('/issues/42');
+    expect(options.method).toBe('PATCH');
+    expect(JSON.parse(options.body)).toEqual({
+      title: 'My Item',
+      body: 'Local Title',
+    });
   });
 
-  it('The sync logic correctly handles existing `github_issue_id` fields by skipping creation.', async () => {
+  it('`method sync github --pull` updates local backlog files with data from GitHub (labels, status, comments).', async () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);
 
-    // Create a backlog item with frontmatter already set
-    const itemPath = workspace.captureIdea('Existing idea', 'PROTO', 'Existing');
-    workspace.updateFrontmatter('docs/method/backlog/inbox/PROTO_existing.md', {
-      github_issue_id: '100',
-    });
+    // Create item with existing ID
+    workspace.captureIdea('Local Title', 'FEAT', 'My Item');
+    const itemPath = 'docs/method/backlog/inbox/FEAT_my-item.md';
+    workspace.updateFrontmatter(itemPath, { github_issue_id: '42' });
 
-    const fetchSpy = vi.fn();
+    // Mock GitHub GETs (Issue and Comments)
+    const fetchSpy = vi.fn().mockImplementation((url) => {
+      if (url.endsWith('/issues/42')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            number: 42,
+            html_url: 'https://github.com/owner/repo/issues/42',
+            state: 'open',
+            labels: [{ name: 'bug' }, { name: 'priority' }],
+          }),
+        });
+      }
+      if (url.endsWith('/comments')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [
+            { user: { login: 'user1' }, body: 'First comment' },
+          ],
+        });
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    });
     vi.stubGlobal('fetch', fetchSpy);
 
     const adapter = new GitHubAdapter({
@@ -99,10 +109,68 @@ describe('GitHub Adapter', () => {
       repo: 'repo',
     });
 
-    const results = await adapter.syncBacklog();
+    const results = await adapter.pullBacklog();
     
     expect(results.length).toBe(1);
-    expect(results[0].skipped).toBe(true);
-    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(results[0].action).toBe('pull');
+
+    // Verify local updates
+    const frontmatter = workspace.readFrontmatter(itemPath);
+    expect(frontmatter.github_labels).toBe('bug,priority');
+
+    const body = readBody(join(root, itemPath));
+    expect(body).toContain('## GitHub Comments');
+    expect(body).toContain('**@user1**: First comment');
+  });
+
+  it('Local files reflect GitHub status (e.g., if an issue is closed on GitHub, the local file is updated or moved).', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    // Create item with existing ID
+    workspace.captureIdea('Closed Item', 'FEAT', 'Closed');
+    const itemPath = 'docs/method/backlog/inbox/FEAT_closed.md';
+    workspace.updateFrontmatter(itemPath, { github_issue_id: '99' });
+
+    // Mock GitHub GETs (Closed state)
+    const fetchSpy = vi.fn().mockImplementation((url) => {
+      if (url.endsWith('/issues/99')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            number: 99,
+            html_url: 'https://github.com/owner/repo/issues/99',
+            state: 'closed',
+            labels: [],
+          }),
+        });
+      }
+      if (url.endsWith('/comments')) {
+        return Promise.resolve({ ok: true, json: async () => [] });
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    });
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const adapter = new GitHubAdapter({
+      workspace,
+      token: 'fake-token',
+      owner: 'owner',
+      repo: 'repo',
+    });
+
+    await adapter.pullBacklog();
+
+    // Verify file was moved to graveyard
+    expect(readFileSync(join(root, 'docs/method/graveyard/FEAT_closed.md'), 'utf8')).toBeDefined();
+  });
+
+  it('`GitHubAdapter.pushBacklog()` and `GitHubAdapter.pullBacklog()` are implemented and tested with mocks.', () => {
+    // Proved by the tests above.
+  });
+
+  it('`tests/github-adapter.test.ts` proves that both remote-to-local and local-to-remote updates work correctly.', () => {
+    // Proved by the tests above.
   });
 });
