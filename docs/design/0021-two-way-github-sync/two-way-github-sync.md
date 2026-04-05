@@ -15,32 +15,31 @@ Legend: PROCESS
 
 ## Hill
 
-Extend the GitHub adapter to support "pulling" state from GitHub back to
-the local filesystem. This ensures that changes made on the GitHub web
-interface (such as updating labels, adding comments, or closing issues)
-can be reflected in the local backlog items, keeping the two systems in
-sync while maintaining the filesystem as the final authority.
+Extend the GitHub adapter to support full two-way synchronization between
+the local filesystem and GitHub Issues. The filesystem remains the 
+authority; the adapter will:
+1. **Push**: Update existing GitHub issues if the local title or body has 
+   changed since the last sync.
+2. **Pull**: Update local backlog items with remote labels, status 
+   (Open/Closed), and top-level comments to keep the local context rich.
 
 ## Playback Questions
 
 ### Human
 
-- [ ] `method sync github --pull` (or similar) updates local backlog files
-  with data from GitHub.
+- [ ] `method sync github --push` (or default) updates the title and 
+  description of an existing GitHub issue if the local file changes.
+- [ ] `method sync github --pull` updates local backlog files with data 
+  from GitHub (labels, status, comments).
 - [ ] Local files reflect GitHub status (e.g., if an issue is closed on
-  GitHub, the local file is moved to a 'closed' or 'done' state, or
-  updated in place).
-- [ ] GitHub labels are synced back to the YAML frontmatter.
-- [ ] Top-level GitHub comments (or a summary) are appended to the
-  local markdown body.
+  GitHub, the local file is updated or moved).
 
 ### Agent
 
-- [ ] `GitHubAdapter.pullBacklog()` is implemented and tested with mocks.
-- [ ] `Workspace.updateBacklogItem()` (or similar) handles the move/update
-  logic safely.
-- [ ] `tests/github-adapter.test.ts` proves that remote changes are
-  correctly applied locally.
+- [ ] `GitHubAdapter.pushBacklog()` and `GitHubAdapter.pullBacklog()` are 
+  implemented and tested with mocks.
+- [ ] `tests/github-adapter.test.ts` proves that both remote-to-local and 
+  local-to-remote updates work correctly.
 
 ## Accessibility and Assistive Reading
 
