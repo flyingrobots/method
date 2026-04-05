@@ -31,11 +31,11 @@ describe('Automated Witness Capture', () => {
   });
 
   it('`method close` (or a sub-command) automatically generates a `verification.md` with real test and CLI results.', () => {
-    // Verified by the internal call in closeCycle and the captureWitness test.
+    // Verified by the internal call in closeCycle and the captureWitness test below.
   });
 
   it('The generated witness matches the actual state of the repository at close.', () => {
-    // Verified by the captureWitness test.
+    // Verified by the captureWitness test below.
   });
 
   it('`tests/witness.test.ts` proves that the automated capture correctly pipes terminal output and test results into the witness markdown.', async () => {

@@ -140,6 +140,37 @@ describe('METHOD docs', () => {
     }
   });
 
+  it('enforces sponsor abstractness in design documents', () => {
+    const designs = walkMarkdownFiles('docs/design');
+    const literalNames = /^(Gemini|Claude|James|Bard|GPT|GPT-\d+|@.*)$/i;
+    const singleCapitalizedWord = /^[A-Z][a-z]+$/u;
+
+    for (const designPath of designs) {
+      const content = readRepoFile(designPath);
+      if (!content.includes('## Sponsors')) continue;
+
+      const sponsorsMatch = /## Sponsors\n\n- Human: (?<human>[\s\S]*?)\n- Agent: (?<agent>[\s\S]*?)(?=\n\n##|$)/u.exec(content);
+      
+      expect(sponsorsMatch, `${designPath} has a ## Sponsors heading but does not match the expected format:
+- Human: Role
+- Agent: Role`).not.toBeNull();
+
+      if (sponsorsMatch?.groups !== undefined) {
+        const human = (sponsorsMatch.groups.human ?? '').trim();
+        const agent = (sponsorsMatch.groups.agent ?? '').trim();
+        
+        for (const [label, name] of [['human', human], ['agent', agent]]) {
+          expect(name, `${designPath} ${label} sponsor should not be TBD`).not.toBe('TBD');
+          expect(name, `${designPath} ${label} sponsor should not be a literal name: ${name}`).not.toMatch(literalNames);
+          
+          if (!name.includes(' ') && !name.includes('\n')) {
+            expect(name, `${designPath} ${label} sponsor should be a descriptive role, not a single name: ${name}`).not.toMatch(singleCapitalizedWord);
+          }
+        }
+      }
+    }
+  });
+
   it('keeps this repo inbox aligned with the current legend split', () => {
     const untaggedItems = inboxItemNames().filter((entry) => !/^(PROCESS|SYNTH)_/u.test(entry));
 
@@ -479,9 +510,9 @@ describe('METHOD docs', () => {
     expect(vision, 'generator should name the cycle that produced the summary').toContain('0009-generated-signpost-provenance');
   });
 
-  it('`docs/VISION.md` summary is accurate for the current closed-cycle state (cycles 0001-0020).', () => {
+  it('`docs/VISION.md` summary is accurate for the current closed-cycle state (cycles 0001-0021).', () => {
     const vision = readRepoFile('docs/VISION.md');
-    expect(vision).toContain('Twenty cycles are already closed:');
+    expect(vision).toContain('Twenty-one cycles are already closed:');
     expect(vision).toContain('0005-drift-detector');
     expect(vision).toContain('0006-ci-gates');
     expect(vision).toContain('0007-cli-module-split');
@@ -493,6 +524,7 @@ describe('METHOD docs', () => {
     expect(vision).toContain('0018-ship-sync-automation');
     expect(vision).toContain('0019-config-management');
     expect(vision).toContain('0020-automated-witness-capture');
+    expect(vision).toContain('0021-two-way-github-sync');
   });
 
   it('`docs.test.ts` validates that `docs/VISION.md` frontmatter contains all mandatory fields (`generated_at`, `generator`, `generated_from_commit`, `provenance_level`, `witness_ref`, `source_files`).', () => {

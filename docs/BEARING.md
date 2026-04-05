@@ -14,9 +14,9 @@ Current priority: pull TBD to continue the system's maturity.
 
 ## What just shipped?
 
+- `0021-two-way-github-sync`: Two-way GitHub Sync
 - `0020-automated-witness-capture`: Automated Witness Capture
 - `0019-config-management`: Config Management
-- `0018-ship-sync-automation`: Ship Sync Automation
 
 ## What feels wrong?
 

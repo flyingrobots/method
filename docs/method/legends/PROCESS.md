@@ -11,6 +11,8 @@ system.
   outcome.
 - [commitment-integrity](../../invariants/commitment-integrity.md) —
   pulled work does not go back to the backlog.
+- [sponsor-abstractness](../../invariants/sponsor-abstractness.md) —
+  sponsors are abstract roles, not literal people or agents.
 
 ## What it covers
 

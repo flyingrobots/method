@@ -13,10 +13,10 @@ Drift check: yes
 ## Summary
 
 This cycle successfully automated the "Ship Sync Maneuver" through a new
-`method sync ship` command. The command identifies closed cycles not 
+`method sync ship` command. The command identifies closed cycles not
 yet present in `CHANGELOG.md`, appends them to the "Unreleased" section,
-and completely refreshes `docs/BEARING.md` with the latest ships and 
-backlog priorities. This reduces manual bookkeeping and ensures the 
+and completely refreshes `docs/BEARING.md` with the latest ships and
+backlog priorities. This reduces manual bookkeeping and ensures the
 repo's signposts stay honest as the system matures.
 
 ## Playback Witness
@@ -29,8 +29,8 @@ repo's signposts stay honest as the system matures.
 
 ## New Debt
 
-- `renderBearing` currently uses a hardcoded template for the "What 
-  feels wrong?" section; this could be moved to a configuration file or 
+- `renderBearing` currently uses a hardcoded template for the "What
+  feels wrong?" section; this could be moved to a configuration file or
   extracted from the existing `BEARING.md` in a future cycle.
 
 ## Cool Ideas
