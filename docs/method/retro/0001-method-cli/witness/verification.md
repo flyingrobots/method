@@ -12,7 +12,7 @@ $ npm test
 > method@0.1.0 test
 > vitest run --config vitest.config.ts
 
- RUN  v4.1.2 /Users/james/git/method
+ RUN  v4.1.2 ./method
 
  Test Files  1 passed (1)
       Tests  7 passed (7)
@@ -38,7 +38,7 @@ $ npm run method -- status
 > method@0.1.0 method
 > tsx src/cli.ts status
 
-METHOD Status  /Users/james/git/method
+METHOD Status  ./method
 
 --- Backlog ---
 inbox       0  -

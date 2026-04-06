@@ -15,7 +15,7 @@ current synthesis state.
 > vitest run --config vitest.config.ts
 
 
- RUN  v4.1.2 /Users/james/git/method
+ RUN  v4.1.2 ./method
 
 
  Test Files  4 passed (4)

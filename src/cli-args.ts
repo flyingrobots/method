@@ -10,7 +10,8 @@ export type ParsedCommand =
   | { command: 'drift'; cycle?: string }
   | { command: 'status' }
   | { command: 'mcp' }
-  | { command: 'sync'; adapter: 'github' | 'ship' };
+  | { command: 'sync'; adapter: 'github'; push?: boolean; pull?: boolean }
+  | { command: 'sync'; adapter: 'ship' };
 
 export function parseCliArgs(argv: readonly string[]): ParsedCommand {
   const [command, ...rest] = argv;
@@ -51,10 +52,26 @@ export function parseCliArgs(argv: readonly string[]): ParsedCommand {
       }
       return { command: 'mcp' };
     case 'sync':
-      if (rest[0] !== 'github' && rest[0] !== 'ship') {
-        throw new MethodError('Usage: method sync github|ship');
+      if (rest[0] === 'github') {
+        const flags = rest.slice(1);
+        const allowedFlags = ['--push', '--pull'];
+        for (const flag of flags) {
+          if (!allowedFlags.includes(flag)) {
+            throw new MethodError(`Unknown sync github option: ${flag}\n\n${usage('sync')}`);
+          }
+        }
+        const push = flags.includes('--push');
+        const pull = flags.includes('--pull');
+        const finalPush = push || (!push && !pull);
+        return { command: 'sync', adapter: 'github', push: finalPush, pull };
       }
-      return { command: 'sync', adapter: rest[0] };
+      if (rest[0] === 'ship') {
+        if (rest.length > 1) {
+          throw new MethodError(`\`sync ship\` does not take any arguments.\n\n${usage('sync')}`);
+        }
+        return { command: 'sync', adapter: 'ship' };
+      }
+      throw new MethodError(`Usage: method sync github|ship\n\n${usage('sync')}`);
     default:
       throw new MethodError(`Unknown command: ${command}`);
   }
@@ -90,7 +107,15 @@ export function usage(topic?: string): string {
   }
 
   if (topic === 'sync') {
-    return 'Usage: method sync github|ship\n\nSynchronize the backlog with GitHub Issues or perform a Ship Sync.';
+    return [
+      'Usage: method sync github|ship [options]',
+      '',
+      'GitHub Options:',
+      '  --push                      Update GitHub issues with local changes (default).',
+      '  --pull                      Update local backlog with GitHub changes (labels, comments, status).',
+      '',
+      'Perform Ship Sync or synchronize the backlog with GitHub Issues.',
+    ].join('\n');
   }
 
   return [
@@ -104,7 +129,8 @@ export function usage(topic?: string): string {
     '  drift [cycle]               Check active cycle playback questions against tests.',
     '  status                      Show backlog, active cycles, and legend health.',
     '  mcp                         Start the MCP server over stdio.',
-    '  sync github|ship            Sync backlog with GitHub Issues or perform Ship Sync.',
+    '  sync github [--push|--pull] Sync backlog with GitHub Issues.',
+    '  sync ship                   Perform Ship Sync.',
     '',
     'Run `method help <command>` for command-specific usage.',
   ].join('\n');

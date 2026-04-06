@@ -14,7 +14,7 @@ $ npm run method -- status
 > method@0.1.0 method
 > tsx src/cli.ts status
 
-METHOD Status  /Users/james/git/method
+METHOD Status  ./method
 
 --- Backlog ---
 inbox       0  -
@@ -55,7 +55,7 @@ $ npm run method -- status
 > method@0.1.0 method
 > tsx src/cli.ts status
 
-METHOD Status  /Users/james/git/method
+METHOD Status  ./method
 
 --- Backlog ---
 inbox       0  -

@@ -1,10 +1,10 @@
 ---
 title: "METHOD - Executive Summary"
-generated_at: 2026-04-04T20:20:00-07:00
+generated_at: 2026-04-04T22:35:00-07:00
 generator: "manual synthesis following Executive Summary Protocol (Cycle 0013)"
-generated_from_commit: "644e40a9205213ba4d3db5b233c7042ea1ba687e"
+generated_from_commit: "921706b9fc9fd5c7cf78331bdd0f3f91013ea558"
 provenance_level: artifact_history
-witness_ref: docs/method/retro/0020-automated-witness-capture/witness/verification.md
+witness_ref: docs/method/retro/0021-two-way-github-sync/witness/verification.md
 source_files:
   - README.md
   - CHANGELOG.md
@@ -32,6 +32,7 @@ source_files:
   - docs/design/0018-ship-sync-automation/ship-sync-automation.md
   - docs/design/0019-config-management/config-management.md
   - docs/design/0020-automated-witness-capture/automated-witness-capture.md
+  - docs/design/0021-two-way-github-sync/two-way-github-sync.md
 ---
 
 # METHOD - Executive Summary
@@ -50,7 +51,7 @@ state of the system without replacing the underlying files.
 ## Current state
 
 METHOD has evolved from pure doctrine into a formal, programmable system.
-Twenty cycles are already closed:
+Twenty-one cycles are already closed:
 
 - **CLI Foundations (0001-0004, 0007):** Established the CLI, witness
   conventions, and separated the module structure.
@@ -58,8 +59,8 @@ Twenty cycles are already closed:
 - **Maturity (0008-0011, 0016, 0019):** Formalized releases, metadata
   contracts, extracted a clean API, adopted System-Style JS, and
   implemented a formal configuration system.
-- **Connectivity (0012, 0014):** Implemented an MCP server and a GitHub
-  Issue synchronization adapter.
+- **Connectivity (0012, 0014, 0021):** Implemented an MCP server and full
+  two-way GitHub Issue synchronization.
 - **Workflow (0013, 0015, 0017-0018, 0020):** Formalized the Executive
   Summary Protocol, Git branch doctrine, Behavior Spikes, Ship Sync
   automation, and Automated Witness Capture.
@@ -80,7 +81,7 @@ The repo is organized under two legends:
 Covers cycle discipline, backlog movement, adapters (GitHub, MCP), and
 named patterns (spikes, workflow).
 - **Active:** None.
-- **Up-next:** `PROCESS_two-way-github-sync`.
+- **Up-next:** `PROCESS_i18n-string-extraction`.
 
 ### SYNTH
 Covers repo self-description, signposts, and provenance level.
@@ -93,8 +94,8 @@ Covers repo self-description, signposts, and provenance level.
 - None.
 
 ### Up-next
-- **PROCESS_two-way-github-sync:** Support syncing comments and labels
-  back to the filesystem backlog.
+- **PROCESS_i18n-string-extraction:** Extract hardcoded English strings into
+  a centralized messages file.
 
 ### Inbox
 - None.

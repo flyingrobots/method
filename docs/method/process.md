@@ -26,8 +26,10 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
 ## Default Loop
 
 1. Pull an item from the backlog into `docs/design/<cycle>/`.
-2. Write the design with both human and agent sponsors named, plus the
-   accessibility, localization, and agent-inspectability contract.
+2. Write the design with both human and agent sponsors named as
+   abstract roles (e.g., "System Architect", "Workflow Automator"),
+   plus the accessibility, localization, and agent-inspectability
+   contract.
 3. Write failing tests from the playback questions.
 4. Make the tests pass.
 5. Produce a reproducible playback witness, including reduced/

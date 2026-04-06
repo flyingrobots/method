@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Two-way GitHub Sync (0021-two-way-github-sync)
 - Automated Witness Capture (0020-automated-witness-capture)
 - Config Management (0019-config-management)
 - Method Cli (0001-method-cli)
@@ -24,8 +25,8 @@
 - Ship Sync Automation (0018-ship-sync-automation)
 ### Fixed
 
-- Resolved review feedback on PR #5: revised release runbook bullets for 
-  clarity, enforced phase heading order in tests, and clarified 
+- Resolved review feedback on PR #5: revised release runbook bullets for
+  clarity, enforced phase heading order in tests, and clarified
   commitment and signpost boundedness invariants.
 
 ## Unreleased

@@ -109,15 +109,35 @@ export async function runCli(
           repo: repo!,
         });
 
-        const results = await adapter.syncBacklog();
-        for (const result of results) {
-          if (result.skipped) {
-            continue;
+        if (!parsed.push && !parsed.pull) {
+          stderr.write(`${alert('No sync direction specified. Use --push and/or --pull.', { variant: 'error', ctx })}\n`);
+          return 1;
+        }
+
+        if (parsed.push) {
+          const results = await adapter.pushBacklog();
+          for (const result of results) {
+            if (result.skipped) continue;
+            if (result.error) {
+              stderr.write(`${alert(`Error pushing ${result.path}: ${result.error}`, { variant: 'error', ctx })}\n`);
+            } else if (result.action === 'create' || result.action === 'push') {
+              const issueLabel = result.issue?.number ?? '<unknown>';
+              const verb = result.action === 'create' ? 'Created' : 'Updated';
+              stdout.write(`${alert(`${verb} GitHub Issue #${issueLabel} for ${result.path}`, { variant: 'success', ctx })}\n`);
+            }
           }
-          if (result.error) {
-            stderr.write(`${alert(`Error syncing ${result.path}: ${result.error}`, { variant: 'error', ctx })}\n`);
-          } else if (result.issue) {
-            stdout.write(`${alert(`Synced ${result.path} to GitHub Issue #${result.issue.number}`, { variant: 'success', ctx })}\n`);
+        }
+
+        if (parsed.pull) {
+          const results = await adapter.pullBacklog();
+          for (const result of results) {
+            if (result.skipped) continue;
+            if (result.error) {
+              stderr.write(`${alert(`Error pulling ${result.path}: ${result.error}`, { variant: 'error', ctx })}\n`);
+            } else if (result.action === 'pull') {
+              const issueLabel = result.issue?.number ?? '<unknown>';
+              stdout.write(`${alert(`Pulled remote changes from GitHub Issue #${issueLabel} into ${result.path}`, { variant: 'success', ctx })}\n`);
+            }
           }
         }
         return 0;

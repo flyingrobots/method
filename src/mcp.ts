@@ -1,10 +1,8 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { relative } from 'node:path';
 import { Workspace } from './index.js';
+import { GitHubAdapter } from './adapters/github.js';
 import type { Outcome } from './domain.js';
 
 export function createMcpServer(cwd: string = process.cwd()) {
@@ -76,6 +74,17 @@ export function createMcpServer(cwd: string = process.cwd()) {
           inputSchema: { type: 'object', properties: {} },
         },
         {
+          name: 'method_sync_github',
+          description: 'Synchronize backlog with GitHub Issues',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              push: { type: 'boolean', description: 'Update GitHub issues with local changes (default: true)' },
+              pull: { type: 'boolean', description: 'Update local backlog with GitHub changes' },
+            },
+          },
+        },
+        {
           name: 'method_capture_witness',
           description: 'Automate terminal evidence capture for a cycle',
           inputSchema: {
@@ -133,6 +142,67 @@ export function createMcpServer(cwd: string = process.cwd()) {
           result.newShips.length === 0 ? 'No new ships.' : '',
         ].join('\n');
         return { content: [{ type: 'text', text }] };
+      }
+
+      if (request.params.name === 'method_sync_github') {
+        const args = request.params.arguments as { push?: boolean; pull?: boolean } | undefined;
+        const push = args?.push || (!args?.push && !args?.pull);
+        const pull = args?.pull || false;
+
+        const token = workspace.config.github_token;
+        const repoFull = workspace.config.github_repo;
+
+        if (!token) {
+          throw new Error('GitHub token missing in .method.json or environment.');
+        }
+        if (!repoFull || !repoFull.includes('/')) {
+          throw new Error('GitHub repo invalid; must be owner/repo in .method.json or environment.');
+        }
+
+        const [owner, repo] = repoFull.split('/');
+        const adapter = new GitHubAdapter({
+          workspace,
+          token,
+          owner: owner!,
+          repo: repo!,
+        });
+
+        const log: string[] = [];
+        let hasError = false;
+
+        if (push) {
+          const results = await adapter.pushBacklog();
+          for (const r of results) {
+            if (r.skipped) continue;
+            if (r.error) {
+              log.push(`Error pushing ${r.path}: ${r.error}`);
+              hasError = true;
+            } else {
+              const issueLabel = r.issue?.number ?? '<unknown>';
+              const verb = r.action === 'create' ? 'Created' : 'Updated';
+              log.push(`${verb} GitHub Issue #${issueLabel} for ${r.path}`);
+            }
+          }
+        }
+
+        if (pull) {
+          const results = await adapter.pullBacklog();
+          for (const r of results) {
+            if (r.skipped) continue;
+            if (r.error) {
+              log.push(`Error pulling ${r.path}: ${r.error}`);
+              hasError = true;
+            } else {
+              const issueLabel = r.issue?.number ?? '<unknown>';
+              log.push(`Pulled remote changes from GitHub Issue #${issueLabel} into ${r.path}`);
+            }
+          }
+        }
+
+        return { 
+          content: [{ type: 'text', text: log.join('\n') || 'No changes.' }],
+          isError: hasError,
+        };
       }
 
       if (request.params.name === 'method_capture_witness') {

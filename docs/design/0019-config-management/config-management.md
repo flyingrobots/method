@@ -10,8 +10,8 @@ Legend: PROCESS
 
 ## Sponsors
 
-- Human: @james
-- Agent: @gemini-cli
+- Human: Backlog Operator
+- Agent: Sync Automator
 
 ## Hill
 

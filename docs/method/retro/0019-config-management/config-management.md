@@ -12,11 +12,11 @@ Drift check: yes
 
 ## Summary
 
-This cycle delivered a formal configuration system for METHOD. The system 
-loads settings from a `.method.json` file in the repo root, validates them 
-via a Zod schema in `src/config.ts`, and integrates them into the 
-`Workspace` context. Environment variables continue to serve as high-priority 
-overrides. This shift standardizes how credentials and repo-local 
+This cycle delivered a formal configuration system for METHOD. The system
+loads settings from a `.method.json` file in the repo root, validates them
+via a Zod schema in `src/config.ts`, and integrates them into the
+`Workspace` context. Environment variables continue to serve as high-priority
+overrides. This shift standardizes how credentials and repo-local
 constants are managed across different environments.
 
 ## Playback Witness

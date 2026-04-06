@@ -28,9 +28,9 @@ core domain remains portable.
 
 ## New Debt
 
-- Existing calls to domain models (like `Workspace.status`) are not yet 
-  explicitly parsing the return values through schemas, though the models 
-  now use the schemas for definition. A follow-up cycle should enforce 
+- Existing calls to domain models (like `Workspace.status`) are not yet
+  explicitly parsing the return values through schemas, though the models
+  now use the schemas for definition. A follow-up cycle should enforce
   "validation at the point of entry/exit" more rigorously.
 
 ## Cool Ideas
