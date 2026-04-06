@@ -220,9 +220,10 @@ describe('METHOD docs', () => {
   });
 
   it('sanitizes personal absolute paths from committed verification witnesses', () => {
-    const readmeRevisionVerification = readRepoFile('docs/method/retro/0003-readme-revision/witness/verification.md');
-    const visionRefreshVerification = readRepoFile('docs/method/retro/0004-readme-and-vision-refresh/witness/verification.md');
-    const driftDetectorVerification = readRepoFile('docs/method/retro/0005-drift-detector/witness/verification.md');
+    const witnesses = walkMarkdownFiles('docs/method/retro')
+      .filter((relativePath) => relativePath.includes('/witness/verification.md'));
+
+    expect(witnesses.length, 'expected at least one verification witness').toBeGreaterThan(0);
 
     const personalPathPatterns = [
       '/Users/',
@@ -232,10 +233,11 @@ describe('METHOD docs', () => {
       'C:\\Users\\',
     ];
 
-    for (const pattern of personalPathPatterns) {
-      expect(readmeRevisionVerification).not.toContain(pattern);
-      expect(visionRefreshVerification).not.toContain(pattern);
-      expect(driftDetectorVerification).not.toContain(pattern);
+    for (const witnessPath of witnesses) {
+      const content = readRepoFile(witnessPath);
+      for (const pattern of personalPathPatterns) {
+        expect(content, `${witnessPath} contains personal path: ${pattern}`).not.toContain(pattern);
+      }
     }
   });
 
@@ -352,6 +354,7 @@ describe('METHOD docs', () => {
       'lane',
       'github_issue_id',
       'github_issue_url',
+      'github_labels',
     ];
 
     const docs = walkMarkdownFiles('docs');

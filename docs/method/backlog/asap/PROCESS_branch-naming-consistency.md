@@ -1,3 +1,9 @@
+---
+title: "Branch Naming Consistency"
+legend: PROCESS
+lane: asap
+---
+
 # Unify branch naming rules across METHOD docs
 
 METHOD currently names cycle branches inconsistently.

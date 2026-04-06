@@ -15,7 +15,7 @@ standardized YAML frontmatter contract, with automated enforcement in
 > vitest run --config vitest.config.ts
 
 
- RUN  v4.1.2 /Users/james/git/method
+ RUN  v4.1.2 ./method
 
 
  Test Files  2 passed (2)

@@ -1,3 +1,9 @@
+---
+title: "RED Phase Playback Coverage"
+legend: PROCESS
+lane: asap
+---
+
 # RED should explicitly cover playback questions and test-shape breadth
 
 METHOD says RED tests are the executable spec and that playback

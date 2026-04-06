@@ -1,3 +1,9 @@
+---
+title: "Repo Lane Conformance"
+legend: PROCESS
+lane: asap
+---
+
 # METHOD repos should either contain declared backlog lanes or say they are optional
 
 METHOD defines backlog lanes in `README.md`, but the repo itself can
