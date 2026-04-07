@@ -82,34 +82,10 @@ Two-way sync between the local backlog and GitHub Issues:
 - **Pull**: Updates local files with remote labels, comments, and
   status. Moves closed issues to the graveyard.
 
-## CLI Commands
+## Reference Docs
 
-| Command | Description |
-|---------|-------------|
-| `method init [path]` | Scaffold a METHOD workspace. |
-| `method inbox <idea> [--legend CODE] [--title TITLE]` | Capture a raw idea in `inbox/`. |
-| `method pull <item>` | Promote a backlog item into the next numbered cycle. |
-| `method close [cycle] [--drift-check yes\|no] [--outcome ...]` | Write a retro for an active cycle. |
-| `method drift [cycle]` | Check playback questions against test descriptions. |
-| `method status` | Show backlog lanes, active cycles, and legend health. |
-| `method mcp` | Start the MCP server over stdio. |
-| `method sync github [--push] [--pull]` | Sync backlog with GitHub Issues. |
-| `method sync ship` | Update CHANGELOG.md and BEARING.md. |
-
-## MCP Tools
-
-All tools require `workspace` (absolute path to the METHOD root).
-
-| Tool | Parameters | Description |
-|------|-----------|-------------|
-| `method_status` | — | Get workspace status as JSON. |
-| `method_inbox` | `idea`, `legend?`, `title?` | Capture an idea. |
-| `method_pull` | `item` | Promote a backlog item into a cycle. |
-| `method_drift` | `cycle?` | Check playback-question drift. |
-| `method_close` | `cycle?`, `driftCheck`, `outcome` | Close a cycle. |
-| `method_sync_ship` | — | Perform ship sync. |
-| `method_sync_github` | `push?`, `pull?` | Sync with GitHub Issues. |
-| `method_capture_witness` | `cycle?` | Capture verification witness. |
+- **`docs/CLI.md`** — full CLI command reference with usage and examples.
+- **`docs/MCP.md`** — MCP tool reference with parameters and error handling.
 
 ## Testing
 

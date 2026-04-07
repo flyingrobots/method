@@ -298,6 +298,8 @@ describe('METHOD docs', () => {
     const docs = walkMarkdownFiles('docs');
     const excluded = [
       'docs/VISION.md', // Already tested separately
+      'docs/CLI.md',
+      'docs/MCP.md',
       'docs/method/process.md',
       'docs/method/release.md',
       'docs/method/release-runbook.md',
@@ -562,7 +564,8 @@ describe('METHOD docs', () => {
   it('documents the drift detector in the README tooling section', () => {
     const readme = readRepoFile('README.md');
 
-    expect(readme).toContain('| `method drift [cycle]` | Check active cycle playback questions against test descriptions. |');
+    expect(readme).toContain('method drift');
+    expect(readme).toContain('docs/CLI.md');
   });
 
   it('ships a minimal CI workflow that runs build and test on push and pull requests', () => {
@@ -695,28 +698,34 @@ describe('METHOD docs', () => {
   });
 
   it('CLI and MCP reference docs exist and name every command and tool.', () => {
+    const cli = readRepoFile('docs/CLI.md');
+    const mcp = readRepoFile('docs/MCP.md');
     const readme = readRepoFile('README.md');
 
-    // CLI commands
-    expect(readme).toContain('method init');
-    expect(readme).toContain('method inbox');
-    expect(readme).toContain('method pull');
-    expect(readme).toContain('method close');
-    expect(readme).toContain('method drift');
-    expect(readme).toContain('method status');
-    expect(readme).toContain('method mcp');
-    expect(readme).toContain('method sync github');
-    expect(readme).toContain('method sync ship');
+    // CLI doc names every command
+    expect(cli).toContain('method init');
+    expect(cli).toContain('method inbox');
+    expect(cli).toContain('method pull');
+    expect(cli).toContain('method close');
+    expect(cli).toContain('method drift');
+    expect(cli).toContain('method status');
+    expect(cli).toContain('method mcp');
+    expect(cli).toContain('method sync github');
+    expect(cli).toContain('method sync ship');
 
-    // MCP tools
-    expect(readme).toContain('method_status');
-    expect(readme).toContain('method_inbox');
-    expect(readme).toContain('method_pull');
-    expect(readme).toContain('method_close');
-    expect(readme).toContain('method_drift');
-    expect(readme).toContain('method_sync_ship');
-    expect(readme).toContain('method_sync_github');
-    expect(readme).toContain('method_capture_witness');
+    // MCP doc names every tool
+    expect(mcp).toContain('method_status');
+    expect(mcp).toContain('method_inbox');
+    expect(mcp).toContain('method_pull');
+    expect(mcp).toContain('method_close');
+    expect(mcp).toContain('method_drift');
+    expect(mcp).toContain('method_sync_ship');
+    expect(mcp).toContain('method_sync_github');
+    expect(mcp).toContain('method_capture_witness');
+
+    // README references both docs
+    expect(readme).toContain('docs/CLI.md');
+    expect(readme).toContain('docs/MCP.md');
   });
 
   it('documents release-note surfaces in the repo structure and release guidance', () => {
