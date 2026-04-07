@@ -7,7 +7,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { exec } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import GitPlumbing from '@git-stunts/plumbing';
 import { basename, dirname, relative, resolve } from 'node:path';
@@ -145,7 +145,12 @@ export class Workspace {
 
     mkdirSync(dirname(path), { recursive: true });
     const heading = (title ?? cleanIdea).trim();
-    writeFileSync(path, `# ${heading}\n\n${cleanIdea}\n`, 'utf8');
+    const fmLines = ['---', `title: "${heading.replace(/"/gu, '\\"')}"`];
+    if (legend !== undefined) {
+      fmLines.push(`legend: ${legend.trim().toUpperCase()}`);
+    }
+    fmLines.push('lane: inbox', '---');
+    writeFileSync(path, `${fmLines.join('\n')}\n\n# ${heading}\n\n${cleanIdea}\n`, 'utf8');
     return path;
   }
 
@@ -275,8 +280,8 @@ export class Workspace {
 
     mkdirSync(dirname(witnessPath), { recursive: true });
 
-    const testResult = await this.execCommand('npm test');
-    const driftResult = await this.execCommand(`tsx src/cli.ts drift ${cycle.name}`);
+    const testResult = await this.execCommand('npm', ['test']);
+    const driftResult = await this.execCommand('tsx', ['src/cli.ts', 'drift', cycle.name]);
 
     const content = renderWitnessDoc({
       cycle,
@@ -572,13 +577,14 @@ export class Workspace {
       }));
   }
 
-  async execCommand(command: string, options?: { timeoutMs?: number }): Promise<string> {
+  async execCommand(command: string, args: string[] = [], options?: { timeoutMs?: number }): Promise<string> {
+    const fullCommand = [command, ...args].join(' ');
     if (process.env.METHOD_TEST === 'true') {
-      return `[MOCK] Output for ${command}`;
+      return `[MOCK] Output for ${fullCommand}`;
     }
-    const execAsync = promisify(exec);
+    const execFileAsync = promisify(execFile);
     try {
-      const { stdout, stderr } = await execAsync(command, {
+      const { stdout, stderr } = await execFileAsync(command, args, {
         cwd: this.root,
         encoding: 'utf8',
         timeout: options?.timeoutMs,
@@ -586,7 +592,7 @@ export class Workspace {
       return stdout + stderr;
     } catch (error: any) {
       if (error.killed || error.signal === 'SIGTERM') {
-        throw new MethodError(`Command timed out: ${command}`);
+        throw new MethodError(`Command timed out: ${fullCommand}`);
       }
       return (error.stdout ?? '') + (error.stderr ?? '');
     }

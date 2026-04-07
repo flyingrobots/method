@@ -26,7 +26,7 @@ describe('Async Exec', () => {
     const workspace = new Workspace(root);
 
     // execCommand should return a Promise (thenable)
-    const result = workspace.execCommand('echo hello');
+    const result = workspace.execCommand('echo', ['hello']);
     expect(result).toBeInstanceOf(Promise);
     expect(await result).toContain('hello');
   });
@@ -67,7 +67,7 @@ describe('Async Exec', () => {
       initWorkspace(root);
       const workspace = new Workspace(root);
 
-      const output = await workspace.execCommand('npm test');
+      const output = await workspace.execCommand('npm', ['test']);
       expect(output).toBe('[MOCK] Output for npm test');
     } finally {
       if (originalEnv === undefined) {
@@ -88,7 +88,7 @@ describe('Async Exec', () => {
 
       // A command that would hang should be killed by the timeout
       await expect(
-        workspace.execCommand('sleep 30', { timeoutMs: 200 }),
+        workspace.execCommand('sleep', ['30'], { timeoutMs: 200 }),
       ).rejects.toThrow(/timed out|killed|abort/iu);
     } finally {
       if (originalEnv !== undefined) {
