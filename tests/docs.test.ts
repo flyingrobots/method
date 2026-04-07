@@ -667,6 +667,58 @@ describe('METHOD docs', () => {
     expect(readme).toMatch(/lane.*scaffold|scaffold.*lane/iu);
   });
 
+  it('The repo has LICENSE (Apache 2.0), CONTRIBUTING.md, SECURITY.md, and NOTICE files.', () => {
+    const license = readRepoFile('LICENSE');
+    expect(license).toContain('Apache License');
+    expect(license).toContain('Version 2.0');
+
+    const contributing = readRepoFile('CONTRIBUTING.md');
+    expect(contributing).toContain('# Contributing');
+
+    const security = readRepoFile('SECURITY.md');
+    expect(security).toContain('# Security');
+
+    const notice = readRepoFile('NOTICE');
+    expect(notice).toContain('METHOD');
+  });
+
+  it('ARCHITECTURE.md explains how the source code is organized.', () => {
+    const arch = readRepoFile('ARCHITECTURE.md');
+    expect(arch).toContain('# Architecture');
+    expect(arch).toContain('src/');
+    expect(arch).toContain('cli.ts');
+    expect(arch).toContain('index.ts');
+    expect(arch).toContain('mcp.ts');
+    expect(arch).toContain('drift.ts');
+    expect(arch).toContain('config.ts');
+    expect(arch).toContain('domain.ts');
+  });
+
+  it('CLI and MCP reference docs exist and name every command and tool.', () => {
+    const readme = readRepoFile('README.md');
+
+    // CLI commands
+    expect(readme).toContain('method init');
+    expect(readme).toContain('method inbox');
+    expect(readme).toContain('method pull');
+    expect(readme).toContain('method close');
+    expect(readme).toContain('method drift');
+    expect(readme).toContain('method status');
+    expect(readme).toContain('method mcp');
+    expect(readme).toContain('method sync github');
+    expect(readme).toContain('method sync ship');
+
+    // MCP tools
+    expect(readme).toContain('method_status');
+    expect(readme).toContain('method_inbox');
+    expect(readme).toContain('method_pull');
+    expect(readme).toContain('method_close');
+    expect(readme).toContain('method_drift');
+    expect(readme).toContain('method_sync_ship');
+    expect(readme).toContain('method_sync_github');
+    expect(readme).toContain('method_capture_witness');
+  });
+
   it('documents release-note surfaces in the repo structure and release guidance', () => {
     const readme = readRepoFile('README.md');
     const releasesGuide = readRepoFile('docs/releases/README.md');
