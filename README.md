@@ -136,6 +136,9 @@ The inbox is processed during maintenance.
 
 Anything else sits in the backlog root.
 
+`method init` scaffolds all lane directories. Lanes exist from
+initialization, not on first use.
+
 ### Naming
 
 Legend prefix if applicable. No numeric IDs.
@@ -252,8 +255,9 @@ in one sentence, the cycle is too big. Split it.
 
 ### The loop
 
-0. **Pull** - choose from the backlog. Move it into
-   `docs/design/<cycle>/`. You are now committed.
+0. **Pull** - choose from the backlog. Create a branch
+   (`cycles/####-slug`), move the item into `docs/design/<cycle>/`.
+   You are now committed.
 
 1. **Design** - write a design doc. Required sections:
 
@@ -270,7 +274,9 @@ in one sentence, the cycle is too big. Split it.
    position.
 
 2. **RED** - write failing tests. Playback questions become specs.
-   Default to agent surface first.
+   Default to agent surface first. Where relevant to the hill, also
+   cover the golden path, failure modes, and edge cases. If a category
+   does not apply, say so in the design doc or test file.
 
 3. **GREEN** - make them pass.
 
