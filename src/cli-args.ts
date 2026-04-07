@@ -77,6 +77,8 @@ export function parseCliArgs(argv: readonly string[]): ParsedCommand {
   }
 }
 
+export const CLI_TOPICS = ['init', 'inbox', 'pull', 'close', 'status', 'drift', 'mcp', 'sync'] as const;
+
 export function usage(topic?: string): string {
   if (topic === 'init') {
     return 'Usage: method init [path]\n\nScaffold a METHOD workspace in the given directory.';

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- OSS Release Scaffolding (0026-oss-release-scaffolding)
 - Configurable Workspace Paths (0025-configurable-workspace-paths)
 - Method Consistency Fixes (0022-method-consistency-fixes)
 - Drift Near-Miss Hints (0023-drift-near-miss-hints)

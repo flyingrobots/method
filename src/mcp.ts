@@ -7,6 +7,80 @@ import type { Outcome } from './domain.js';
 
 const workspaceProperty = { workspace: { type: 'string' as const, description: 'Absolute path to the METHOD workspace root directory' } };
 
+export interface McpToolDef {
+  name: string;
+  description: string;
+  inputSchema: {
+    type: 'object';
+    properties: Record<string, { type: string; description?: string; enum?: string[] }>;
+    required: string[];
+  };
+}
+
+export const MCP_TOOLS: McpToolDef[] = [
+  {
+    name: 'method_status',
+    description: 'Get the current status of the METHOD workspace (backlog lanes, active cycles, legend health)',
+    inputSchema: { type: 'object', properties: { ...workspaceProperty }, required: ['workspace'] },
+  },
+  {
+    name: 'method_inbox',
+    description: 'Capture a new raw idea into the inbox',
+    inputSchema: {
+      type: 'object',
+      properties: { ...workspaceProperty, idea: { type: 'string' }, legend: { type: 'string' }, title: { type: 'string' } },
+      required: ['workspace', 'idea'],
+    },
+  },
+  {
+    name: 'method_pull',
+    description: 'Promote a backlog item into the next numbered cycle',
+    inputSchema: { type: 'object', properties: { ...workspaceProperty, item: { type: 'string' } }, required: ['workspace', 'item'] },
+  },
+  {
+    name: 'method_drift',
+    description: 'Check active cycle playback questions against tests',
+    inputSchema: { type: 'object', properties: { ...workspaceProperty, cycle: { type: 'string' } }, required: ['workspace'] },
+  },
+  {
+    name: 'method_close',
+    description: 'Close an active cycle into a retro',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        ...workspaceProperty,
+        cycle: { type: 'string' },
+        driftCheck: { type: 'boolean' },
+        outcome: { type: 'string', enum: ['hill-met', 'partial', 'not-met'] },
+      },
+      required: ['workspace', 'driftCheck', 'outcome'],
+    },
+  },
+  {
+    name: 'method_sync_ship',
+    description: 'Perform the Ship Sync maneuver (update CHANGELOG.md and BEARING.md)',
+    inputSchema: { type: 'object', properties: { ...workspaceProperty }, required: ['workspace'] },
+  },
+  {
+    name: 'method_sync_github',
+    description: 'Synchronize backlog with GitHub Issues',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        ...workspaceProperty,
+        push: { type: 'boolean', description: 'Update GitHub issues with local changes (default: true)' },
+        pull: { type: 'boolean', description: 'Update local backlog with GitHub changes' },
+      },
+      required: ['workspace'],
+    },
+  },
+  {
+    name: 'method_capture_witness',
+    description: 'Automate terminal evidence capture for a cycle',
+    inputSchema: { type: 'object', properties: { ...workspaceProperty, cycle: { type: 'string' } }, required: ['workspace'] },
+  },
+];
+
 export function createMcpServer() {
   const server = new Server(
     { name: 'method', version: '0.3.0' },
@@ -14,105 +88,7 @@ export function createMcpServer() {
   );
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
-    return {
-      tools: [
-        {
-          name: 'method_status',
-          description: 'Get the current status of the METHOD workspace (backlog lanes, active cycles, legend health)',
-          inputSchema: {
-            type: 'object',
-            properties: { ...workspaceProperty },
-            required: ['workspace'],
-          },
-        },
-        {
-          name: 'method_inbox',
-          description: 'Capture a new raw idea into the inbox',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              ...workspaceProperty,
-              idea: { type: 'string' },
-              legend: { type: 'string' },
-              title: { type: 'string' },
-            },
-            required: ['workspace', 'idea'],
-          },
-        },
-        {
-          name: 'method_pull',
-          description: 'Promote a backlog item into the next numbered cycle',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              ...workspaceProperty,
-              item: { type: 'string' },
-            },
-            required: ['workspace', 'item'],
-          },
-        },
-        {
-          name: 'method_drift',
-          description: 'Check active cycle playback questions against tests',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              ...workspaceProperty,
-              cycle: { type: 'string' },
-            },
-            required: ['workspace'],
-          },
-        },
-        {
-          name: 'method_close',
-          description: 'Close an active cycle into a retro',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              ...workspaceProperty,
-              cycle: { type: 'string' },
-              driftCheck: { type: 'boolean' },
-              outcome: { type: 'string', enum: ['hill-met', 'partial', 'not-met'] },
-            },
-            required: ['workspace', 'driftCheck', 'outcome'],
-          },
-        },
-        {
-          name: 'method_sync_ship',
-          description: 'Perform the Ship Sync maneuver (update CHANGELOG.md and BEARING.md)',
-          inputSchema: {
-            type: 'object',
-            properties: { ...workspaceProperty },
-            required: ['workspace'],
-          },
-        },
-        {
-          name: 'method_sync_github',
-          description: 'Synchronize backlog with GitHub Issues',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              ...workspaceProperty,
-              push: { type: 'boolean', description: 'Update GitHub issues with local changes (default: true)' },
-              pull: { type: 'boolean', description: 'Update local backlog with GitHub changes' },
-            },
-            required: ['workspace'],
-          },
-        },
-        {
-          name: 'method_capture_witness',
-          description: 'Automate terminal evidence capture for a cycle',
-          inputSchema: {
-            type: 'object',
-            properties: {
-              ...workspaceProperty,
-              cycle: { type: 'string' },
-            },
-            required: ['workspace'],
-          },
-        },
-      ],
-    };
+    return { tools: MCP_TOOLS };
   });
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {

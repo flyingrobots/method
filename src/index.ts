@@ -7,7 +7,7 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { exec } from 'node:child_process';
+import { exec, execSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { basename, dirname, relative, resolve } from 'node:path';
 import {
@@ -20,8 +20,10 @@ import {
   type WorkspaceStatus,
 } from './domain.js';
 import { DEFAULT_PATHS, loadConfig, type Config, type PathsConfig } from './config.js';
+import { CLI_TOPICS, usage } from './cli-args.js';
 import { detectWorkspaceDrift, type DriftReport } from './drift.js';
 import { MethodError } from './errors.js';
+import { MCP_TOOLS } from './mcp.js';
 
 export interface ResolvedPaths {
   backlog: string;
@@ -223,9 +225,12 @@ export class Workspace {
   shipSync(): { updated: string[]; newShips: Cycle[] } {
     const changelogPath = resolve(this.root, 'CHANGELOG.md');
     const bearingPath = resolve(this.root, 'docs/BEARING.md');
+    const cliPath = resolve(this.root, 'docs/CLI.md');
+    const mcpPath = resolve(this.root, 'docs/MCP.md');
     const status = this.status();
     const closedCycles = this.allCycles().filter((cycle) => existsSync(cycle.retroDoc));
-    
+    const commitSha = this.currentCommitSha();
+
     const newShips = this.findNewShips(closedCycles);
     const updated: string[] = [];
 
@@ -237,7 +242,21 @@ export class Workspace {
     writeFileSync(bearingPath, renderBearing(status, closedCycles), 'utf8');
     updated.push('docs/BEARING.md');
 
+    writeFileSync(cliPath, generateCliReference(commitSha), 'utf8');
+    updated.push('docs/CLI.md');
+
+    writeFileSync(mcpPath, generateMcpReference(commitSha), 'utf8');
+    updated.push('docs/MCP.md');
+
     return { updated, newShips };
+  }
+
+  private currentCommitSha(): string {
+    try {
+      return execSync('git rev-parse HEAD', { cwd: this.root, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+    } catch {
+      return 'unknown';
+    }
   }
 
   async captureWitness(cycleName?: string): Promise<string> {
@@ -563,6 +582,98 @@ export class Workspace {
       return (error.stdout ?? '') + (error.stderr ?? '');
     }
   }
+}
+
+function generateCliReference(commitSha: string): string {
+  const lines: string[] = [
+    '---',
+    'title: "CLI Reference"',
+    `generated_from_commit: "${commitSha}"`,
+    '---',
+    '',
+    '# CLI Reference',
+    '',
+    'The `method` command is the primary interface for METHOD workspace',
+    'operations. Run `method help` for a quick summary or',
+    '`method help <command>` for command-specific usage.',
+    '',
+    '## Commands',
+    '',
+  ];
+
+  for (const topic of CLI_TOPICS) {
+    const text = usage(topic);
+    const usageLine = text.split('\n')[0] ?? '';
+    const description = text.split('\n').slice(1).filter((l) => l.trim().length > 0);
+    lines.push(`### \`${usageLine.replace(/^Usage: /u, '')}\``);
+    lines.push('');
+    for (const line of description) {
+      lines.push(line.startsWith('  ') ? line : line);
+    }
+    if (description.length > 0) {
+      lines.push('');
+    }
+  }
+
+  lines.push('## Exit Codes');
+  lines.push('');
+  lines.push('| Code | Meaning |');
+  lines.push('|------|---------|');
+  lines.push('| 0 | Success |');
+  lines.push('| 1 | Error (bad arguments, missing workspace, failed operation) |');
+  lines.push('| 2 | Drift found (from `method drift`) |');
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+function generateMcpReference(commitSha: string): string {
+  const lines: string[] = [
+    '---',
+    'title: "MCP Reference"',
+    `generated_from_commit: "${commitSha}"`,
+    '---',
+    '',
+    '# MCP Reference',
+    '',
+    'METHOD exposes its workspace operations through a Model Context',
+    'Protocol (MCP) server. Start it with `method mcp` — it communicates',
+    'over stdio using JSON-RPC.',
+    '',
+    '## Workspace Parameter',
+    '',
+    'Every tool requires a `workspace` parameter: the absolute path to the',
+    'METHOD workspace root directory. This makes the server',
+    'workspace-agnostic — a single instance can serve multiple projects.',
+    '',
+    '## Tools',
+    '',
+  ];
+
+  for (const tool of MCP_TOOLS) {
+    lines.push(`### \`${tool.name}\``);
+    lines.push('');
+    lines.push(tool.description);
+    lines.push('');
+
+    const params = Object.entries(tool.inputSchema.properties)
+      .filter(([key]) => key !== 'workspace');
+    const required = new Set(tool.inputSchema.required.filter((k) => k !== 'workspace'));
+
+    if (params.length > 0) {
+      lines.push('**Parameters:**');
+      lines.push('');
+      for (const [key, schema] of params) {
+        const req = required.has(key) ? '(required)' : '(optional)';
+        const desc = ('description' in schema && schema.description) ? ` — ${schema.description}` : '';
+        const enumValues = ('enum' in schema && schema.enum) ? ` (${schema.enum.join(', ')})` : '';
+        lines.push(`- \`${key}\` ${req} \`${schema.type}\`${enumValues}${desc}`);
+      }
+      lines.push('');
+    }
+  }
+
+  return lines.join('\n');
 }
 
 function collectMarkdownFiles(root: string): string[] {
