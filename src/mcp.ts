@@ -1,11 +1,11 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { relative } from 'node:path';
-import { resolveWorkspaceRoot, Workspace } from './index.js';
+import { Workspace } from './index.js';
 import { GitHubAdapter } from './adapters/github.js';
 import type { Outcome } from './domain.js';
 
-const cwdProperty = { cwd: { type: 'string' as const, description: 'Absolute path to the METHOD workspace root' } };
+const workspaceProperty = { workspace: { type: 'string' as const, description: 'Absolute path to the METHOD workspace root directory' } };
 
 export function createMcpServer() {
   const server = new Server(
@@ -21,8 +21,8 @@ export function createMcpServer() {
           description: 'Get the current status of the METHOD workspace (backlog lanes, active cycles, legend health)',
           inputSchema: {
             type: 'object',
-            properties: { ...cwdProperty },
-            required: ['cwd'],
+            properties: { ...workspaceProperty },
+            required: ['workspace'],
           },
         },
         {
@@ -31,12 +31,12 @@ export function createMcpServer() {
           inputSchema: {
             type: 'object',
             properties: {
-              ...cwdProperty,
+              ...workspaceProperty,
               idea: { type: 'string' },
               legend: { type: 'string' },
               title: { type: 'string' },
             },
-            required: ['cwd', 'idea'],
+            required: ['workspace', 'idea'],
           },
         },
         {
@@ -45,10 +45,10 @@ export function createMcpServer() {
           inputSchema: {
             type: 'object',
             properties: {
-              ...cwdProperty,
+              ...workspaceProperty,
               item: { type: 'string' },
             },
-            required: ['cwd', 'item'],
+            required: ['workspace', 'item'],
           },
         },
         {
@@ -57,10 +57,10 @@ export function createMcpServer() {
           inputSchema: {
             type: 'object',
             properties: {
-              ...cwdProperty,
+              ...workspaceProperty,
               cycle: { type: 'string' },
             },
-            required: ['cwd'],
+            required: ['workspace'],
           },
         },
         {
@@ -69,12 +69,12 @@ export function createMcpServer() {
           inputSchema: {
             type: 'object',
             properties: {
-              ...cwdProperty,
+              ...workspaceProperty,
               cycle: { type: 'string' },
               driftCheck: { type: 'boolean' },
               outcome: { type: 'string', enum: ['hill-met', 'partial', 'not-met'] },
             },
-            required: ['cwd', 'driftCheck', 'outcome'],
+            required: ['workspace', 'driftCheck', 'outcome'],
           },
         },
         {
@@ -82,8 +82,8 @@ export function createMcpServer() {
           description: 'Perform the Ship Sync maneuver (update CHANGELOG.md and BEARING.md)',
           inputSchema: {
             type: 'object',
-            properties: { ...cwdProperty },
-            required: ['cwd'],
+            properties: { ...workspaceProperty },
+            required: ['workspace'],
           },
         },
         {
@@ -92,11 +92,11 @@ export function createMcpServer() {
           inputSchema: {
             type: 'object',
             properties: {
-              ...cwdProperty,
+              ...workspaceProperty,
               push: { type: 'boolean', description: 'Update GitHub issues with local changes (default: true)' },
               pull: { type: 'boolean', description: 'Update local backlog with GitHub changes' },
             },
-            required: ['cwd'],
+            required: ['workspace'],
           },
         },
         {
@@ -105,10 +105,10 @@ export function createMcpServer() {
           inputSchema: {
             type: 'object',
             properties: {
-              ...cwdProperty,
+              ...workspaceProperty,
               cycle: { type: 'string' },
             },
-            required: ['cwd'],
+            required: ['workspace'],
           },
         },
       ],
@@ -118,13 +118,12 @@ export function createMcpServer() {
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     try {
       const args = (request.params.arguments ?? {}) as Record<string, unknown>;
-      const cwd = args.cwd as string | undefined;
-      if (!cwd) {
-        throw new Error('cwd is required. Pass the absolute path to the METHOD workspace root.');
+      const workspacePath = args.workspace as string | undefined;
+      if (!workspacePath) {
+        throw new Error('workspace is required. Pass the absolute path to the METHOD workspace root directory.');
       }
 
-      const root = resolveWorkspaceRoot(cwd);
-      const workspace = new Workspace(root);
+      const workspace = new Workspace(workspacePath);
       workspace.ensureInitialized();
 
       if (request.params.name === 'method_status') {

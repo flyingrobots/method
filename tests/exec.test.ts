@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { initWorkspace, resolveWorkspaceRoot, Workspace } from '../src/index.js';
+import { initWorkspace, Workspace } from '../src/index.js';
 
 const tempRoots: string[] = [];
 
@@ -18,25 +18,6 @@ function createTempRoot(): string {
   tempRoots.push(root);
   return root;
 }
-
-describe('resolveWorkspaceRoot', () => {
-  it('resolves from a subdirectory to the workspace root', () => {
-    const root = createTempRoot();
-    initWorkspace(root);
-    const subdir = join(root, 'docs', 'method', 'backlog', 'inbox');
-
-    const resolved = resolveWorkspaceRoot(subdir);
-    expect(resolved).toBe(root);
-  });
-
-  it('returns the given path when no workspace is found', () => {
-    const root = createTempRoot();
-    // No initWorkspace — empty dir, no docs/method/
-
-    const resolved = resolveWorkspaceRoot(root);
-    expect(resolved).toBe(root);
-  });
-});
 
 describe('Async Exec', () => {
   it('Workspace.execCommand returns a Promise and uses an async API.', async () => {

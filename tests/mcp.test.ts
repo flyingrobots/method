@@ -57,8 +57,8 @@ describe('MCP Server', () => {
 
     // Every tool must require cwd
     for (const tool of result.tools) {
-      expect(tool.inputSchema.required, `${tool.name} must require cwd`).toContain('cwd');
-      expect(tool.inputSchema.properties.cwd, `${tool.name} must have cwd property`).toBeDefined();
+      expect(tool.inputSchema.required, `${tool.name} must require workspace`).toContain('workspace');
+      expect(tool.inputSchema.properties.workspace, `${tool.name} must have workspace property`).toBeDefined();
     }
 
     vi.restoreAllMocks();
@@ -88,37 +88,37 @@ describe('MCP Server', () => {
     expect(callToolHandler).toBeDefined();
 
     // Call method_status
-    const statusResult = await callToolHandler({ params: { name: 'method_status', arguments: { cwd: root } } });
+    const statusResult = await callToolHandler({ params: { name: 'method_status', arguments: { workspace: root } } });
     expect(statusResult.isError).toBeFalsy();
     expect(statusResult.content[0].text).toContain('"inbox": []');
 
     // Call method_inbox
-    const inboxResult = await callToolHandler({ params: { name: 'method_inbox', arguments: { cwd: root, idea: 'test idea from mcp' } } });
+    const inboxResult = await callToolHandler({ params: { name: 'method_inbox', arguments: { workspace: root, idea: 'test idea from mcp' } } });
     expect(inboxResult.isError).toBeFalsy();
     expect(inboxResult.content[0].text).toContain('Captured to docs/method/backlog/inbox/test-idea-from-mcp.md');
 
     // Check status again
-    const statusAfterInbox = await callToolHandler({ params: { name: 'method_status', arguments: { cwd: root } } });
+    const statusAfterInbox = await callToolHandler({ params: { name: 'method_status', arguments: { workspace: root } } });
     expect(statusAfterInbox.content[0].text).toContain('test-idea-from-mcp');
 
     // Call method_pull
-    const pullResult = await callToolHandler({ params: { name: 'method_pull', arguments: { cwd: root, item: 'test-idea-from-mcp' } } });
+    const pullResult = await callToolHandler({ params: { name: 'method_pull', arguments: { workspace: root, item: 'test-idea-from-mcp' } } });
     expect(pullResult.isError).toBeFalsy();
     expect(pullResult.content[0].text).toContain('Pulled into 0001-test-idea-from-mcp');
 
     // Check status again
-    const statusAfterPull = await callToolHandler({ params: { name: 'method_status', arguments: { cwd: root } } });
+    const statusAfterPull = await callToolHandler({ params: { name: 'method_status', arguments: { workspace: root } } });
     expect(statusAfterPull.content[0].text).toContain('0001-test-idea-from-mcp');
 
     // Call method_capture_witness
-    const captureResult = await callToolHandler({ params: { name: 'method_capture_witness', arguments: { cwd: root, cycle: '0001-test-idea-from-mcp' } } });
+    const captureResult = await callToolHandler({ params: { name: 'method_capture_witness', arguments: { workspace: root, cycle: '0001-test-idea-from-mcp' } } });
     expect(captureResult.isError).toBeFalsy();
     expect(captureResult.content[0].text).toContain('Captured witness to docs/method/retro/0001-test-idea-from-mcp/witness/verification.md');
 
-    // Call without cwd — should error
-    const noCwdResult = await callToolHandler({ params: { name: 'method_status', arguments: {} } });
-    expect(noCwdResult.isError).toBe(true);
-    expect(noCwdResult.content[0].text).toContain('cwd is required');
+    // Call without workspace — should error
+    const noWorkspaceResult = await callToolHandler({ params: { name: 'method_status', arguments: {} } });
+    expect(noWorkspaceResult.isError).toBe(true);
+    expect(noWorkspaceResult.content[0].text).toContain('workspace is required');
 
     vi.restoreAllMocks();
   });

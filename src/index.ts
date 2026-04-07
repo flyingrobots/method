@@ -7,9 +7,9 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { exec, execSync } from 'node:child_process';
+import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
-import { basename, dirname, relative, resolve, parse as parsePath } from 'node:path';
+import { basename, dirname, relative, resolve } from 'node:path';
 import {
   BACKLOG_DIR,
   type BacklogItem,
@@ -28,38 +28,6 @@ import { MethodError } from './errors.js';
 
 const LEGEND_PATTERN = /^(?<legend>[A-Z][A-Z0-9]*)_(?<slug>.+)$/;
 const CYCLE_PATTERN = /^(?<number>\d{4})-(?<slug>[a-z0-9][a-z0-9-]*)$/;
-
-export function resolveWorkspaceRoot(from: string): string {
-  // Try git rev-parse first
-  try {
-    const gitRoot = execSync('git rev-parse --show-toplevel', {
-      cwd: from,
-      encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim();
-    if (existsSync(resolve(gitRoot, 'docs/method'))) {
-      return gitRoot;
-    }
-  } catch {
-    // Not a git repo or git not available — fall through
-  }
-
-  // Walk up the directory tree looking for docs/method/
-  let current = resolve(from);
-  while (true) {
-    if (existsSync(resolve(current, 'docs/method'))) {
-      return current;
-    }
-    const parent = parsePath(current).dir;
-    if (parent === current) {
-      break;
-    }
-    current = parent;
-  }
-
-  // Nothing found — return the original path and let ensureInitialized fail with a clear error
-  return resolve(from);
-}
 
 export function initWorkspace(root: string): { created: string[] } {
   const directories = [
