@@ -14,9 +14,9 @@ Current priority: pull TBD to continue the system's maturity.
 
 ## What just shipped?
 
+- `0025-configurable-workspace-paths`: Configurable Workspace Paths
 - `0024-async-exec-refactor`: Async Exec Refactor
 - `0023-drift-near-miss-hints`: Drift Near-Miss Hints
-- `0022-method-consistency-fixes`: Method Consistency Fixes
 
 ## What feels wrong?
 

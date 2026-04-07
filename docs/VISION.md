@@ -1,10 +1,10 @@
 ---
 title: "METHOD - Executive Summary"
-generated_at: 2026-04-04T22:35:00-07:00
+generated_at: 2026-04-06T21:38:42-07:00
 generator: "manual synthesis following Executive Summary Protocol (Cycle 0013)"
-generated_from_commit: "921706b9fc9fd5c7cf78331bdd0f3f91013ea558"
+generated_from_commit: "9a7e2d4d71de0370213b609a445a3fd2381f272c"
 provenance_level: artifact_history
-witness_ref: docs/method/retro/0021-two-way-github-sync/witness/verification.md
+witness_ref: docs/method/retro/0025-configurable-workspace-paths/witness/verification.md
 source_files:
   - README.md
   - CHANGELOG.md
@@ -33,6 +33,10 @@ source_files:
   - docs/design/0019-config-management/config-management.md
   - docs/design/0020-automated-witness-capture/automated-witness-capture.md
   - docs/design/0021-two-way-github-sync/two-way-github-sync.md
+  - docs/design/0022-method-consistency-fixes/method-consistency-fixes.md
+  - docs/design/0023-drift-near-miss-hints/drift-near-miss-hints.md
+  - docs/design/0024-async-exec-refactor/async-exec-refactor.md
+  - docs/design/0025-configurable-workspace-paths/configurable-workspace-paths.md
 ---
 
 # METHOD - Executive Summary
@@ -51,7 +55,7 @@ state of the system without replacing the underlying files.
 ## Current state
 
 METHOD has evolved from pure doctrine into a formal, programmable system.
-Twenty-one cycles are already closed:
+Twenty-five cycles are closed:
 
 - **CLI Foundations (0001-0004, 0007):** Established the CLI, witness
   conventions, and separated the module structure.
@@ -64,6 +68,10 @@ Twenty-one cycles are already closed:
 - **Workflow (0013, 0015, 0017-0018, 0020):** Formalized the Executive
   Summary Protocol, Git branch doctrine, Behavior Spikes, Ship Sync
   automation, and Automated Witness Capture.
+- **Hardening (0022-0025):** Unified branch naming and RED phase doctrine,
+  added drift near-miss hints, replaced blocking `execSync` with async
+  exec, and made the workspace directory layout fully configurable via
+  `.method.json`.
 
 The repo is organized under two legends:
 - `PROCESS`: Workflow mechanics, adapters, and system architecture.
@@ -81,30 +89,37 @@ The repo is organized under two legends:
 Covers cycle discipline, backlog movement, adapters (GitHub, MCP), and
 named patterns (spikes, workflow).
 - **Active:** None.
-- **Up-next:** `PROCESS_i18n-string-extraction`.
+- **Backlog:** 7 items across inbox and cool-ideas.
 
 ### SYNTH
 Covers repo self-description, signposts, and provenance level.
 - **Active:** None.
-- **Up-next:** None.
+- **Backlog:** 2 items in cool-ideas.
 
 ## Roadmap
 
 ### Active
 - None.
 
-### Up-next
-- **PROCESS_i18n-string-extraction:** Extract hardcoded English strings into
-  a centralized messages file.
-
 ### Inbox
-- None.
+- **PROCESS_semantic-drift-detector:** LLM-based fuzzy matching for drift.
+- **PROCESS_multi-forge-adapter:** GitLab/Bitbucket via common ForgeAdapter.
+- **PROCESS_interactive-scaffolder:** Wizard for `method pull`.
+- **PROCESS_i18n-string-extraction:** Centralize hardcoded English strings.
+
+### Cool Ideas
+- **PROCESS_legend-audit-and-assignment:** First-class legend management.
+- **PROCESS_retro-conversational-closeout:** CLI-guided retro prompts.
+- **PROCESS_review-config-hardening:** Tune bot review config.
+- **SYNTH_artifact-history-and-semantic-provenance:** Formal provenance split.
+- **SYNTH_cycle-witness-command:** `method witness` command.
 
 ## Open questions
 
 - Should METHOD support visual screenshot capture in witnesses?
 - How much domain logic should move from `src/index.ts` to legend-specific
   adapters?
+- What does v0.3.0 look like as a first public release?
 
 ## Limits
 
