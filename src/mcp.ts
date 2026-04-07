@@ -1,17 +1,17 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { relative } from 'node:path';
-import { Workspace } from './index.js';
+import { resolveWorkspaceRoot, Workspace } from './index.js';
 import { GitHubAdapter } from './adapters/github.js';
 import type { Outcome } from './domain.js';
 
-export function createMcpServer(cwd: string = process.cwd()) {
+const cwdProperty = { cwd: { type: 'string' as const, description: 'Absolute path to the METHOD workspace root' } };
+
+export function createMcpServer() {
   const server = new Server(
-    { name: 'method', version: '0.1.0' },
+    { name: 'method', version: '0.3.0' },
     { capabilities: { tools: {} } }
   );
-
-  const workspace = new Workspace(cwd);
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return {
@@ -19,7 +19,11 @@ export function createMcpServer(cwd: string = process.cwd()) {
         {
           name: 'method_status',
           description: 'Get the current status of the METHOD workspace (backlog lanes, active cycles, legend health)',
-          inputSchema: { type: 'object', properties: {} },
+          inputSchema: {
+            type: 'object',
+            properties: { ...cwdProperty },
+            required: ['cwd'],
+          },
         },
         {
           name: 'method_inbox',
@@ -27,11 +31,12 @@ export function createMcpServer(cwd: string = process.cwd()) {
           inputSchema: {
             type: 'object',
             properties: {
+              ...cwdProperty,
               idea: { type: 'string' },
               legend: { type: 'string' },
               title: { type: 'string' },
             },
-            required: ['idea'],
+            required: ['cwd', 'idea'],
           },
         },
         {
@@ -40,9 +45,10 @@ export function createMcpServer(cwd: string = process.cwd()) {
           inputSchema: {
             type: 'object',
             properties: {
+              ...cwdProperty,
               item: { type: 'string' },
             },
-            required: ['item'],
+            required: ['cwd', 'item'],
           },
         },
         {
@@ -51,8 +57,10 @@ export function createMcpServer(cwd: string = process.cwd()) {
           inputSchema: {
             type: 'object',
             properties: {
+              ...cwdProperty,
               cycle: { type: 'string' },
             },
+            required: ['cwd'],
           },
         },
         {
@@ -61,17 +69,22 @@ export function createMcpServer(cwd: string = process.cwd()) {
           inputSchema: {
             type: 'object',
             properties: {
+              ...cwdProperty,
               cycle: { type: 'string' },
               driftCheck: { type: 'boolean' },
               outcome: { type: 'string', enum: ['hill-met', 'partial', 'not-met'] },
             },
-            required: ['driftCheck', 'outcome'],
+            required: ['cwd', 'driftCheck', 'outcome'],
           },
         },
         {
           name: 'method_sync_ship',
           description: 'Perform the Ship Sync maneuver (update CHANGELOG.md and BEARING.md)',
-          inputSchema: { type: 'object', properties: {} },
+          inputSchema: {
+            type: 'object',
+            properties: { ...cwdProperty },
+            required: ['cwd'],
+          },
         },
         {
           name: 'method_sync_github',
@@ -79,9 +92,11 @@ export function createMcpServer(cwd: string = process.cwd()) {
           inputSchema: {
             type: 'object',
             properties: {
+              ...cwdProperty,
               push: { type: 'boolean', description: 'Update GitHub issues with local changes (default: true)' },
               pull: { type: 'boolean', description: 'Update local backlog with GitHub changes' },
             },
+            required: ['cwd'],
           },
         },
         {
@@ -90,8 +105,10 @@ export function createMcpServer(cwd: string = process.cwd()) {
           inputSchema: {
             type: 'object',
             properties: {
+              ...cwdProperty,
               cycle: { type: 'string' },
             },
+            required: ['cwd'],
           },
         },
       ],
@@ -99,29 +116,38 @@ export function createMcpServer(cwd: string = process.cwd()) {
   });
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    workspace.ensureInitialized();
-
     try {
+      const args = (request.params.arguments ?? {}) as Record<string, unknown>;
+      const cwd = args.cwd as string | undefined;
+      if (!cwd) {
+        throw new Error('cwd is required. Pass the absolute path to the METHOD workspace root.');
+      }
+
+      const root = resolveWorkspaceRoot(cwd);
+      const workspace = new Workspace(root);
+      workspace.ensureInitialized();
+
       if (request.params.name === 'method_status') {
         const status = workspace.status();
         return { content: [{ type: 'text', text: JSON.stringify(status, null, 2) }] };
       }
 
       if (request.params.name === 'method_inbox') {
-        const args = request.params.arguments as { idea: string; legend?: string; title?: string };
-        const path = workspace.captureIdea(args.idea, args.legend, args.title);
+        const path = workspace.captureIdea(
+          args.idea as string,
+          args.legend as string | undefined,
+          args.title as string | undefined,
+        );
         return { content: [{ type: 'text', text: `Captured to ${relative(workspace.root, path)}` }] };
       }
 
       if (request.params.name === 'method_pull') {
-        const args = request.params.arguments as { item: string };
-        const cycle = workspace.pullItem(args.item);
+        const cycle = workspace.pullItem(args.item as string);
         return { content: [{ type: 'text', text: `Pulled into ${cycle.name}\nDesign: ${relative(workspace.root, cycle.designDoc)}` }] };
       }
 
       if (request.params.name === 'method_drift') {
-        const args = request.params.arguments as { cycle?: string } | undefined;
-        const report = workspace.detectDrift(args?.cycle);
+        const report = workspace.detectDrift(args.cycle as string | undefined);
         return {
           content: [{ type: 'text', text: report.output }],
           isError: report.exitCode !== 0,
@@ -129,8 +155,11 @@ export function createMcpServer(cwd: string = process.cwd()) {
       }
 
       if (request.params.name === 'method_close') {
-        const args = request.params.arguments as { cycle?: string; driftCheck: boolean; outcome: Outcome };
-        const cycle = await workspace.closeCycle(args.cycle, args.driftCheck, args.outcome);
+        const cycle = await workspace.closeCycle(
+          args.cycle as string | undefined,
+          args.driftCheck as boolean,
+          args.outcome as Outcome,
+        );
         return { content: [{ type: 'text', text: `Closed ${cycle.name}\nRetro: ${relative(workspace.root, cycle.retroDoc)}` }] };
       }
 
@@ -145,9 +174,8 @@ export function createMcpServer(cwd: string = process.cwd()) {
       }
 
       if (request.params.name === 'method_sync_github') {
-        const args = request.params.arguments as { push?: boolean; pull?: boolean } | undefined;
-        const push = args?.push || (!args?.push && !args?.pull);
-        const pull = args?.pull || false;
+        const push = (args.push as boolean | undefined) || (!args.push && !args.pull);
+        const pull = (args.pull as boolean | undefined) || false;
 
         const token = workspace.config.github_token;
         const repoFull = workspace.config.github_repo;
@@ -199,15 +227,14 @@ export function createMcpServer(cwd: string = process.cwd()) {
           }
         }
 
-        return { 
+        return {
           content: [{ type: 'text', text: log.join('\n') || 'No changes.' }],
           isError: hasError,
         };
       }
 
       if (request.params.name === 'method_capture_witness') {
-        const args = request.params.arguments as { cycle?: string } | undefined;
-        const path = await workspace.captureWitness(args?.cycle);
+        const path = await workspace.captureWitness(args.cycle as string | undefined);
         return { content: [{ type: 'text', text: `Captured witness to ${relative(workspace.root, path)}` }] };
       }
 

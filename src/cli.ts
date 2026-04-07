@@ -83,7 +83,7 @@ export async function runCli(
     }
 
     if (parsed.command === 'mcp') {
-      const server = createMcpServer(root);
+      const server = createMcpServer();
       const transport = new StdioServerTransport();
       await server.connect(transport);
       // Let it run indefinitely

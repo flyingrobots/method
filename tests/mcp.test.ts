@@ -24,17 +24,11 @@ function createTempRoot(): string {
 
 describe('MCP Server', () => {
   it('Does `src/mcp.ts` export a functional MCP server using `@modelcontextprotocol/sdk`?', () => {
-    const root = createTempRoot();
-    initWorkspace(root);
-    const server = createMcpServer(root);
+    const server = createMcpServer();
     expect(server).toBeInstanceOf(Server);
   });
 
   it('Are tools provided for querying the backlog, pulling items, and closing cycles?', async () => {
-    const root = createTempRoot();
-    initWorkspace(root);
-    
-    // To test tools, we can intercept the request handlers
     let listToolsHandler: any;
     const mockServer = {
       setRequestHandler: vi.fn((schema, handler) => {
@@ -43,15 +37,15 @@ describe('MCP Server', () => {
         }
       }),
     };
-    
+
     vi.spyOn(Server.prototype, 'setRequestHandler').mockImplementation(mockServer.setRequestHandler);
-    
-    createMcpServer(root);
-    
+
+    createMcpServer();
+
     expect(listToolsHandler).toBeDefined();
     const result = await listToolsHandler();
     expect(result.tools.length).toBeGreaterThan(0);
-    
+
     const toolNames = result.tools.map((t: any) => t.name);
     expect(toolNames).toContain('method_status');
     expect(toolNames).toContain('method_inbox');
@@ -60,6 +54,12 @@ describe('MCP Server', () => {
     expect(toolNames).toContain('method_drift');
     expect(toolNames).toContain('method_sync_ship');
     expect(toolNames).toContain('method_capture_witness');
+
+    // Every tool must require cwd
+    for (const tool of result.tools) {
+      expect(tool.inputSchema.required, `${tool.name} must require cwd`).toContain('cwd');
+      expect(tool.inputSchema.properties.cwd, `${tool.name} must have cwd property`).toBeDefined();
+    }
 
     vi.restoreAllMocks();
   });
@@ -72,7 +72,7 @@ describe('MCP Server', () => {
   it('Do unit tests verify the MCP server integration and its tools?', async () => {
     const root = createTempRoot();
     initWorkspace(root);
-    
+
     let callToolHandler: any;
     const mockServer = {
       setRequestHandler: vi.fn((schema, handler) => {
@@ -81,39 +81,44 @@ describe('MCP Server', () => {
         }
       }),
     };
-    
+
     vi.spyOn(Server.prototype, 'setRequestHandler').mockImplementation(mockServer.setRequestHandler);
-    
-    createMcpServer(root);
+
+    createMcpServer();
     expect(callToolHandler).toBeDefined();
 
     // Call method_status
-    const statusResult = await callToolHandler({ params: { name: 'method_status', arguments: {} } });
+    const statusResult = await callToolHandler({ params: { name: 'method_status', arguments: { cwd: root } } });
     expect(statusResult.isError).toBeFalsy();
     expect(statusResult.content[0].text).toContain('"inbox": []');
 
     // Call method_inbox
-    const inboxResult = await callToolHandler({ params: { name: 'method_inbox', arguments: { idea: 'test idea from mcp' } } });
+    const inboxResult = await callToolHandler({ params: { name: 'method_inbox', arguments: { cwd: root, idea: 'test idea from mcp' } } });
     expect(inboxResult.isError).toBeFalsy();
     expect(inboxResult.content[0].text).toContain('Captured to docs/method/backlog/inbox/test-idea-from-mcp.md');
 
     // Check status again
-    const statusAfterInbox = await callToolHandler({ params: { name: 'method_status', arguments: {} } });
+    const statusAfterInbox = await callToolHandler({ params: { name: 'method_status', arguments: { cwd: root } } });
     expect(statusAfterInbox.content[0].text).toContain('test-idea-from-mcp');
 
     // Call method_pull
-    const pullResult = await callToolHandler({ params: { name: 'method_pull', arguments: { item: 'test-idea-from-mcp' } } });
+    const pullResult = await callToolHandler({ params: { name: 'method_pull', arguments: { cwd: root, item: 'test-idea-from-mcp' } } });
     expect(pullResult.isError).toBeFalsy();
     expect(pullResult.content[0].text).toContain('Pulled into 0001-test-idea-from-mcp');
 
     // Check status again
-    const statusAfterPull = await callToolHandler({ params: { name: 'method_status', arguments: {} } });
+    const statusAfterPull = await callToolHandler({ params: { name: 'method_status', arguments: { cwd: root } } });
     expect(statusAfterPull.content[0].text).toContain('0001-test-idea-from-mcp');
 
     // Call method_capture_witness
-    const captureResult = await callToolHandler({ params: { name: 'method_capture_witness', arguments: { cycle: '0001-test-idea-from-mcp' } } });
+    const captureResult = await callToolHandler({ params: { name: 'method_capture_witness', arguments: { cwd: root, cycle: '0001-test-idea-from-mcp' } } });
     expect(captureResult.isError).toBeFalsy();
     expect(captureResult.content[0].text).toContain('Captured witness to docs/method/retro/0001-test-idea-from-mcp/witness/verification.md');
+
+    // Call without cwd — should error
+    const noCwdResult = await callToolHandler({ params: { name: 'method_status', arguments: {} } });
+    expect(noCwdResult.isError).toBe(true);
+    expect(noCwdResult.content[0].text).toContain('cwd is required');
 
     vi.restoreAllMocks();
   });
