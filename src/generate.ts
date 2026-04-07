@@ -1,3 +1,5 @@
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { CLI_TOPICS, usage } from './cli-args.js';
 import { MCP_TOOLS } from './mcp.js';
 
@@ -18,6 +20,17 @@ export function replaceGeneratedSections(
     const generated = generator();
     return `<!-- generate:${name} -->\n${generated}<!-- /generate -->`;
   });
+}
+
+export function createGenerators(root: string): GeneratorRegistry {
+  return {
+    'cli-commands': cliCommandsGenerator,
+    'mcp-tools': mcpToolsGenerator,
+    'signpost-inventory': signpostInventoryGenerator,
+    'source-layout': () => sourceLayoutGenerator(root),
+    'test-summary': () => testSummaryGenerator(root),
+    'dependencies': () => dependenciesGenerator(root),
+  };
 }
 
 export function cliCommandsGenerator(): string {
@@ -78,13 +91,98 @@ export function signpostInventoryGenerator(): string {
     '| Signpost | Type | Description |',
     '|----------|------|-------------|',
     '| `README.md` | Hand-authored | Core doctrine and filesystem shape. |',
-    '| `ARCHITECTURE.md` | Hand-authored | How the source code is organized. |',
+    '| `ARCHITECTURE.md` | Hybrid | How the source code is organized. |',
     '| `docs/BEARING.md` | Generated | Current direction and recent ships. |',
     '| `docs/VISION.md` | Generated | Bounded executive synthesis. |',
-    '| `docs/CLI.md` | Generated | CLI command reference. |',
-    '| `docs/MCP.md` | Generated | MCP tool reference. |',
+    '| `docs/CLI.md` | Hybrid | CLI command reference. |',
+    '| `docs/MCP.md` | Hybrid | MCP tool reference. |',
     '| `docs/GUIDE.md` | Hybrid | Operator advice with generated sections. |',
     '',
   ];
+  return lines.join('\n');
+}
+
+function sourceLayoutGenerator(root: string): string {
+  const srcDir = resolve(root, 'src');
+  if (!existsSync(srcDir)) {
+    return '(no src/ directory found)\n';
+  }
+
+  const lines: string[] = ['```', 'src/'];
+
+  const entries = collectSourceEntries(srcDir, 'src');
+  for (const entry of entries) {
+    lines.push(entry);
+  }
+
+  lines.push('```');
+  lines.push('');
+  return lines.join('\n');
+}
+
+function collectSourceEntries(dir: string, prefix: string): string[] {
+  const entries: string[] = [];
+  const items = readdirSync(dir, { withFileTypes: true }).sort((a, b) => {
+    // Directories first, then files
+    if (a.isDirectory() && !b.isDirectory()) return -1;
+    if (!a.isDirectory() && b.isDirectory()) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  for (const item of items) {
+    if (item.name.startsWith('.')) continue;
+    if (item.isDirectory()) {
+      entries.push(`  ${item.name}/`);
+      const children = collectSourceEntries(resolve(dir, item.name), `${prefix}/${item.name}`);
+      for (const child of children) {
+        entries.push(`  ${child}`);
+      }
+    } else if (item.isFile() && /\.[cm]?[jt]sx?$/u.test(item.name)) {
+      entries.push(`  ${item.name}`);
+    }
+  }
+
+  return entries;
+}
+
+function testSummaryGenerator(root: string): string {
+  const testsDir = resolve(root, 'tests');
+  if (!existsSync(testsDir)) {
+    return '(no tests/ directory found)\n';
+  }
+
+  const files = readdirSync(testsDir)
+    .filter((f) => /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(f))
+    .sort();
+
+  const lines: string[] = [
+    `${files.length} test files in \`tests/\` using Vitest:`,
+    '',
+    ...files.map((f) => `- \`${f}\``),
+    '',
+    'Each test file creates temp workspaces via `mkdtempSync` and cleans',
+    'up in `afterEach`. The `METHOD_TEST=true` environment variable mocks',
+    'shell command execution during witness capture.',
+    '',
+  ];
+
+  return lines.join('\n');
+}
+
+function dependenciesGenerator(root: string): string {
+  const pkgPath = resolve(root, 'package.json');
+  if (!existsSync(pkgPath)) {
+    return '(no package.json found)\n';
+  }
+
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+  const deps = Object.keys(pkg.dependencies ?? {}).sort();
+
+  if (deps.length === 0) {
+    return 'No runtime dependencies.\n';
+  }
+
+  const lines: string[] = deps.map((d) => `- \`${d}\``);
+  lines.push('');
   return lines.join('\n');
 }

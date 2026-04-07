@@ -22,7 +22,7 @@ import {
 import { DEFAULT_PATHS, loadConfig, type Config, type PathsConfig } from './config.js';
 import { detectWorkspaceDrift, type DriftReport } from './drift.js';
 import { MethodError } from './errors.js';
-import { cliCommandsGenerator, mcpToolsGenerator, replaceGeneratedSections, signpostInventoryGenerator } from './generate.js';
+import { createGenerators, replaceGeneratedSections } from './generate.js';
 
 export interface ResolvedPaths {
   backlog: string;
@@ -240,13 +240,9 @@ export class Workspace {
     updated.push('docs/BEARING.md');
 
     // Hybrid generation: replace <!-- generate:NAME --> sections in signpost files
-    const generators = {
-      'cli-commands': cliCommandsGenerator,
-      'mcp-tools': mcpToolsGenerator,
-      'signpost-inventory': signpostInventoryGenerator,
-    };
+    const generators = createGenerators(this.root);
 
-    for (const signpost of ['docs/CLI.md', 'docs/MCP.md', 'docs/GUIDE.md']) {
+    for (const signpost of ['ARCHITECTURE.md', 'docs/CLI.md', 'docs/MCP.md', 'docs/GUIDE.md']) {
       const signpostPath = resolve(this.root, signpost);
       if (!existsSync(signpostPath)) {
         continue;

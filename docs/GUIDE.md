@@ -50,10 +50,10 @@ but are not yet strong enough to claim as universal rules.
 | Signpost | Type | Description |
 |----------|------|-------------|
 | `README.md` | Hand-authored | Core doctrine and filesystem shape. |
-| `ARCHITECTURE.md` | Hand-authored | How the source code is organized. |
+| `ARCHITECTURE.md` | Hybrid | How the source code is organized. |
 | `docs/BEARING.md` | Generated | Current direction and recent ships. |
 | `docs/VISION.md` | Generated | Bounded executive synthesis. |
-| `docs/CLI.md` | Generated | CLI command reference. |
-| `docs/MCP.md` | Generated | MCP tool reference. |
+| `docs/CLI.md` | Hybrid | CLI command reference. |
+| `docs/MCP.md` | Hybrid | MCP tool reference. |
 | `docs/GUIDE.md` | Hybrid | Operator advice with generated sections. |
 <!-- /generate -->

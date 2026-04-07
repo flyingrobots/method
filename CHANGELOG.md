@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Hybrid Signpost Generation (0028-hybrid-signpost-generation)
 - Generated Reference Signposts (0027-generated-reference-signposts)
 - OSS Release Scaffolding (0026-oss-release-scaffolding)
 - Configurable Workspace Paths (0025-configurable-workspace-paths)

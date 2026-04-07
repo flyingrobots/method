@@ -1,6 +1,7 @@
 ---
 title: "Architecture"
-generated_from_commit: "c877c709503f635519d00f99311805a094591534"
+generator: "method sync ship"
+provenance_level: artifact_history
 ---
 
 # Architecture
@@ -11,20 +12,23 @@ in the core, adapters for external systems, and a thin CLI shell.
 
 ## Source Layout
 
+<!-- generate:source-layout -->
 ```
 src/
-  index.ts              Workspace class — core domain logic
-  domain.ts             Zod schemas, types, and lane definitions
-  config.ts             .method.json loader with Zod validation
-  errors.ts             MethodError class
-  drift.ts              Playback-question drift detection
-  cli.ts                CLI entry point and command dispatch
-  cli-args.ts           Argument parsing and usage text
-  cli-renderer.ts       Terminal output formatting
-  mcp.ts                MCP server (Model Context Protocol)
   adapters/
-    github.ts           GitHub Issues sync adapter (push/pull)
+    github.ts
+  cli-args.ts
+  cli-renderer.ts
+  cli.ts
+  config.ts
+  domain.ts
+  drift.ts
+  errors.ts
+  generate.ts
+  index.ts
+  mcp.ts
 ```
+<!-- /generate -->
 
 ## Key Modules
 
@@ -89,18 +93,37 @@ Two-way sync between the local backlog and GitHub Issues:
 
 ## Reference Docs
 
-- **`docs/CLI.md`** — full CLI command reference with usage and examples.
-- **`docs/MCP.md`** — MCP tool reference with parameters and error handling.
+- **`docs/CLI.md`** — CLI command reference (hybrid generated).
+- **`docs/MCP.md`** — MCP tool reference (hybrid generated).
 
 ## Testing
 
-Tests live in `tests/` and use Vitest. Each test file creates temp
-workspaces via `mkdtempSync` and cleans up in `afterEach`. The
-`METHOD_TEST=true` environment variable mocks shell command execution
-during witness capture.
+<!-- generate:test-summary -->
+12 test files in `tests/` using Vitest:
+
+- `api.test.ts`
+- `cli.test.ts`
+- `config.test.ts`
+- `docs.test.ts`
+- `domain.test.ts`
+- `drift.test.ts`
+- `exec.test.ts`
+- `generate.test.ts`
+- `github-adapter.test.ts`
+- `mcp.test.ts`
+- `ship-sync.test.ts`
+- `witness.test.ts`
+
+Each test file creates temp workspaces via `mkdtempSync` and cleans
+up in `afterEach`. The `METHOD_TEST=true` environment variable mocks
+shell command execution during witness capture.
+<!-- /generate -->
 
 ## Dependencies
 
-- `@modelcontextprotocol/sdk` — MCP server framework
-- `@flyingrobots/bijou` / `@flyingrobots/bijou-node` — terminal output
-- `zod` — runtime schema validation
+<!-- generate:dependencies -->
+- `@flyingrobots/bijou`
+- `@flyingrobots/bijou-node`
+- `@modelcontextprotocol/sdk`
+- `zod`
+<!-- /generate -->
