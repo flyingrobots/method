@@ -452,12 +452,32 @@ Core commands:
 
 | Command | Purpose |
 |---------|---------|
-| `method init` | Scaffold METHOD directories and placeholder docs. |
-| `method inbox "raw idea"` | Capture a backlog note in `inbox/`. |
+| `method init [path]` | Scaffold METHOD directories and placeholder docs. |
+| `method inbox <idea>` | Capture a backlog note in `inbox/`. |
 | `method pull <item>` | Promote a backlog item into the next numbered cycle. |
 | `method close [cycle]` | Write a retro and create its `witness/` directory. |
 | `method drift [cycle]` | Check active cycle playback questions against test descriptions. |
 | `method status` | Summarize backlog lanes, active cycles, and legend load. |
+| `method mcp` | Start the MCP server over stdio. |
+| `method sync github [--push] [--pull]` | Sync backlog with GitHub Issues. |
+| `method sync ship` | Update CHANGELOG.md and BEARING.md after merge. |
+
+### MCP Tools
+
+The MCP server exposes METHOD operations for agent integration. Every
+tool requires a `workspace` parameter (absolute path to the workspace
+root). See `ARCHITECTURE.md` for the full tool reference.
+
+| Tool | Purpose |
+|------|---------|
+| `method_status` | Get workspace status as JSON. |
+| `method_inbox` | Capture an idea into the inbox. |
+| `method_pull` | Promote a backlog item into a cycle. |
+| `method_drift` | Check playback-question drift. |
+| `method_close` | Close a cycle with retro and witness. |
+| `method_sync_ship` | Perform ship sync. |
+| `method_sync_github` | Sync backlog with GitHub Issues. |
+| `method_capture_witness` | Capture verification witness. |
 
 Repo-local CI currently uses GitHub Actions as a host adapter through
 `.github/workflows/ci.yml`. The first cut stays narrow and explicit:
