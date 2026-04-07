@@ -14,7 +14,7 @@ export interface DriftReport {
   output: string;
 }
 
-export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[]): DriftReport {
+export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], testsDir?: string): DriftReport {
   if (cycles.length === 0) {
     return {
       exitCode: 0,
@@ -23,7 +23,7 @@ export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[]): Dr
   }
 
   const questions = cycles.flatMap((cycle) => extractPlaybackQuestions(cycle.designDoc));
-  const testDescriptions = collectTestDescriptions(root);
+  const testDescriptions = collectTestDescriptions(testsDir ?? resolve(root, 'tests'));
   const unmatched = questions.filter((question) =>
     !testDescriptions.some((description) => normalizeForMatch(description) === question.normalized));
   const summaryLine = `Scanned ${cycles.length} active cycle${plural(cycles.length)}, ${questions.length} playback question${plural(questions.length)}, ${testDescriptions.length} test description${plural(testDescriptions.length)}.`;
@@ -80,9 +80,9 @@ export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[]): Dr
   };
 }
 
-function collectTestDescriptions(root: string): string[] {
+function collectTestDescriptions(testsDir: string): string[] {
   const descriptions: string[] = [];
-  for (const file of collectTestFiles(root)) {
+  for (const file of collectTestFiles(testsDir)) {
     const contents = stripComments(readFileSync(file, 'utf8'));
     for (const match of contents.matchAll(/\b(?:it|test)\s*\(\s*(['"`])((?:\\.|(?!\1)[\s\S])*?)\1/gu)) {
       const description = decodeTestStringLiteral(match[2] ?? '', match[1] ?? '').trim();
@@ -94,13 +94,12 @@ function collectTestDescriptions(root: string): string[] {
   return descriptions;
 }
 
-function collectTestFiles(root: string): string[] {
-  const testsRoot = resolve(root, 'tests');
-  if (!existsSync(testsRoot)) {
+function collectTestFiles(testsDir: string): string[] {
+  if (!existsSync(testsDir)) {
     return [];
   }
 
-  return collectFiles(testsRoot, (name) => /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(name));
+  return collectFiles(testsDir, (name) => /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(name));
 }
 
 function collectFiles(root: string, predicate: (name: string) => boolean): string[] {

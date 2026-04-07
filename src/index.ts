@@ -11,44 +11,62 @@ import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { basename, dirname, relative, resolve } from 'node:path';
 import {
-  BACKLOG_DIR,
   type BacklogItem,
   type Cycle,
-  DESIGN_DIR,
   type Lane,
   LANES,
   type LegendHealth,
   type Outcome,
-  RETRO_DIR,
   type WorkspaceStatus,
 } from './domain.js';
-import { loadConfig, type Config } from './config.js';
+import { DEFAULT_PATHS, loadConfig, type Config, type PathsConfig } from './config.js';
 import { detectWorkspaceDrift, type DriftReport } from './drift.js';
 import { MethodError } from './errors.js';
+
+export interface ResolvedPaths {
+  backlog: string;
+  design: string;
+  retro: string;
+  tests: string;
+  graveyard: string;
+  methodDir: string;
+}
+
+function resolvePaths(root: string, paths: PathsConfig): ResolvedPaths {
+  return {
+    backlog: resolve(root, paths.backlog),
+    design: resolve(root, paths.design),
+    retro: resolve(root, paths.retro),
+    tests: resolve(root, paths.tests),
+    graveyard: resolve(root, paths.graveyard),
+    methodDir: resolve(root, paths.method_dir),
+  };
+}
 
 const LEGEND_PATTERN = /^(?<legend>[A-Z][A-Z0-9]*)_(?<slug>.+)$/;
 const CYCLE_PATTERN = /^(?<number>\d{4})-(?<slug>[a-z0-9][a-z0-9-]*)$/;
 
-export function initWorkspace(root: string): { created: string[] } {
+export function initWorkspace(root: string, pathsConfig?: PathsConfig): { created: string[] } {
+  const p = resolvePaths(root, pathsConfig ?? DEFAULT_PATHS);
   const directories = [
-    resolve(root, BACKLOG_DIR, 'inbox'),
-    resolve(root, BACKLOG_DIR, 'asap'),
-    resolve(root, BACKLOG_DIR, 'up-next'),
-    resolve(root, BACKLOG_DIR, 'cool-ideas'),
-    resolve(root, BACKLOG_DIR, 'bad-code'),
-    resolve(root, 'docs/method/legends'),
-    resolve(root, 'docs/method/graveyard'),
-    resolve(root, 'docs/method/releases'),
-    resolve(root, 'docs/method/retro'),
+    resolve(p.backlog, 'inbox'),
+    resolve(p.backlog, 'asap'),
+    resolve(p.backlog, 'up-next'),
+    resolve(p.backlog, 'cool-ideas'),
+    resolve(p.backlog, 'bad-code'),
+    resolve(p.methodDir, 'legends'),
+    p.graveyard,
+    resolve(p.methodDir, 'releases'),
+    p.retro,
     resolve(root, 'docs/releases'),
-    resolve(root, DESIGN_DIR),
+    p.design,
   ];
   const files = new Map<string, string>([
     [resolve(root, 'CHANGELOG.md'), '# Changelog\n\n## Unreleased\n\n- No externally meaningful changes recorded yet.\n'],
-    [resolve(root, 'docs/method/process.md'), '# Process\n\nDescribe how cycles run in this repository.\n'],
-    [resolve(root, 'docs/method/release.md'), '# Release\n\nDescribe when and how externally meaningful releases ship.\n'],
-    [resolve(root, 'docs/method/release-runbook.md'), '# Release Runbook\n\nDescribe the sequential release pre-flight for this repository.\n'],
-    [resolve(root, 'docs/method/releases/README.md'), '# Release Packets\n\nStore internal release design and verification artifacts here.\n'],
+    [resolve(p.methodDir, 'process.md'), '# Process\n\nDescribe how cycles run in this repository.\n'],
+    [resolve(p.methodDir, 'release.md'), '# Release\n\nDescribe when and how externally meaningful releases ship.\n'],
+    [resolve(p.methodDir, 'release-runbook.md'), '# Release Runbook\n\nDescribe the sequential release pre-flight for this repository.\n'],
+    [resolve(p.methodDir, 'releases/README.md'), '# Release Packets\n\nStore internal release design and verification artifacts here.\n'],
     [resolve(root, 'docs/releases/README.md'), '# Releases\n\nStore user-facing release notes and migration guides here.\n'],
   ]);
 
@@ -76,20 +94,22 @@ export function initWorkspace(root: string): { created: string[] } {
 export class Workspace {
   readonly root: string;
   readonly config: Config;
+  readonly paths: ResolvedPaths;
 
   constructor(root: string) {
     this.root = root;
     this.config = loadConfig(root);
+    this.paths = resolvePaths(root, this.config.paths);
   }
 
   ensureInitialized(): void {
     const requiredPaths = [
       resolve(this.root, 'CHANGELOG.md'),
-      resolve(this.root, BACKLOG_DIR),
-      resolve(this.root, DESIGN_DIR),
-      resolve(this.root, RETRO_DIR),
-      resolve(this.root, 'docs/method/process.md'),
-      resolve(this.root, 'docs/method/release.md'),
+      this.paths.backlog,
+      this.paths.design,
+      this.paths.retro,
+      resolve(this.paths.methodDir, 'process.md'),
+      resolve(this.paths.methodDir, 'release.md'),
     ];
     if (requiredPaths.some((path) => !existsSync(path))) {
       throw new MethodError(`${this.root} is not a METHOD workspace. Run \`method init\` first.`);
@@ -116,7 +136,7 @@ export class Workspace {
       prefix = `${normalized}_`;
     }
 
-    const path = resolve(this.root, BACKLOG_DIR, 'inbox', `${prefix}${slug}.md`);
+    const path = resolve(this.paths.backlog, 'inbox', `${prefix}${slug}.md`);
     if (existsSync(path)) {
       throw new MethodError(`${relative(this.root, path)} already exists. Use --title to disambiguate.`);
     }
@@ -136,7 +156,7 @@ export class Workspace {
 
     const { legend, slug } = splitLegend(fileStem(backlogItem));
     const cycleName = `${String(this.nextCycleNumber()).padStart(4, '0')}-${slug}`;
-    const designDir = resolve(this.root, DESIGN_DIR, cycleName);
+    const designDir = resolve(this.paths.design, cycleName);
     const designDoc = resolve(designDir, `${slug}.md`);
     if (existsSync(designDoc)) {
       throw new MethodError(`${relative(this.root, designDoc)} already exists.`);
@@ -160,7 +180,7 @@ export class Workspace {
       number: Number.parseInt(cycleName.slice(0, 4), 10),
       slug,
       designDoc,
-      retroDoc: resolve(this.root, RETRO_DIR, cycleName, `${slug}.md`),
+      retroDoc: resolve(this.paths.retro, cycleName, `${slug}.md`),
     };
   }
 
@@ -170,7 +190,7 @@ export class Workspace {
     }
 
     const cycle = this.resolveCycle(cycleName);
-    const retroDir = resolve(this.root, RETRO_DIR, cycle.name);
+    const retroDir = resolve(this.paths.retro, cycle.name);
     const witnessDir = resolve(retroDir, 'witness');
     mkdirSync(witnessDir, { recursive: true });
 
@@ -197,7 +217,7 @@ export class Workspace {
 
   detectDrift(cycleName?: string): DriftReport {
     const cycles = cycleName === undefined ? this.openCycles() : [this.resolveCycle(cycleName)];
-    return detectWorkspaceDrift(this.root, cycles);
+    return detectWorkspaceDrift(this.root, cycles, this.paths.tests);
   }
 
   shipSync(): { updated: string[]; newShips: Cycle[] } {
@@ -222,7 +242,7 @@ export class Workspace {
 
   async captureWitness(cycleName?: string): Promise<string> {
     const cycle = this.resolveCycle(cycleName);
-    const retroDir = resolve(this.root, RETRO_DIR, cycle.name);
+    const retroDir = resolve(this.paths.retro, cycle.name);
     const witnessPath = resolve(retroDir, 'witness', 'verification.md');
 
     mkdirSync(dirname(witnessPath), { recursive: true });
@@ -251,9 +271,9 @@ export class Workspace {
     };
 
     for (const lane of LANES) {
-      backlog[lane] = this.collectBacklogItems(resolve(this.root, BACKLOG_DIR, lane), lane);
+      backlog[lane] = this.collectBacklogItems(resolve(this.paths.backlog, lane), lane);
     }
-    backlog.root = this.collectBacklogItems(resolve(this.root, BACKLOG_DIR), 'root', false);
+    backlog.root = this.collectBacklogItems(this.paths.backlog, 'root', false);
 
     const activeCycles = this.openCycles();
     const legendHealth = this.calculateLegendHealth(activeCycles);
@@ -346,11 +366,11 @@ export class Workspace {
     const fileName = basename(fullPath);
     let targetDir: string;
     if (targetLane === 'graveyard') {
-      targetDir = resolve(this.root, 'docs/method/graveyard');
+      targetDir = this.paths.graveyard;
     } else if (targetLane === 'root') {
-      targetDir = resolve(this.root, BACKLOG_DIR);
+      targetDir = this.paths.backlog;
     } else {
-      targetDir = resolve(this.root, BACKLOG_DIR, targetLane);
+      targetDir = resolve(this.paths.backlog, targetLane);
     }
     
     mkdirSync(targetDir, { recursive: true });
@@ -404,7 +424,7 @@ export class Workspace {
       return direct;
     }
 
-    const backlogFiles = collectMarkdownFiles(resolve(this.root, BACKLOG_DIR));
+    const backlogFiles = collectMarkdownFiles(this.paths.backlog);
     const exactMatches = backlogFiles.filter((file) => file === direct || basename(file) === item || fileStem(file) === item);
     if (exactMatches.length === 1) {
       return exactMatches[0];
@@ -428,7 +448,7 @@ export class Workspace {
 
   private allCycles(): Cycle[] {
     const cycles = new Map<string, Cycle>();
-    for (const base of [resolve(this.root, DESIGN_DIR), resolve(this.root, RETRO_DIR)]) {
+    for (const base of [this.paths.design, this.paths.retro]) {
       if (!existsSync(base)) {
         continue;
       }
@@ -446,8 +466,8 @@ export class Workspace {
           name: entry.name,
           number,
           slug,
-          designDoc: resolve(this.root, DESIGN_DIR, entry.name, `${slug}.md`),
-          retroDoc: resolve(this.root, RETRO_DIR, entry.name, `${slug}.md`),
+          designDoc: resolve(this.paths.design, entry.name, `${slug}.md`),
+          retroDoc: resolve(this.paths.retro, entry.name, `${slug}.md`),
         });
       }
     }
@@ -501,7 +521,7 @@ export class Workspace {
 
   private calculateLegendHealth(activeCycles: readonly Cycle[]): LegendHealth[] {
     const counts = new Map<string, { backlog: number; active: number }>();
-    for (const file of collectMarkdownFiles(resolve(this.root, BACKLOG_DIR))) {
+    for (const file of collectMarkdownFiles(this.paths.backlog)) {
       const { legend } = splitLegend(fileStem(file));
       const key = legend ?? 'untagged';
       const current = counts.get(key) ?? { backlog: 0, active: 0 };

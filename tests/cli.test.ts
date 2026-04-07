@@ -407,6 +407,46 @@ describe('method CLI', () => {
     expect(error.exitCode).toBe(1);
   });
 
+  it('A project with custom paths in .method.json has method init scaffold to those paths and all commands operate against them.', async () => {
+    const root = createTempRoot();
+
+    // Write custom paths config before init
+    writeFileSync(join(root, '.method.json'), JSON.stringify({
+      paths: {
+        backlog: '.method/backlog',
+        design: '.method/design',
+        retro: '.method/retro',
+        graveyard: '.method/graveyard',
+        method_dir: '.method',
+        tests: 'spec',
+      },
+    }), 'utf8');
+
+    // Init should scaffold to custom paths
+    const stdout = new MemoryWriter();
+    await runCli(['init'], { cwd: root, stdout, stderr: new MemoryWriter() });
+    expect(existsSync(join(root, '.method/backlog/inbox'))).toBe(true);
+    expect(existsSync(join(root, '.method/design'))).toBe(true);
+    expect(existsSync(join(root, '.method/retro'))).toBe(true);
+    expect(existsSync(join(root, '.method/graveyard'))).toBe(true);
+    expect(existsSync(join(root, '.method/process.md'))).toBe(true);
+
+    // Inbox should work against custom paths
+    const inboxOut = new MemoryWriter();
+    await runCli(['inbox', 'custom path test', '--legend', 'PROC'], { cwd: root, stdout: inboxOut, stderr: new MemoryWriter() });
+    expect(existsSync(join(root, '.method/backlog/inbox/PROC_custom-path-test.md'))).toBe(true);
+
+    // Pull should work against custom paths
+    const pullOut = new MemoryWriter();
+    await runCli(['pull', 'PROC_custom-path-test'], { cwd: root, stdout: pullOut, stderr: new MemoryWriter() });
+    expect(existsSync(join(root, '.method/design/0001-custom-path-test/custom-path-test.md'))).toBe(true);
+
+    // Status should reflect it
+    const statusOut = new MemoryWriter();
+    await runCli(['status'], { cwd: root, stdout: statusOut, stderr: new MemoryWriter() });
+    expect(statusOut.output).toContain('0001-custom-path-test');
+  });
+
   it('shows help for the drift command', async () => {
     const { root, exitCode, stdout } = await runDriftHelpScenario();
 

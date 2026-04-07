@@ -9,6 +9,7 @@ import { createNodeContext } from '@flyingrobots/bijou-node';
 import { parseCliArgs, usage } from './cli-args.js';
 import { renderStatus } from './cli-renderer.js';
 import { initWorkspace, Workspace } from './index.js';
+import { loadConfig } from './config.js';
 import { createMcpServer } from './mcp.js';
 import { GitHubAdapter } from './adapters/github.js';
 
@@ -42,7 +43,8 @@ export async function runCli(
 
     if (parsed.command === 'init') {
       const target = resolve(root, parsed.path);
-      const result = initWorkspace(target);
+      const config = loadConfig(target);
+      const result = initWorkspace(target, config.paths);
       stdout.write(`${alert(`Initialized METHOD workspace at ${target}`, { variant: 'success', ctx })}\n`);
       if (result.created.length > 0) {
         stdout.write(`${result.created.map((entry) => `- ${entry}`).join('\n')}\n`);

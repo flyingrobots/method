@@ -4,9 +4,6 @@ export const LANES = ['inbox', 'asap', 'up-next', 'cool-ideas', 'bad-code'] as c
 export const LaneSchema = z.enum([...LANES, 'root']);
 export type Lane = z.infer<typeof LaneSchema>;
 
-export const BACKLOG_DIR = 'docs/method/backlog';
-export const DESIGN_DIR = 'docs/design';
-export const RETRO_DIR = 'docs/method/retro';
 
 export const OutcomeSchema = z.enum(['hill-met', 'partial', 'not-met']);
 export type Outcome = z.infer<typeof OutcomeSchema>;
