@@ -275,7 +275,8 @@ describe('method CLI', () => {
     expect(stdout.output).toContain('docs/design/0001-drift-detector/drift-detector.md');
     expect(stdout.output).toContain('Human: Can I see a concise drift report?');
     expect(stdout.output).toContain('Agent: Does a near miss still count as unmatched?');
-    expect(stdout.output).toContain('No exact normalized test description match found');
+    // Near-miss hints are shown when test descriptions are close but not exact
+    expect(stdout.output).toContain('Near miss');
   });
 
   it('Are the extraction and matching rules explicit enough that I can reproduce the detector\'s findings from committed markdown and test files alone?', async () => {

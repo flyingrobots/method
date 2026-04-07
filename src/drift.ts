@@ -48,12 +48,22 @@ export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[]): Dr
     grouped.set(question.designDoc, current);
   }
 
+  const normalizedDescriptions = testDescriptions.map((d) => ({
+    original: d,
+    normalized: normalizeForMatch(d),
+  }));
+
   const findingLines: string[] = [];
   for (const designDoc of [...grouped.keys()].sort((left, right) => left.localeCompare(right))) {
     findingLines.push(relative(root, designDoc));
     for (const question of grouped.get(designDoc) ?? []) {
       findingLines.push(`- ${question.sponsor}: ${question.text}`);
-      findingLines.push('  No exact normalized test description match found.');
+      const hint = findNearMiss(question.normalized, normalizedDescriptions);
+      if (hint !== undefined) {
+        findingLines.push(`  Near miss: "${hint}"`);
+      } else {
+        findingLines.push('  No exact normalized test description match found.');
+      }
     }
     findingLines.push('');
   }
@@ -170,6 +180,51 @@ function extractPlaybackQuestions(path: string): PlaybackQuestion[] {
   }
 
   return questions;
+}
+
+const NEAR_MISS_THRESHOLD = 0.7;
+
+function findNearMiss(
+  normalizedQuestion: string,
+  descriptions: readonly { original: string; normalized: string }[],
+): string | undefined {
+  let bestScore = 0;
+  let bestOriginal: string | undefined;
+
+  for (const desc of descriptions) {
+    const score = tokenSimilarity(normalizedQuestion, desc.normalized);
+    if (score > bestScore) {
+      bestScore = score;
+      bestOriginal = desc.original;
+    }
+  }
+
+  return bestScore >= NEAR_MISS_THRESHOLD ? bestOriginal : undefined;
+}
+
+function tokenSimilarity(left: string, right: string): number {
+  const tokenize = (value: string): Set<string> =>
+    new Set(value.replace(/[^\p{L}\p{N}\s]/gu, '').split(' ').filter((t) => t.length > 0));
+  const leftTokens = tokenize(left);
+  const rightTokens = tokenize(right);
+
+  if (leftTokens.size === 0 && rightTokens.size === 0) {
+    return 1;
+  }
+  if (leftTokens.size === 0 || rightTokens.size === 0) {
+    return 0;
+  }
+
+  let intersection = 0;
+  for (const token of leftTokens) {
+    if (rightTokens.has(token)) {
+      intersection += 1;
+    }
+  }
+
+  // Jaccard similarity: |intersection| / |union|
+  const union = leftTokens.size + rightTokens.size - intersection;
+  return intersection / union;
 }
 
 function normalizeForMatch(value: string): string {
