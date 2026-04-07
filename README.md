@@ -75,7 +75,7 @@ docs/
     retro/<cycle>/<task>.md         retrospectives
     releases/vX.Y.Z/                internal release packets
     graveyard/                      rejected ideas
-    guide.md                        operator advice and non-doctrinal practice notes
+  GUIDE.md                          operator advice and non-doctrinal practice notes
     process.md                      how cycles run
     release.md                      how releases work
     release-runbook.md              sequential release pre-flight
@@ -109,6 +109,7 @@ state of the repo; they do not create commitments.
 | `docs/VISION.md` | A bounded executive synthesis grounded in repo-visible sources. |
 | `docs/CLI.md` | CLI command reference. |
 | `docs/MCP.md` | MCP tool reference. |
+| `docs/GUIDE.md` | Operator advice and non-doctrinal practice notes. |
 
 Generated signposts should carry generation metadata and a source
 manifest. Unless they say otherwise explicitly, they are making
