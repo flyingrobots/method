@@ -7,7 +7,8 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { execSync } from 'node:child_process';
+import { exec } from 'node:child_process';
+import { promisify } from 'node:util';
 import { basename, dirname, relative, resolve } from 'node:path';
 import {
   BACKLOG_DIR,
@@ -163,7 +164,7 @@ export class Workspace {
     };
   }
 
-  closeCycle(cycleName: string | undefined, completedDriftCheck: boolean, outcome?: Outcome): Cycle {
+  async closeCycle(cycleName: string | undefined, completedDriftCheck: boolean, outcome?: Outcome): Promise<Cycle> {
     if (!completedDriftCheck) {
       throw new MethodError('Cannot close a cycle without completing the drift check.');
     }
@@ -172,13 +173,13 @@ export class Workspace {
     const retroDir = resolve(this.root, RETRO_DIR, cycle.name);
     const witnessDir = resolve(retroDir, 'witness');
     mkdirSync(witnessDir, { recursive: true });
-    
+
     if (existsSync(cycle.retroDoc)) {
       throw new MethodError(`${relative(this.root, cycle.retroDoc)} already exists.`);
     }
 
     // Capture witness while the cycle is still technically "active" (retro doc doesn't exist yet)
-    this.captureWitness(cycle.name);
+    await this.captureWitness(cycle.name);
 
     writeFileSync(
       cycle.retroDoc,
@@ -219,18 +220,15 @@ export class Workspace {
     return { updated, newShips };
   }
 
-  captureWitness(cycleName?: string): string {
+  async captureWitness(cycleName?: string): Promise<string> {
     const cycle = this.resolveCycle(cycleName);
     const retroDir = resolve(this.root, RETRO_DIR, cycle.name);
     const witnessPath = resolve(retroDir, 'witness', 'verification.md');
-    
+
     mkdirSync(dirname(witnessPath), { recursive: true });
 
-    // In a real environment, we'd execute commands. 
-    // For this implementation, we'll assume the caller wants us to 
-    // run the standard verification suite.
-    const testResult = this.execCommand('npm test');
-    const driftResult = this.execCommand(`tsx src/cli.ts drift ${cycle.name}`);
+    const testResult = await this.execCommand('npm test');
+    const driftResult = await this.execCommand(`tsx src/cli.ts drift ${cycle.name}`);
 
     const content = renderWitnessDoc({
       cycle,
@@ -526,14 +524,23 @@ export class Workspace {
       }));
   }
 
-  private execCommand(command: string): string {
+  async execCommand(command: string, options?: { timeoutMs?: number }): Promise<string> {
     if (process.env.METHOD_TEST === 'true') {
       return `[MOCK] Output for ${command}`;
     }
+    const execAsync = promisify(exec);
     try {
-      return execSync(command, { cwd: this.root, encoding: 'utf8', stdio: 'pipe' });
+      const { stdout, stderr } = await execAsync(command, {
+        cwd: this.root,
+        encoding: 'utf8',
+        timeout: options?.timeoutMs,
+      });
+      return stdout + stderr;
     } catch (error: any) {
-      return error.stdout + error.stderr;
+      if (error.killed || error.signal === 'SIGTERM') {
+        throw new MethodError(`Command timed out: ${command}`);
+      }
+      return (error.stdout ?? '') + (error.stderr ?? '');
     }
   }
 }

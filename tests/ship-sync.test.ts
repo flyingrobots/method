@@ -20,7 +20,7 @@ function createTempRoot(): string {
 }
 
 describe('Ship Sync', () => {
-  it('A new `method sync ship` command identifies closed cycles that are not yet in the `CHANGELOG.md` and appends them.', () => {
+  it('A new `method sync ship` command identifies closed cycles that are not yet in the `CHANGELOG.md` and appends them.', async () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);
@@ -28,7 +28,7 @@ describe('Ship Sync', () => {
     // Create and close a cycle
     const itemPath = workspace.captureIdea('Feature X', 'FEAT', 'New Feature');
     const cycle = workspace.pullItem('FEAT_new-feature');
-    workspace.closeCycle(cycle.name, true, 'hill-met');
+    await workspace.closeCycle(cycle.name, true, 'hill-met');
 
     // Run ship sync
     const result = workspace.shipSync();
@@ -42,7 +42,7 @@ describe('Ship Sync', () => {
     expect(changelog).toContain(`- New Feature (${cycle.name})`);
   });
 
-  it('`docs/BEARING.md` is automatically refreshed with the latest ships and the next items in the backlog.', () => {
+  it('`docs/BEARING.md` is automatically refreshed with the latest ships and the next items in the backlog.', async () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);
@@ -56,7 +56,7 @@ describe('Ship Sync', () => {
 
     const itemPath = workspace.captureIdea('Feature Z', 'FEAT', 'Just Shipped');
     const cycle = workspace.pullItem('FEAT_just-shipped');
-    workspace.closeCycle(cycle.name, true, 'hill-met');
+    await workspace.closeCycle(cycle.name, true, 'hill-met');
 
     // Run ship sync
     workspace.shipSync();
@@ -72,7 +72,7 @@ describe('Ship Sync', () => {
     expect(workspace.shipSync).toBeDefined();
   });
 
-  it('`tests/ship-sync.test.ts` proves that the sync is idempotent (running it twice doesn\'t duplicate entries).', () => {
+  it('`tests/ship-sync.test.ts` proves that the sync is idempotent (running it twice doesn\'t duplicate entries).', async () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);
@@ -80,7 +80,7 @@ describe('Ship Sync', () => {
     // Create and close a cycle
     workspace.captureIdea('Feature Y', 'FEAT', 'Another Feature');
     const cycle = workspace.pullItem('FEAT_another-feature');
-    workspace.closeCycle(cycle.name, true, 'hill-met');
+    await workspace.closeCycle(cycle.name, true, 'hill-met');
 
     // Run ship sync first time
     workspace.shipSync();

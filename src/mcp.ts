@@ -130,7 +130,7 @@ export function createMcpServer(cwd: string = process.cwd()) {
 
       if (request.params.name === 'method_close') {
         const args = request.params.arguments as { cycle?: string; driftCheck: boolean; outcome: Outcome };
-        const cycle = workspace.closeCycle(args.cycle, args.driftCheck, args.outcome);
+        const cycle = await workspace.closeCycle(args.cycle, args.driftCheck, args.outcome);
         return { content: [{ type: 'text', text: `Closed ${cycle.name}\nRetro: ${relative(workspace.root, cycle.retroDoc)}` }] };
       }
 
@@ -207,7 +207,7 @@ export function createMcpServer(cwd: string = process.cwd()) {
 
       if (request.params.name === 'method_capture_witness') {
         const args = request.params.arguments as { cycle?: string } | undefined;
-        const path = workspace.captureWitness(args?.cycle);
+        const path = await workspace.captureWitness(args?.cycle);
         return { content: [{ type: 'text', text: `Captured witness to ${relative(workspace.root, path)}` }] };
       }
 

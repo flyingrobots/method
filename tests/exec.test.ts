@@ -79,13 +79,21 @@ describe('Async Exec', () => {
   });
 
   it('The async exec supports a configurable timeout.', async () => {
-    const root = createTempRoot();
-    initWorkspace(root);
-    const workspace = new Workspace(root);
+    const originalEnv = process.env.METHOD_TEST;
+    delete process.env.METHOD_TEST;
+    try {
+      const root = createTempRoot();
+      initWorkspace(root);
+      const workspace = new Workspace(root);
 
-    // A command that would hang should be killed by the timeout
-    await expect(
-      workspace.execCommand('sleep 30', { timeoutMs: 200 }),
-    ).rejects.toThrow(/timed out|killed|abort/iu);
+      // A command that would hang should be killed by the timeout
+      await expect(
+        workspace.execCommand('sleep 30', { timeoutMs: 200 }),
+      ).rejects.toThrow(/timed out|killed|abort/iu);
+    } finally {
+      if (originalEnv !== undefined) {
+        process.env.METHOD_TEST = originalEnv;
+      }
+    }
   });
 });
