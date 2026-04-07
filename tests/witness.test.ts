@@ -48,7 +48,7 @@ describe('Automated Witness Capture', () => {
     const cycle = workspace.pullItem('FEAT_witness-test');
     
     // No need to spy manually now, index.ts handles it via METHOD_TEST
-    const witnessPath = workspace.captureWitness(cycle.name);
+    const witnessPath = await workspace.captureWitness(cycle.name);
     
     expect(witnessPath).toContain('docs/method/retro/0001-witness-test/witness/verification.md');
     
