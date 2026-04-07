@@ -1,3 +1,7 @@
+---
+title: "Architecture"
+---
+
 # Architecture
 
 METHOD is a TypeScript CLI and library that implements the METHOD

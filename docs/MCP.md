@@ -1,3 +1,7 @@
+---
+title: "MCP Reference"
+---
+
 # MCP Reference
 
 METHOD exposes its workspace operations through a Model Context

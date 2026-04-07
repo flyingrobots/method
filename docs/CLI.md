@@ -1,3 +1,7 @@
+---
+title: "CLI Reference"
+---
+
 # CLI Reference
 
 The `method` command is the primary interface for METHOD workspace
