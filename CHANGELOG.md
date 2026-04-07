@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Method Consistency Fixes (0022-method-consistency-fixes)
+- Drift Near-Miss Hints (0023-drift-near-miss-hints)
+- Async Exec Refactor (0024-async-exec-refactor)
 - Two-way GitHub Sync (0021-two-way-github-sync)
 - Automated Witness Capture (0020-automated-witness-capture)
 - Config Management (0019-config-management)
