@@ -1,6 +1,20 @@
 import { resolve } from 'node:path';
+import { z } from 'zod';
 import { readBody, readHeading, type Workspace } from '../index.js';
 import { type WorkspaceStatus } from '../domain.js';
+
+const GitHubIssueResponseSchema = z.object({
+  id: z.number(),
+  number: z.number(),
+  html_url: z.string(),
+  state: z.enum(['open', 'closed']),
+  labels: z.array(z.object({ name: z.string() })),
+});
+
+const GitHubCommentResponseSchema = z.array(z.object({
+  user: z.object({ login: z.string() }),
+  body: z.string(),
+}));
 
 export interface GitHubIssue {
   id: number;
@@ -180,14 +194,15 @@ export class GitHubAdapter {
   }
 
   private async fetchComments(number: number): Promise<{ user: string; body: string }[]> {
-    const data = (await this.ghFetch(`/repos/${this.owner}/${this.repo}/issues/${number}/comments`)) as any[];
-    return data.map((c: any) => ({
+    const data = await this.ghFetch(`/repos/${this.owner}/${this.repo}/issues/${number}/comments`);
+    const parsed = GitHubCommentResponseSchema.parse(data);
+    return parsed.map((c) => ({
       user: c.user.login,
       body: c.body,
     }));
   }
 
-  private async ghFetch(endpoint: string, options: RequestInit = {}): Promise<any> {
+  private async ghFetch(endpoint: string, options: RequestInit = {}): Promise<unknown> {
     const url = endpoint.startsWith('http') ? endpoint : `https://api.github.com${endpoint}`;
     const response = await fetch(url, {
       ...options,
@@ -208,13 +223,14 @@ export class GitHubAdapter {
     return response.json();
   }
 
-  private mapIssue(data: any): GitHubIssue {
+  private mapIssue(data: unknown): GitHubIssue {
+    const parsed = GitHubIssueResponseSchema.parse(data);
     return {
-      id: data.id,
-      number: data.number,
-      url: data.html_url,
-      state: data.state,
-      labels: data.labels.map((l: any) => l.name),
+      id: parsed.id,
+      number: parsed.number,
+      url: parsed.html_url,
+      state: parsed.state,
+      labels: parsed.labels.map((l) => l.name),
     };
   }
 }

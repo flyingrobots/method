@@ -102,16 +102,16 @@ function collectTestFiles(testsDir: string): string[] {
   return collectFiles(testsDir, (name) => /\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(name));
 }
 
-function collectFiles(root: string, predicate: (name: string) => boolean): string[] {
-  if (!existsSync(root)) {
+function collectFiles(root: string, predicate: (name: string) => boolean, maxDepth = 10): string[] {
+  if (maxDepth <= 0 || !existsSync(root)) {
     return [];
   }
 
   const files: string[] = [];
   for (const entry of readdirSync(root, { withFileTypes: true })) {
     const path = resolve(root, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...collectFiles(path, predicate));
+    if (entry.isDirectory() && !entry.isSymbolicLink()) {
+      files.push(...collectFiles(path, predicate, maxDepth - 1));
     } else if (entry.isFile() && predicate(entry.name)) {
       files.push(path);
     }

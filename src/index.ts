@@ -23,7 +23,15 @@ import {
 import { DEFAULT_PATHS, loadConfig, type Config, type PathsConfig } from './config.js';
 import { detectWorkspaceDrift, type DriftReport } from './drift.js';
 import { MethodError } from './errors.js';
+import {
+  readBody as fmReadBody,
+  readFrontmatter as fmReadFrontmatter,
+  readHeading as fmReadHeading,
+  updateBody as fmUpdateBody,
+  updateFrontmatter as fmUpdateFrontmatter,
+} from './frontmatter.js';
 import { createGenerators, replaceGeneratedSections } from './generate.js';
+import { renderBearing, renderDesignDoc, renderRetroDoc, renderWitnessDoc, titleCase } from './renderers.js';
 
 export interface ResolvedPaths {
   backlog: string;
@@ -320,74 +328,15 @@ export class Workspace {
   }
 
   updateFrontmatter(path: string, updates: Record<string, string>): void {
-    const fullPath = resolve(this.root, path);
-    const content = readFileSync(fullPath, 'utf8');
-    let newContent = content;
-
-    if (content.startsWith('---\n')) {
-      const end = content.indexOf('\n---\n', 4);
-      if (end !== -1) {
-        let frontmatter = content.slice(4, end);
-        for (const [key, value] of Object.entries(updates)) {
-          const regex = new RegExp(`^${key}:.*$`, 'mu');
-          if (regex.test(frontmatter)) {
-            frontmatter = frontmatter.replace(regex, `${key}: ${value}`);
-          } else {
-            frontmatter = `${frontmatter}\n${key}: ${value}`;
-          }
-        }
-        newContent = `---\n${frontmatter.trim()}\n---\n${content.slice(end + 5)}`;
-      }
-    } else {
-      let frontmatter = '';
-      for (const [key, value] of Object.entries(updates)) {
-        frontmatter += `${key}: ${value}\n`;
-      }
-      newContent = `---\n${frontmatter.trim()}\n---\n\n${content}`;
-    }
-
-    writeFileSync(fullPath, newContent, 'utf8');
+    fmUpdateFrontmatter(resolve(this.root, path), updates);
   }
 
   readFrontmatter(path: string): Record<string, string> {
-    const fullPath = resolve(this.root, path);
-    const content = readFileSync(fullPath, 'utf8');
-    const result: Record<string, string> = {};
-
-    if (content.startsWith('---\n')) {
-      const end = content.indexOf('\n---\n', 4);
-      if (end !== -1) {
-        const frontmatter = content.slice(4, end);
-        const lines = frontmatter.split('\n');
-        for (const line of lines) {
-          const match = /^([a-z0-9_]+):\s*(.*)$/u.exec(line.trim());
-          if (match !== null) {
-            result[match[1] ?? ''] = (match[2] ?? '').trim();
-          }
-        }
-      }
-    }
-
-    return result;
+    return fmReadFrontmatter(resolve(this.root, path));
   }
 
   updateBody(path: string, newBody: string): void {
-    const fullPath = resolve(this.root, path);
-    const content = readFileSync(fullPath, 'utf8');
-    let frontmatter = '';
-
-    if (content.startsWith('---\n')) {
-      const end = content.indexOf('\n---\n', 4);
-      if (end !== -1) {
-        frontmatter = content.slice(0, end + 5);
-      }
-    }
-
-    const title = readHeading(fullPath);
-    const newContent = frontmatter 
-      ? `${frontmatter}\n# ${title}\n\n${newBody.trim()}\n`
-      : `# ${title}\n\n${newBody.trim()}\n`;
-    writeFileSync(fullPath, newContent, 'utf8');
+    fmUpdateBody(resolve(this.root, path), newBody);
   }
 
   moveBacklogItem(path: string, targetLane: Lane | 'graveyard'): string {
@@ -599,16 +548,16 @@ export class Workspace {
   }
 }
 
-function collectMarkdownFiles(root: string): string[] {
-  if (!existsSync(root)) {
+function collectMarkdownFiles(root: string, maxDepth = 10): string[] {
+  if (maxDepth <= 0 || !existsSync(root)) {
     return [];
   }
 
   const files: string[] = [];
   for (const entry of readdirSync(root, { withFileTypes: true })) {
     const path = resolve(root, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...collectMarkdownFiles(path));
+    if (entry.isDirectory() && !entry.isSymbolicLink()) {
+      files.push(...collectMarkdownFiles(path, maxDepth - 1));
     } else if (entry.isFile() && entry.name.endsWith('.md')) {
       files.push(path);
     }
@@ -617,182 +566,6 @@ function collectMarkdownFiles(root: string): string[] {
   return files.sort((left, right) => left.localeCompare(right));
 }
 
-function renderBearing(status: WorkspaceStatus, closedCycles: Cycle[], commitSha: string): string {
-  const latestShips = [...closedCycles].reverse().slice(0, 3);
-  const nextUp = [...status.backlog.asap, ...status.backlog['up-next']].slice(0, 2);
-
-  const priority = nextUp.length > 0 ? nextUp.map(i => `\`${i.stem}\``).join(' or ') : 'TBD';
-
-  const shipLines = latestShips.map(cycle => {
-    const title = readHeading(cycle.designDoc) || titleCase(cycle.slug);
-    return `- \`${cycle.name}\`: ${title}`;
-  });
-
-  return [
-    '---',
-    'title: "BEARING"',
-    `generated_at: ${new Date().toISOString()}`,
-    'generator: "method sync ship (renderBearing)"',
-    `generated_from_commit: "${commitSha}"`,
-    'provenance_level: artifact_history',
-    '---',
-    '',
-    '# BEARING',
-    '',
-    'This signpost summarizes direction. It does not create commitments or',
-    'replace backlog items, design docs, retros, or CLI status.',
-    '',
-    '## Where are we going?',
-    '',
-    `Current priority: pull ${priority} to continue the system's maturity.`,
-    '',
-    '## What just shipped?',
-    '',
-    ...shipLines,
-    '',
-    '## What feels wrong?',
-    '',
-    '- Backlog maintenance is still largely manual.',
-    '- Witness generation is not yet automated.',
-    '',
-  ].join('\n');
-}
-
-function renderWitnessDoc(options: {
-  cycle: Cycle;
-  testResult: string;
-  driftResult: string;
-}): string {
-  const title = readHeading(options.cycle.designDoc) || titleCase(options.cycle.slug);
-  return [
-    '---',
-    `title: "Verification Witness for Cycle ${options.cycle.number}"`,
-    '---',
-    '',
-    `# Verification Witness for Cycle ${options.cycle.number}`,
-    '',
-    `This witness proves that \`${title}\` now carries the required`,
-    'behavior and adheres to the repo invariants.',
-    '',
-    '## Test Results',
-    '',
-    '```',
-    options.testResult.trim(),
-    '```',
-    '',
-    '## Drift Results',
-    '',
-    '```',
-    options.driftResult.trim(),
-    '```',
-    '',
-    '## Manual Verification',
-    '',
-    '- [x] Automated capture completed successfully.',
-    '',
-  ].join('\n');
-}
-
-function renderDesignDoc(options: {
-  title: string;
-  legend?: string;
-  source: string;
-  backlogBody: string;
-}): string {
-  const legendValue = options.legend ?? 'none';
-  return [
-    `# ${options.title}`,
-    '',
-    `Source backlog item: \`${options.source}\``,
-    `Legend: ${legendValue}`,
-    '',
-    '## Sponsors',
-    '',
-    '- Human: TBD',
-    '- Agent: TBD',
-    '',
-    '## Hill',
-    '',
-    'TBD',
-    '',
-    '## Playback Questions',
-    '',
-    '### Human',
-    '',
-    '- [ ] TBD',
-    '',
-    '### Agent',
-    '',
-    '- [ ] TBD',
-    '',
-    '## Accessibility and Assistive Reading',
-    '',
-    '- Linear truth / reduced-complexity posture: TBD',
-    '- Non-visual or alternate-reading expectations: TBD',
-    '',
-    '## Localization and Directionality',
-    '',
-    '- Locale / wording / formatting assumptions: TBD',
-    '- Logical direction / layout assumptions: TBD',
-    '',
-    '## Agent Inspectability and Explainability',
-    '',
-    '- What must be explicit and deterministic for agents: TBD',
-    '- What must be attributable, evidenced, or governed: TBD',
-    '',
-    '## Non-goals',
-    '',
-    '- [ ] TBD',
-    '',
-    '## Backlog Context',
-    '',
-    options.backlogBody,
-    '',
-  ].join('\n');
-}
-
-function renderRetroDoc(options: {
-  cycle: Cycle;
-  root: string;
-  outcome?: Outcome;
-  witnessDir: string;
-}): string {
-  const title = readHeading(options.cycle.designDoc) || titleCase(options.cycle.slug);
-  return [
-    `# ${title} Retro`,
-    '',
-    `Design: \`${relative(options.root, options.cycle.designDoc)}\``,
-    `Outcome: ${options.outcome ?? 'TBD'}`,
-    'Drift check: yes',
-    '',
-    '## Summary',
-    '',
-    'TBD',
-    '',
-    '## Playback Witness',
-    '',
-    `Add artifacts under \`${options.witnessDir}\` and link them here.`,
-    '',
-    '## Drift',
-    '',
-    '- None recorded.',
-    '',
-    '## New Debt',
-    '',
-    '- None recorded.',
-    '',
-    '## Cool Ideas',
-    '',
-    '- None recorded.',
-    '',
-    '## Backlog Maintenance',
-    '',
-    '- [ ] Inbox processed',
-    '- [ ] Priorities reviewed',
-    '- [ ] Dead work buried or merged',
-    '',
-  ].join('\n');
-}
 
 function splitLegend(stem: string): { legend?: string; slug: string } {
   const match = LEGEND_PATTERN.exec(stem);
@@ -802,32 +575,9 @@ function splitLegend(stem: string): { legend?: string; slug: string } {
   return { legend: match.groups.legend, slug: match.groups.slug };
 }
 
-export function readHeading(path: string): string {
-  for (const line of readFileSync(path, 'utf8').split(/\r?\n/u)) {
-    if (line.startsWith('# ')) {
-      return line.slice(2).trim();
-    }
-  }
-  return '';
-}
+export const readHeading = fmReadHeading;
 
-export function readBody(path: string): string {
-  const content = readFileSync(path, 'utf8');
-  let body = content;
-
-  // Strip YAML frontmatter
-  if (content.startsWith('---\n')) {
-    const end = content.indexOf('\n---\n', 4);
-    if (end !== -1) {
-      body = content.slice(end + 5);
-    }
-  }
-
-  const lines = body.trim().split(/\r?\n/u);
-  const bodyLines = lines[0]?.startsWith('# ') ? lines.slice(1) : lines;
-  const result = bodyLines.join('\n').trim();
-  return result.length > 0 ? result : 'TBD';
-}
+export const readBody = fmReadBody;
 
 function readDesignLegend(path: string): string | undefined {
   for (const line of readFileSync(path, 'utf8').split(/\r?\n/u)) {
@@ -846,14 +596,6 @@ function slugify(value: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/gu, '-')
     .replace(/^-+|-+$/gu, '');
-}
-
-function titleCase(value: string): string {
-  return value
-    .split('-')
-    .filter((part) => part.length > 0)
-    .map((part) => `${part[0].toUpperCase()}${part.slice(1)}`)
-    .join(' ');
 }
 
 function fileStem(path: string): string {
