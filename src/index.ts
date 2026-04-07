@@ -239,7 +239,7 @@ export class Workspace {
       updated.push('CHANGELOG.md');
     }
 
-    writeFileSync(bearingPath, renderBearing(status, closedCycles), 'utf8');
+    writeFileSync(bearingPath, renderBearing(status, closedCycles, commitSha), 'utf8');
     updated.push('docs/BEARING.md');
 
     writeFileSync(cliPath, generateCliReference(commitSha), 'utf8');
@@ -588,7 +588,10 @@ function generateCliReference(commitSha: string): string {
   const lines: string[] = [
     '---',
     'title: "CLI Reference"',
+    `generated_at: ${new Date().toISOString()}`,
+    'generator: "method sync ship (generateCliReference)"',
     `generated_from_commit: "${commitSha}"`,
+    'provenance_level: artifact_history',
     '---',
     '',
     '# CLI Reference',
@@ -631,7 +634,10 @@ function generateMcpReference(commitSha: string): string {
   const lines: string[] = [
     '---',
     'title: "MCP Reference"',
+    `generated_at: ${new Date().toISOString()}`,
+    'generator: "method sync ship (generateMcpReference)"',
     `generated_from_commit: "${commitSha}"`,
+    'provenance_level: artifact_history',
     '---',
     '',
     '# MCP Reference',
@@ -694,7 +700,7 @@ function collectMarkdownFiles(root: string): string[] {
   return files.sort((left, right) => left.localeCompare(right));
 }
 
-function renderBearing(status: WorkspaceStatus, closedCycles: Cycle[]): string {
+function renderBearing(status: WorkspaceStatus, closedCycles: Cycle[], commitSha: string): string {
   const latestShips = [...closedCycles].reverse().slice(0, 3);
   const nextUp = [...status.backlog.asap, ...status.backlog['up-next']].slice(0, 2);
 
@@ -708,7 +714,10 @@ function renderBearing(status: WorkspaceStatus, closedCycles: Cycle[]): string {
   return [
     '---',
     'title: "BEARING"',
-    'legend: none',
+    `generated_at: ${new Date().toISOString()}`,
+    'generator: "method sync ship (renderBearing)"',
+    `generated_from_commit: "${commitSha}"`,
+    'provenance_level: artifact_history',
     '---',
     '',
     '# BEARING',

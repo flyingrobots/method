@@ -1,6 +1,9 @@
 ---
 title: "MCP Reference"
-generated_from_commit: "fe47f5bb944a4035cfd2c0692e438a2174206103"
+generated_at: 2026-04-07T05:30:14.482Z
+generator: "method sync ship (generateMcpReference)"
+generated_from_commit: "03d889ddbe57ecb6b336ba2a62815f863f85bfd1"
+provenance_level: artifact_history
 ---
 
 # MCP Reference
