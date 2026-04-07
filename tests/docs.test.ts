@@ -405,7 +405,7 @@ describe('METHOD docs', () => {
 
   it('docs/method/process.md contains the branching and commitment rules.', () => {
     const process = readRepoFile('docs/method/process.md');
-    expect(process).toContain('cycles/<cycle_name>');
+    expect(process).toContain('cycles/####-slug');
     expect(process).toContain('stage and commit all modified files');
   });
 
@@ -627,6 +627,40 @@ describe('METHOD docs', () => {
       lastIndex = index;
     }
     expect(runbook).toContain('Never guess. Never claim success');
+  });
+
+  it('Branch naming uses one canonical pattern across README.md and docs/method/process.md, with no contradictory examples.', () => {
+    const readme = readRepoFile('README.md');
+    const process = readRepoFile('docs/method/process.md');
+
+    // Both docs must name the cycles/####-slug pattern
+    expect(readme).toContain('cycles/');
+    expect(process).toContain('cycles/####-slug');
+
+    // process.md Rules section must use cycles/####-slug, not bare cycles/<cycle_name>
+    expect(process).not.toContain('cycles/<cycle_name>');
+
+    // Branch naming section must show cycles/ prefix
+    expect(process).toContain('cycles/');
+    expect(process).toContain('`cycles/####-slug`');
+  });
+
+  it('The RED step in README.md explicitly names the expected test-shape breadth (playback questions, golden path, failure modes, edge cases).', () => {
+    const readme = readRepoFile('README.md');
+
+    // RED step must go beyond just "playback questions become specs"
+    expect(readme).toContain('playback questions');
+    expect(readme).toContain('golden path');
+    expect(readme).toContain('failure modes');
+    expect(readme).toContain('edge cases');
+  });
+
+  it('Lane conformance has an explicit rule documented.', () => {
+    const readme = readRepoFile('README.md');
+
+    // The README must state whether lanes are scaffolded or created on demand
+    expect(readme).toContain('method init');
+    expect(readme).toMatch(/lane.*scaffold|scaffold.*lane/iu);
   });
 
   it('documents release-note surfaces in the repo structure and release guidance', () => {
