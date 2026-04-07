@@ -17,6 +17,8 @@ in the core, adapters for external systems, and a thin CLI shell.
 src/
   adapters/
     github.ts
+  types/
+    git-stunts-plumbing.d.ts
   cli-args.ts
   cli-renderer.ts
   cli.ts
@@ -124,6 +126,7 @@ shell command execution during witness capture.
 <!-- generate:dependencies -->
 - `@flyingrobots/bijou`
 - `@flyingrobots/bijou-node`
+- `@git-stunts/plumbing`
 - `@modelcontextprotocol/sdk`
 - `zod`
 <!-- /generate -->

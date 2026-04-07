@@ -31,7 +31,7 @@ describe('Ship Sync', () => {
     await workspace.closeCycle(cycle.name, true, 'hill-met');
 
     // Run ship sync
-    const result = workspace.shipSync();
+    const result = await workspace.shipSync();
     expect(result.newShips.length).toBe(1);
     expect(result.newShips[0].name).toBe(cycle.name);
     expect(result.updated).toContain('CHANGELOG.md');
@@ -59,7 +59,7 @@ describe('Ship Sync', () => {
     await workspace.closeCycle(cycle.name, true, 'hill-met');
 
     // Run ship sync
-    workspace.shipSync();
+    await workspace.shipSync();
 
     // Verify BEARING
     const bearing = readFileSync(join(root, 'docs/BEARING.md'), 'utf8');
@@ -83,13 +83,13 @@ describe('Ship Sync', () => {
     await workspace.closeCycle(cycle.name, true, 'hill-met');
 
     // Run ship sync first time
-    workspace.shipSync();
+    await workspace.shipSync();
     const changelogFirst = readFileSync(join(root, 'CHANGELOG.md'), 'utf8');
     const countFirst = (changelogFirst.match(new RegExp(cycle.name, 'g')) || []).length;
     expect(countFirst).toBe(1);
 
     // Run ship sync second time
-    const result = workspace.shipSync();
+    const result = await workspace.shipSync();
     expect(result.newShips.length).toBe(0);
     expect(result.updated).not.toContain('CHANGELOG.md');
 
@@ -98,12 +98,12 @@ describe('Ship Sync', () => {
     expect(countSecond).toBe(1);
   });
 
-  it('The command correctly handles workspaces with no new ships.', () => {
+  it('The command correctly handles workspaces with no new ships.', async () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);
 
-    const result = workspace.shipSync();
+    const result = await workspace.shipSync();
     expect(result.newShips.length).toBe(0);
     expect(result.updated).toContain('docs/BEARING.md');
     expect(result.updated).not.toContain('CHANGELOG.md');

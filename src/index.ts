@@ -7,8 +7,9 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
-import { exec, execSync } from 'node:child_process';
+import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
+import GitPlumbing from '@git-stunts/plumbing';
 import { basename, dirname, relative, resolve } from 'node:path';
 import {
   type BacklogItem,
@@ -221,12 +222,12 @@ export class Workspace {
     return detectWorkspaceDrift(this.root, cycles, this.paths.tests);
   }
 
-  shipSync(): { updated: string[]; newShips: Cycle[] } {
+  async shipSync(): Promise<{ updated: string[]; newShips: Cycle[] }> {
     const changelogPath = resolve(this.root, 'CHANGELOG.md');
     const bearingPath = resolve(this.root, 'docs/BEARING.md');
     const status = this.status();
     const closedCycles = this.allCycles().filter((cycle) => existsSync(cycle.retroDoc));
-    const commitSha = this.currentCommitSha();
+    const commitSha = await this.currentCommitSha();
 
     const newShips = this.findNewShips(closedCycles);
     const updated: string[] = [];
@@ -258,9 +259,10 @@ export class Workspace {
     return { updated, newShips };
   }
 
-  private currentCommitSha(): string {
+  private async currentCommitSha(): Promise<string> {
     try {
-      return execSync('git rev-parse HEAD', { cwd: this.root, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+      const git = GitPlumbing.createDefault({ cwd: this.root });
+      return await git.execute({ args: ['rev-parse', 'HEAD'] });
     } catch {
       return 'unknown';
     }

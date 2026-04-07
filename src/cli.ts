@@ -147,7 +147,7 @@ export async function runCli(
       }
 
       if (parsed.adapter === 'ship') {
-        const result = workspace.shipSync();
+        const result = await workspace.shipSync();
         for (const path of result.updated) {
           stdout.write(`${alert(`Updated ${path}`, { variant: 'success', ctx })}\n`);
         }

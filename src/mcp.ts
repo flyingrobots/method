@@ -139,7 +139,7 @@ export function createMcpServer() {
       }
 
       if (request.params.name === 'method_sync_ship') {
-        const result = workspace.shipSync();
+        const result = await workspace.shipSync();
         const text = [
           `Updated: ${result.updated.join(', ')}`,
           ...result.newShips.map((c) => `- Shipped ${c.name}`),
