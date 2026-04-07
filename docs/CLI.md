@@ -1,7 +1,7 @@
 ---
 title: "CLI Reference"
 generated_at: 2026-04-07T05:30:14.481Z
-generator: "method sync ship (generateCliReference)"
+generator: "method sync ship"
 generated_from_commit: "03d889ddbe57ecb6b336ba2a62815f863f85bfd1"
 provenance_level: artifact_history
 ---
@@ -14,6 +14,7 @@ operations. Run `method help` for a quick summary or
 
 ## Commands
 
+<!-- generate:cli-commands -->
 ### `method init [path]`
 
 Scaffold a METHOD workspace in the given directory.
@@ -50,10 +51,19 @@ GitHub Options:
   --pull                      Update local backlog with GitHub changes (labels, comments, status).
 Perform Ship Sync or synchronize the backlog with GitHub Issues.
 
-## Exit Codes
+### Exit Codes
 
 | Code | Meaning |
 |------|---------|
 | 0 | Success |
 | 1 | Error (bad arguments, missing workspace, failed operation) |
 | 2 | Drift found (from `method drift`) |
+<!-- /generate -->
+
+## Configuration
+
+The CLI reads `.method.json` from the workspace root for:
+
+- `paths` — custom directory layout (see `ARCHITECTURE.md`)
+- `github_token` / `github_repo` — GitHub adapter credentials
+- Environment overrides: `GITHUB_TOKEN`, `GITHUB_REPO`

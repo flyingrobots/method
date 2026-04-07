@@ -1,6 +1,10 @@
 ---
 title: "Guide"
+generator: "method sync ship"
+provenance_level: artifact_history
 ---
+
+# Guide
 
 This document holds practical advice for working in a METHOD repo. It
 is intentionally lighter than doctrine in `README.md` or
@@ -39,3 +43,17 @@ Some things are worth saying before they are worth standardizing.
 `README.md` and `docs/method/process.md` describe the load-bearing
 contract of METHOD. This guide is for patterns that help in practice
 but are not yet strong enough to claim as universal rules.
+
+## Signposts
+
+<!-- generate:signpost-inventory -->
+| Signpost | Type | Description |
+|----------|------|-------------|
+| `README.md` | Hand-authored | Core doctrine and filesystem shape. |
+| `ARCHITECTURE.md` | Hand-authored | How the source code is organized. |
+| `docs/BEARING.md` | Generated | Current direction and recent ships. |
+| `docs/VISION.md` | Generated | Bounded executive synthesis. |
+| `docs/CLI.md` | Generated | CLI command reference. |
+| `docs/MCP.md` | Generated | MCP tool reference. |
+| `docs/GUIDE.md` | Hybrid | Operator advice with generated sections. |
+<!-- /generate -->
