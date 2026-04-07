@@ -710,8 +710,10 @@ describe('METHOD docs', () => {
     expect(cli).toContain('method drift');
     expect(cli).toContain('method status');
     expect(cli).toContain('method mcp');
-    expect(cli).toContain('method sync github');
-    expect(cli).toContain('method sync ship');
+    expect(cli).toContain('method sync');
+    expect(cli).toContain('--push');
+    expect(cli).toContain('--pull');
+    expect(cli).toContain('Ship Sync');
 
     // MCP doc names every tool
     expect(mcp).toContain('method_status');
