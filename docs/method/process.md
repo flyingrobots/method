@@ -17,7 +17,7 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
   reflect merged `main` state, not branch-local closeout state.
 - Review visibility is currently outside METHOD's repo-native
   coordination surface; branch and PR context carry it for now.
-- All cycle work must be done on a branch named `cycles/<cycle_name>`.
+- All cycle work must be done on a branch named `cycles/####-slug`.
 - Once a full cycle is complete (after the retro), the operator must
   push the branch and open a PR to the target branch (usually `main`).
 - Agents must stage and commit all modified files at the end of each turn
@@ -47,8 +47,8 @@ METHOD uses Git for distributed coordination but remains forge-agnostic.
 
 ### Branch Naming
 
-- **Cycle Branches:** Use the full cycle name: `####-slug` (e.g.,
-  `0015-git-branch-workflow-policy`).
+- **Cycle Branches:** Use `cycles/####-slug` (e.g.,
+  `cycles/0015-git-branch-workflow-policy`).
 - **Maintenance Branches:** Use `maint-slug` for low-risk changes that
   require review (e.g., `maint-fix-typos`).
 - **Triage/Backlog:** Small backlog captures or moves can happen
