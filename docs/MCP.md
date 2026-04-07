@@ -1,7 +1,7 @@
 ---
 title: "MCP Reference"
 generated_at: 2026-04-07T05:30:14.482Z
-generator: "method sync ship (generateMcpReference)"
+generator: "method sync ship"
 generated_from_commit: "03d889ddbe57ecb6b336ba2a62815f863f85bfd1"
 provenance_level: artifact_history
 ---
@@ -20,6 +20,7 @@ workspace-agnostic — a single instance can serve multiple projects.
 
 ## Tools
 
+<!-- generate:mcp-tools -->
 ### `method_status`
 
 Get the current status of the METHOD workspace (backlog lanes, active cycles, legend health)
@@ -80,3 +81,10 @@ Automate terminal evidence capture for a cycle
 **Parameters:**
 
 - `cycle` (optional) `string`
+<!-- /generate -->
+
+## Error Handling
+
+All tools return `isError: true` with a text message on failure.
+Common errors: `workspace is required`, `not a METHOD workspace`,
+`No active cycles found`.
