@@ -23,6 +23,13 @@ import {
 import { DEFAULT_PATHS, loadConfig, type Config, type PathsConfig } from './config.js';
 import { detectWorkspaceDrift, type DriftReport } from './drift.js';
 import { MethodError } from './errors.js';
+import {
+  readBody as fmReadBody,
+  readFrontmatter as fmReadFrontmatter,
+  readHeading as fmReadHeading,
+  updateBody as fmUpdateBody,
+  updateFrontmatter as fmUpdateFrontmatter,
+} from './frontmatter.js';
 import { createGenerators, replaceGeneratedSections } from './generate.js';
 
 export interface ResolvedPaths {
@@ -320,74 +327,15 @@ export class Workspace {
   }
 
   updateFrontmatter(path: string, updates: Record<string, string>): void {
-    const fullPath = resolve(this.root, path);
-    const content = readFileSync(fullPath, 'utf8');
-    let newContent = content;
-
-    if (content.startsWith('---\n')) {
-      const end = content.indexOf('\n---\n', 4);
-      if (end !== -1) {
-        let frontmatter = content.slice(4, end);
-        for (const [key, value] of Object.entries(updates)) {
-          const regex = new RegExp(`^${key}:.*$`, 'mu');
-          if (regex.test(frontmatter)) {
-            frontmatter = frontmatter.replace(regex, `${key}: ${value}`);
-          } else {
-            frontmatter = `${frontmatter}\n${key}: ${value}`;
-          }
-        }
-        newContent = `---\n${frontmatter.trim()}\n---\n${content.slice(end + 5)}`;
-      }
-    } else {
-      let frontmatter = '';
-      for (const [key, value] of Object.entries(updates)) {
-        frontmatter += `${key}: ${value}\n`;
-      }
-      newContent = `---\n${frontmatter.trim()}\n---\n\n${content}`;
-    }
-
-    writeFileSync(fullPath, newContent, 'utf8');
+    fmUpdateFrontmatter(resolve(this.root, path), updates);
   }
 
   readFrontmatter(path: string): Record<string, string> {
-    const fullPath = resolve(this.root, path);
-    const content = readFileSync(fullPath, 'utf8');
-    const result: Record<string, string> = {};
-
-    if (content.startsWith('---\n')) {
-      const end = content.indexOf('\n---\n', 4);
-      if (end !== -1) {
-        const frontmatter = content.slice(4, end);
-        const lines = frontmatter.split('\n');
-        for (const line of lines) {
-          const match = /^([a-z0-9_]+):\s*(.*)$/u.exec(line.trim());
-          if (match !== null) {
-            result[match[1] ?? ''] = (match[2] ?? '').trim();
-          }
-        }
-      }
-    }
-
-    return result;
+    return fmReadFrontmatter(resolve(this.root, path));
   }
 
   updateBody(path: string, newBody: string): void {
-    const fullPath = resolve(this.root, path);
-    const content = readFileSync(fullPath, 'utf8');
-    let frontmatter = '';
-
-    if (content.startsWith('---\n')) {
-      const end = content.indexOf('\n---\n', 4);
-      if (end !== -1) {
-        frontmatter = content.slice(0, end + 5);
-      }
-    }
-
-    const title = readHeading(fullPath);
-    const newContent = frontmatter 
-      ? `${frontmatter}\n# ${title}\n\n${newBody.trim()}\n`
-      : `# ${title}\n\n${newBody.trim()}\n`;
-    writeFileSync(fullPath, newContent, 'utf8');
+    fmUpdateBody(resolve(this.root, path), newBody);
   }
 
   moveBacklogItem(path: string, targetLane: Lane | 'graveyard'): string {
@@ -599,16 +547,16 @@ export class Workspace {
   }
 }
 
-function collectMarkdownFiles(root: string): string[] {
-  if (!existsSync(root)) {
+function collectMarkdownFiles(root: string, maxDepth = 10): string[] {
+  if (maxDepth <= 0 || !existsSync(root)) {
     return [];
   }
 
   const files: string[] = [];
   for (const entry of readdirSync(root, { withFileTypes: true })) {
     const path = resolve(root, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...collectMarkdownFiles(path));
+    if (entry.isDirectory() && !entry.isSymbolicLink()) {
+      files.push(...collectMarkdownFiles(path, maxDepth - 1));
     } else if (entry.isFile() && entry.name.endsWith('.md')) {
       files.push(path);
     }
@@ -802,32 +750,9 @@ function splitLegend(stem: string): { legend?: string; slug: string } {
   return { legend: match.groups.legend, slug: match.groups.slug };
 }
 
-export function readHeading(path: string): string {
-  for (const line of readFileSync(path, 'utf8').split(/\r?\n/u)) {
-    if (line.startsWith('# ')) {
-      return line.slice(2).trim();
-    }
-  }
-  return '';
-}
+export const readHeading = fmReadHeading;
 
-export function readBody(path: string): string {
-  const content = readFileSync(path, 'utf8');
-  let body = content;
-
-  // Strip YAML frontmatter
-  if (content.startsWith('---\n')) {
-    const end = content.indexOf('\n---\n', 4);
-    if (end !== -1) {
-      body = content.slice(end + 5);
-    }
-  }
-
-  const lines = body.trim().split(/\r?\n/u);
-  const bodyLines = lines[0]?.startsWith('# ') ? lines.slice(1) : lines;
-  const result = bodyLines.join('\n').trim();
-  return result.length > 0 ? result : 'TBD';
-}
+export const readBody = fmReadBody;
 
 function readDesignLegend(path: string): string | undefined {
   for (const line of readFileSync(path, 'utf8').split(/\r?\n/u)) {

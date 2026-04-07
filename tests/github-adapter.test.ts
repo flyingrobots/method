@@ -83,6 +83,7 @@ describe('GitHub Adapter Two-way Sync', () => {
         return Promise.resolve({
           ok: true,
           json: async () => ({
+            id: 12345,
             number: 42,
             html_url: 'https://github.com/owner/repo/issues/42',
             state: 'open',
@@ -139,6 +140,7 @@ describe('GitHub Adapter Two-way Sync', () => {
         return Promise.resolve({
           ok: true,
           json: async () => ({
+            id: 99999,
             number: 99,
             html_url: 'https://github.com/owner/repo/issues/99',
             state: 'closed',
