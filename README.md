@@ -71,6 +71,8 @@ docs/
       cool-ideas/                   experiments, wild thoughts
       bad-code/                     tech debt
       *.md                          everything else
+    feedback/                       raw feedback awaiting triage
+    feedback/archive/               processed feedback kept for provenance
     legends/                        named domains
     retro/<cycle>/<task>.md         retrospectives
     releases/vX.Y.Z/                internal release packets
@@ -418,6 +420,21 @@ Rejected work moves to `docs/method/graveyard/` with a note explaining
 why. The graveyard prevents re-proposing without context. If you want
 to resurrect something, you must address the note.
 
+## Feedback
+
+Feedback that is not yet shaped into backlog or design work belongs in
+`docs/method/feedback/`.
+
+Treat feedback docs as an inbox for critique, review notes, and
+outside-in observations. When processed, turn accepted feedback into
+explicit repo artifacts such as backlog items, design edits, signpost
+updates, or release notes. Then move the processed feedback document to
+`docs/method/feedback/archive/` with a short disposition note instead
+of deleting it.
+
+The archive preserves provenance, shows what feedback already landed,
+and prevents the same point from being rediscovered without context.
+
 ---
 
 ## Flow
@@ -431,6 +448,9 @@ idea -> inbox/ -> cool-ideas/ -> up-next/ -> asap/
   -> ship sync (BEARING / CHANGELOG / release when meaningful)
       - or ->
   -> graveyard/
+
+feedback -> feedback/ -> backlog/design/signpost/release/no-action
+  -> feedback/archive/
 ```
 
 ---
