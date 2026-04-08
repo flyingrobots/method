@@ -13,6 +13,7 @@ export function titleCase(value: string): string {
 export function renderBearing(status: WorkspaceStatus, closedCycles: Cycle[], commitSha: string): string {
   const latestShips = [...closedCycles].reverse().slice(0, 3);
   const nextUp = [...status.backlog.asap, ...status.backlog['up-next']].slice(0, 2);
+  const frictionLines = deriveBearingFriction(status);
 
   const priority = nextUp.length > 0 ? nextUp.map(i => `\`${i.stem}\``).join(' or ') : 'TBD';
 
@@ -45,10 +46,30 @@ export function renderBearing(status: WorkspaceStatus, closedCycles: Cycle[], co
     '',
     '## What feels wrong?',
     '',
-    '- Backlog maintenance is still largely manual.',
-    '- Witness generation is not yet automated.',
+    ...frictionLines,
     '',
   ].join('\n');
+}
+
+function deriveBearingFriction(status: WorkspaceStatus): string[] {
+  const lines: string[] = [];
+
+  if (status.backlog.inbox.length > 0) {
+    lines.push(`- Inbox still holds ${status.backlog.inbox.length} untriaged item(s).`);
+  }
+  if (status.backlog.asap.length > 0) {
+    lines.push(`- ${status.backlog.asap.length} ASAP backlog item(s) are still unresolved.`);
+  }
+  if (status.backlog['bad-code'].length > 0) {
+    lines.push(`- ${status.backlog['bad-code'].length} bad-code item(s) remain tracked.`);
+  }
+  if (status.activeCycles.length > 0) {
+    lines.push(`- ${status.activeCycles.length} active cycle(s) are still open.`);
+  }
+
+  return lines.length > 0
+    ? lines
+    : ['- No acute coordination pain is currently recorded.'];
 }
 
 export function renderWitnessDoc(options: {
