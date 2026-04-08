@@ -64,7 +64,7 @@ describe('Method API', () => {
     expect(statusAfter.activeCycles[0].name).toBe(cycle.name);
   });
 
-  it('treats backlog frontmatter as the canonical source for lane and legend metadata', () => {
+  it("If a backlog card's filename or directory disagrees with its YAML, does `method status` report the YAML lane and legend rather than the path-derived guess?", () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);
@@ -102,7 +102,7 @@ describe('Method API', () => {
     expect(status.legendHealth.find((entry) => entry.legend === 'PROCESS')).toBeUndefined();
   });
 
-  it('backfills canonical frontmatter when moving legacy backlog items between lanes', () => {
+  it('If I move a legacy backlog card between lanes, does METHOD backfill lane metadata so the card no longer depends on path inference?', () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);
@@ -125,7 +125,7 @@ describe('Method API', () => {
     });
   });
 
-  it('uses backlog frontmatter legend when pulling items into cycles', () => {
+  it('If a backlog card has stale filename legend text, does `method pull` still carry the YAML legend into the design packet?', () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);
@@ -151,7 +151,7 @@ describe('Method API', () => {
     expect(readFileSync(cycle.designDoc, 'utf8')).toContain('Legend: SYNTH');
   });
 
-  it('counts active cycle legend health from design frontmatter before body text', () => {
+  it('Can I consume backlog lane and legend from `Workspace.status()` without reverse-engineering filename prefixes or folder names?', () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);

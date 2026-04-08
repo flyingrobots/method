@@ -87,6 +87,7 @@ export function renderWitnessDoc(options: {
 }
 
 export function renderDesignDoc(options: {
+  cycleName: string;
   title: string;
   legend?: string;
   source: string;
@@ -94,6 +95,13 @@ export function renderDesignDoc(options: {
 }): string {
   const legendValue = options.legend ?? 'none';
   return [
+    '---',
+    `title: ${yamlString(options.title)}`,
+    `legend: ${legendValue}`,
+    `cycle: ${yamlString(options.cycleName)}`,
+    `source_backlog: ${yamlString(options.source)}`,
+    '---',
+    '',
     `# ${options.title}`,
     '',
     `Source backlog item: \`${options.source}\``,
@@ -101,8 +109,8 @@ export function renderDesignDoc(options: {
     '',
     '## Sponsors',
     '',
-    '- Human: TBD',
-    '- Agent: TBD',
+    '- Human: Backlog operator',
+    '- Agent: Implementation agent',
     '',
     '## Hill',
     '',
@@ -147,15 +155,24 @@ export function renderDesignDoc(options: {
 export function renderRetroDoc(options: {
   cycle: Cycle;
   root: string;
-  outcome?: Outcome;
+  outcome: Outcome;
   witnessDir: string;
 }): string {
   const title = readHeading(options.cycle.designDoc) || titleCase(options.cycle.slug);
+  const designDoc = relative(options.root, options.cycle.designDoc);
   return [
+    '---',
+    `title: ${yamlString(title)}`,
+    `cycle: ${yamlString(options.cycle.name)}`,
+    `design_doc: ${yamlString(designDoc)}`,
+    `outcome: ${options.outcome}`,
+    'drift_check: yes',
+    '---',
+    '',
     `# ${title} Retro`,
     '',
-    `Design: \`${relative(options.root, options.cycle.designDoc)}\``,
-    `Outcome: ${options.outcome ?? 'TBD'}`,
+    `Design: \`${designDoc}\``,
+    `Outcome: ${options.outcome}`,
     'Drift check: yes',
     '',
     '## Summary',
@@ -185,4 +202,8 @@ export function renderRetroDoc(options: {
     '- [ ] Dead work buried or merged',
     '',
   ].join('\n');
+}
+
+function yamlString(value: string): string {
+  return `"${value.replace(/\\/gu, '\\\\').replace(/"/gu, '\\"')}"`;
 }

@@ -95,7 +95,7 @@ describe('method CLI', () => {
     expectFile(root, 'docs/method/backlog/inbox/backfill-the-missing-inbox-lane.md');
   });
 
-  it('promotes backlog items into numbered cycles', async () => {
+  it('Does `method pull` create a design doc that already includes required frontmatter fields like `title`, `legend`, `cycle`, and `source_backlog`?', async () => {
     const root = createTempRoot();
     await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
     writeFileSync(
@@ -115,14 +115,21 @@ describe('method CLI', () => {
     expect(stdout.output).toContain('Pulled into 0001-strand-lifecycle');
     expectFile(root, 'docs/design/0001-strand-lifecycle/strand-lifecycle.md');
     const designDoc = readFile(root, 'docs/design/0001-strand-lifecycle/strand-lifecycle.md');
+    expect(designDoc).toMatch(/^---\n[\s\S]+?\n---\n/u);
+    expect(designDoc).toMatch(/^title:\s+"Strand Lifecycle"$/mu);
+    expect(designDoc).toMatch(/^legend:\s+PROTO$/mu);
+    expect(designDoc).toMatch(/^cycle:\s+"0001-strand-lifecycle"$/mu);
+    expect(designDoc).toMatch(/^source_backlog:\s+"docs\/method\/backlog\/asap\/PROTO_strand-lifecycle\.md"$/mu);
     expect(designDoc).toContain('Legend: PROTO');
+    expect(designDoc).toContain('- Human: Backlog operator');
+    expect(designDoc).toContain('- Agent: Implementation agent');
     expect(designDoc).toContain('Mechanical state transitions for strands.');
     expect(designDoc).toContain('## Accessibility and Assistive Reading');
     expect(designDoc).toContain('## Localization and Directionality');
     expect(designDoc).toContain('## Agent Inspectability and Explainability');
   });
 
-  it('writes retros and witness directories on close', async () => {
+  it('Does `method close` create a retro doc that already includes required frontmatter fields like `title`, `outcome`, `drift_check`, and `design_doc`?', async () => {
     const root = createTempRoot();
     await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
     mkdirSync(join(root, 'docs/design/0001-method-cli'), { recursive: true });
@@ -143,7 +150,85 @@ describe('method CLI', () => {
     expect(stdout.output).toContain('Closed 0001-method-cli');
     expectFile(root, 'docs/method/retro/0001-method-cli/method-cli.md');
     expectFile(root, 'docs/method/retro/0001-method-cli/witness');
-    expect(readFile(root, 'docs/method/retro/0001-method-cli/method-cli.md')).toContain('Outcome: partial');
+    const retroDoc = readFile(root, 'docs/method/retro/0001-method-cli/method-cli.md');
+    expect(retroDoc).toMatch(/^---\n[\s\S]+?\n---\n/u);
+    expect(retroDoc).toMatch(/^title:\s+"Method CLI"$/mu);
+    expect(retroDoc).toMatch(/^outcome:\s+partial$/mu);
+    expect(retroDoc).toMatch(/^drift_check:\s+yes$/mu);
+    expect(retroDoc).toMatch(/^design_doc:\s+"docs\/design\/0001-method-cli\/method-cli\.md"$/mu);
+    expect(retroDoc).toContain('Outcome: partial');
+  });
+
+  it('Can I rely on scaffolded design docs to satisfy the repo docs contract without manual patching?', async () => {
+    const root = createTempRoot();
+    await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    writeFileSync(
+      join(root, 'docs/method/backlog/asap/PROCESS_scaffold-contract.md'),
+      [
+        '---',
+        'title: "Scaffold Contract"',
+        'legend: PROCESS',
+        'lane: asap',
+        '---',
+        '',
+        '# Scaffold Contract',
+        '',
+        'Backlog body.',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const exitCode = await runCli(['pull', 'PROCESS_scaffold-contract'], {
+      cwd: root,
+      stdout: new MemoryWriter(),
+      stderr: new MemoryWriter(),
+    });
+
+    expect(exitCode).toBe(0);
+    const designDoc = readFile(root, 'docs/design/0001-scaffold-contract/scaffold-contract.md');
+    expect(designDoc).toMatch(/^legend:\s+PROCESS$/mu);
+    expect(designDoc).toMatch(/^cycle:\s+"0001-scaffold-contract"$/mu);
+    expect(designDoc).not.toContain('- Human: TBD');
+    expect(designDoc).not.toContain('- Agent: TBD');
+  });
+
+  it('Can I rely on scaffolded retro docs to satisfy the repo docs contract without post-close repairs?', async () => {
+    const root = createTempRoot();
+    await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    mkdirSync(join(root, 'docs/design/0001-scaffold-retro'), { recursive: true });
+    writeFileSync(
+      join(root, 'docs/design/0001-scaffold-retro/scaffold-retro.md'),
+      [
+        '---',
+        'title: "Scaffold Retro"',
+        'legend: PROCESS',
+        'cycle: "0001-scaffold-retro"',
+        'source_backlog: "docs/method/backlog/asap/PROCESS_scaffold-retro.md"',
+        '---',
+        '',
+        '# Scaffold Retro',
+        '',
+        'Legend: PROCESS',
+        '',
+        '## Playback Questions',
+        '',
+        '- [ ] TBD',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const exitCode = await runCli(['close', '0001-scaffold-retro', '--drift-check', 'yes', '--outcome', 'hill-met'], {
+      cwd: root,
+      stdout: new MemoryWriter(),
+      stderr: new MemoryWriter(),
+    });
+
+    expect(exitCode).toBe(0);
+    const retroDoc = readFile(root, 'docs/method/retro/0001-scaffold-retro/scaffold-retro.md');
+    expect(retroDoc).toMatch(/^outcome:\s+hill-met$/mu);
+    expect(retroDoc).toMatch(/^drift_check:\s+yes$/mu);
+    expect(retroDoc).toMatch(/^design_doc:\s+"docs\/design\/0001-scaffold-retro\/scaffold-retro\.md"$/mu);
+    expect(retroDoc).not.toContain('Outcome: TBD');
   });
 
   it('shows backlog, active cycles, and legend health in status', async () => {

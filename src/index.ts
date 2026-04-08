@@ -181,6 +181,7 @@ export class Workspace {
     writeFileSync(
       designDoc,
       renderDesignDoc({
+        cycleName,
         title,
         legend,
         source: relative(this.root, backlogItem),
@@ -199,7 +200,7 @@ export class Workspace {
     };
   }
 
-  async closeCycle(cycleName: string | undefined, completedDriftCheck: boolean, outcome?: Outcome): Promise<Cycle> {
+  async closeCycle(cycleName: string | undefined, completedDriftCheck: boolean, outcome: Outcome): Promise<Cycle> {
     if (!completedDriftCheck) {
       throw new MethodError('Cannot close a cycle without completing the drift check.');
     }
@@ -288,8 +289,8 @@ export class Workspace {
 
     mkdirSync(dirname(witnessPath), { recursive: true });
 
-    const testResult = await this.execCommand('npm', ['test']);
-    const driftResult = await this.execCommand('tsx', ['src/cli.ts', 'drift', cycle.name]);
+    const testResult = sanitizeWitnessOutput(await this.execCommand('npm', ['test']), this.root);
+    const driftResult = sanitizeWitnessOutput(await this.execCommand('tsx', ['src/cli.ts', 'drift', cycle.name]), this.root);
 
     const content = renderWitnessDoc({
       cycle,
@@ -640,4 +641,14 @@ function normalizeBacklogLane(value: string | undefined): Lane | 'root' | undefi
 function normalizeLegend(value: string | undefined): string | undefined {
   const normalized = value?.trim().toUpperCase();
   return normalized === undefined || normalized.length === 0 ? undefined : normalized;
+}
+
+function sanitizeWitnessOutput(value: string, root: string): string {
+  return value
+    .replaceAll(root, '.')
+    .replace(/\/Users\/[^/\s]+/gu, '<HOME>')
+    .replace(/\/home\/[^/\s]+/gu, '<HOME>')
+    .replace(/\/root\b/gu, '<ROOT>')
+    .replace(/\/mnt\/[^/\s]+/gu, '<MNT>')
+    .replace(/C:\\Users\\[^\\\s]+/gu, '<HOME>');
 }
