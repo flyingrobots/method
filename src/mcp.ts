@@ -1,6 +1,6 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { relative } from 'node:path';
+import { basename, relative } from 'node:path';
 import { Workspace } from './index.js';
 import { GitHubAdapter, type GitHubSyncResult } from './adapters/github.js';
 import type { Outcome, WorkspaceStatus } from './domain.js';
@@ -33,7 +33,7 @@ export const MCP_TOOLS: McpToolDef[] = [
       type: 'object',
       properties: {
         ...workspaceProperty,
-        summary: { type: 'boolean', description: 'Return a compact structured summary instead of the fully expanded workspace status (default: true)' },
+        summary: { type: 'boolean', description: 'Return a compact structured summary instead of the fully expanded workspace status (default: false)' },
       },
       required: ['workspace'],
     },
@@ -119,7 +119,7 @@ export function createMcpServer() {
 
       if (request.params.name === 'method_status') {
         const status = workspace.status();
-        const summary = (args.summary as boolean | undefined) ?? true;
+        const summary = args.summary === true;
         if (summary) {
           const summaryResult = summarizeStatus(workspace, status);
           return successResult(
@@ -142,15 +142,11 @@ export function createMcpServer() {
           args.title as string | undefined,
         );
         const relativePath = relative(workspace.root, path);
+        const persistedItem = readPersistedInboxResult(workspace, relativePath);
         return successResult(
           'method_inbox',
           `Captured to ${relativePath}`,
-          {
-            path: relativePath,
-            lane: 'inbox',
-            legend: args.legend as string | undefined,
-            title: args.title as string | undefined,
-          },
+          persistedItem,
         );
       }
 
@@ -308,6 +304,21 @@ function renderStatusSummaryText(summary: McpStatusSummary): string {
   ].join('\n');
 }
 
+function readPersistedInboxResult(workspace: Workspace, relativePath: string) {
+  const frontmatter = workspace.readFrontmatter(relativePath);
+  const stem = fileStem(relativePath);
+  const { legend, slug } = splitBacklogStem(stem);
+
+  return {
+    path: relativePath,
+    lane: frontmatter.lane ?? 'inbox',
+    legend: frontmatter.legend ?? legend,
+    title: frontmatter.title,
+    stem,
+    slug,
+  };
+}
+
 function relativizeCycle(workspace: Workspace, cycle: { name: string; number: number; slug: string; designDoc: string; retroDoc: string }) {
   return {
     ...cycle,
@@ -351,4 +362,17 @@ function toolResult(tool: string, text: string, result: Record<string, unknown>,
     },
     isError,
   };
+}
+
+function fileStem(path: string): string {
+  const name = basename(path);
+  return name.endsWith('.md') ? name.slice(0, -3) : name;
+}
+
+function splitBacklogStem(stem: string): { legend?: string; slug: string } {
+  const match = /^(?<legend>[A-Z][A-Z0-9]*)_(?<slug>.+)$/u.exec(stem);
+  if (match?.groups === undefined) {
+    return { slug: stem };
+  }
+  return { legend: match.groups.legend, slug: match.groups.slug };
 }

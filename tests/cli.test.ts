@@ -60,6 +60,7 @@ describe('method CLI', () => {
     expect(exitCode).toBe(0);
     expect(stdout.output).toContain('Usage: method close');
     expect(stdout.output).toContain('Close an active cycle into docs/method/retro/.');
+    expect(stdout.output).toContain('--outcome hill-met|partial|not-met');
   });
 
   it('captures backlog ideas in inbox', async () => {
@@ -273,7 +274,7 @@ describe('method CLI', () => {
     writeFileSync(join(root, 'docs/design/0001-method-cli/method-cli.md'), '# Method CLI\n\nLegend: none\n', 'utf8');
 
     const stderr = new MemoryWriter();
-    const exitCode = await runCli(['close', '--drift-check', 'no'], {
+    const exitCode = await runCli(['close', '--drift-check', 'no', '--outcome', 'partial'], {
       cwd: root,
       stdout: new MemoryWriter(),
       stderr,
@@ -281,6 +282,24 @@ describe('method CLI', () => {
 
     expect(exitCode).toBe(1);
     expect(stderr.output.toLowerCase()).toContain('drift check');
+  });
+
+  it('refuses close when outcome is omitted', async () => {
+    const root = createTempRoot();
+    await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    mkdirSync(join(root, 'docs/design/0001-method-cli'), { recursive: true });
+    writeFileSync(join(root, 'docs/design/0001-method-cli/method-cli.md'), '# Method CLI\n\nLegend: none\n', 'utf8');
+
+    const stderr = new MemoryWriter();
+    const exitCode = await runCli(['close', '--drift-check', 'yes'], {
+      cwd: root,
+      stdout: new MemoryWriter(),
+      stderr,
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stderr.output).toContain('Usage: method close');
+    expect(stderr.output).toContain('--outcome hill-met|partial|not-met');
   });
 
   it('Can I run the detector and get a concise list of playback questions that have no matching test evidence, with the design file and question text called out directly?', async () => {

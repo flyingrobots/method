@@ -714,6 +714,7 @@ describe('METHOD docs', () => {
     expect(cli).toContain('--push');
     expect(cli).toContain('--pull');
     expect(cli).toContain('Ship Sync');
+    expect(cli).toContain('method close [cycle] [--drift-check yes|no] --outcome hill-met|partial|not-met');
 
     // MCP doc names every tool
     expect(mcp).toContain('method_status');
@@ -724,6 +725,8 @@ describe('METHOD docs', () => {
     expect(mcp).toContain('method_sync_ship');
     expect(mcp).toContain('method_sync_github');
     expect(mcp).toContain('method_capture_witness');
+    expect(mcp).toContain('summary');
+    expect(mcp).toContain('structuredContent');
 
     // README references both docs
     expect(readme).toContain('docs/CLI.md');

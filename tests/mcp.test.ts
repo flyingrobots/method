@@ -82,14 +82,45 @@ describe('MCP Server', () => {
     vi.restoreAllMocks();
   });
 
-  it('Does `method_status` return summary-shaped structured content by default, with lane counts instead of the fully expanded backlog?', async () => {
+  it('Does `method_status` preserve the legacy full-status default when the caller omits the new summary flag?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+    workspace.captureIdea('test idea from mcp', 'PROCESS', 'Test Idea From MCP');
+    const callToolHandler = createCallToolHarness();
+
+    const statusResult = await callToolHandler({ params: { name: 'method_status', arguments: { workspace: root } } });
+    expect(statusResult.isError).toBeFalsy();
+    expect(statusResult.structuredContent.tool).toBe('method_status');
+    expect(statusResult.structuredContent.ok).toBe(true);
+    expect(statusResult.structuredContent.result.mode).toBe('full');
+    expect(statusResult.structuredContent.result.status.backlog.inbox).toContainEqual({
+      stem: 'PROCESS_test-idea-from-mcp',
+      lane: 'inbox',
+      path: 'docs/method/backlog/inbox/PROCESS_test-idea-from-mcp.md',
+      legend: 'PROCESS',
+      slug: 'test-idea-from-mcp',
+    });
+    expect(statusResult.structuredContent.result.status.legendHealth).toContainEqual({
+      legend: 'PROCESS',
+      backlog: 1,
+      active: 0,
+    });
+    expect(statusResult.content[0].text).toContain('Returned full workspace status');
+    vi.restoreAllMocks();
+  });
+
+  it('Can I request `method_status` summary mode explicitly and get compact lane counts without the full backlog payload?', async () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);
     workspace.captureIdea('test idea from mcp', undefined, 'Test Idea From MCP');
     const callToolHandler = createCallToolHarness();
 
-    const statusResult = await callToolHandler({ params: { name: 'method_status', arguments: { workspace: root } } });
+    const statusResult = await callToolHandler({
+      params: { name: 'method_status', arguments: { workspace: root, summary: true } },
+    });
+
     expect(statusResult.isError).toBeFalsy();
     expect(statusResult.structuredContent.tool).toBe('method_status');
     expect(statusResult.structuredContent.ok).toBe(true);
@@ -107,33 +138,7 @@ describe('MCP Server', () => {
     vi.restoreAllMocks();
   });
 
-  it('Can I request `method_status` full mode and still receive the expanded structured workspace state without scraping text?', async () => {
-    const root = createTempRoot();
-    initWorkspace(root);
-    const workspace = new Workspace(root);
-    workspace.captureIdea('test idea from mcp', 'PROCESS', 'Test Idea From MCP');
-    const callToolHandler = createCallToolHarness();
-
-    const statusResult = await callToolHandler({
-      params: { name: 'method_status', arguments: { workspace: root, summary: false } },
-    });
-
-    expect(statusResult.isError).toBeFalsy();
-    expect(statusResult.structuredContent.tool).toBe('method_status');
-    expect(statusResult.structuredContent.ok).toBe(true);
-    expect(statusResult.structuredContent.result.mode).toBe('full');
-    expect(statusResult.structuredContent.result.status.backlog.inbox).toContainEqual({
-      stem: 'PROCESS_test-idea-from-mcp',
-      lane: 'inbox',
-      path: 'docs/method/backlog/inbox/PROCESS_test-idea-from-mcp.md',
-      legend: 'PROCESS',
-      slug: 'test-idea-from-mcp',
-    });
-    expect(statusResult.content[0].text).toContain('Returned full workspace status');
-    vi.restoreAllMocks();
-  });
-
-  it('Do mutation tools (`method_inbox`, `method_pull`, `method_close`, `method_capture_witness`) return stable field-level structured content for paths and cycles?', async () => {
+  it('Do mutation tools (`method_inbox`, `method_pull`, `method_close`, `method_capture_witness`) return stable field-level structured content for persisted paths and cycles?', async () => {
     const root = createTempRoot();
     initWorkspace(root);
     const callToolHandler = createCallToolHarness();
@@ -141,15 +146,22 @@ describe('MCP Server', () => {
     process.env.METHOD_TEST = 'true';
     try {
       const inboxResult = await callToolHandler({
-        params: { name: 'method_inbox', arguments: { workspace: root, idea: 'test idea from mcp' } },
+        params: {
+          name: 'method_inbox',
+          arguments: { workspace: root, idea: 'Test idea from mcp', legend: 'process' },
+        },
       });
       expect(inboxResult.isError).toBeFalsy();
       expect(inboxResult.structuredContent.tool).toBe('method_inbox');
-      expect(inboxResult.structuredContent.result.path).toBe('docs/method/backlog/inbox/test-idea-from-mcp.md');
+      expect(inboxResult.structuredContent.result.path).toBe('docs/method/backlog/inbox/PROCESS_test-idea-from-mcp.md');
       expect(inboxResult.structuredContent.result.lane).toBe('inbox');
+      expect(inboxResult.structuredContent.result.legend).toBe('PROCESS');
+      expect(inboxResult.structuredContent.result.title).toBe('Test idea from mcp');
+      expect(inboxResult.structuredContent.result.stem).toBe('PROCESS_test-idea-from-mcp');
+      expect(inboxResult.structuredContent.result.slug).toBe('test-idea-from-mcp');
 
       const pullResult = await callToolHandler({
-        params: { name: 'method_pull', arguments: { workspace: root, item: 'test-idea-from-mcp' } },
+        params: { name: 'method_pull', arguments: { workspace: root, item: 'PROCESS_test-idea-from-mcp' } },
       });
       expect(pullResult.isError).toBeFalsy();
       expect(pullResult.structuredContent.tool).toBe('method_pull');

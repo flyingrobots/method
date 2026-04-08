@@ -1,8 +1,8 @@
 ---
-title: "CLI Reference"
-generated_at: 2026-04-07T05:30:14.481Z
-generator: "method sync ship"
-generated_from_commit: "03d889ddbe57ecb6b336ba2a62815f863f85bfd1"
+title: CLI Reference
+generated_at: 2026-04-08T21:17:50.746Z
+generator: method sync ship
+generated_from_commit: ecde6ac00e798d68bf69b2c2bfb9044ad44d47e9
 provenance_level: artifact_history
 ---
 
@@ -27,9 +27,9 @@ Capture a raw idea in docs/method/backlog/inbox/.
 
 Promote a backlog item into the next numbered design cycle.
 
-### `method close [cycle] [--drift-check yes|no] [--outcome hill-met|partial|not-met]`
+### `method close [cycle] [--drift-check yes|no] --outcome hill-met|partial|not-met`
 
-Close an active cycle into docs/method/retro/.
+Close an active cycle into docs/method/retro/. `--outcome` is required.
 
 ### `method status`
 

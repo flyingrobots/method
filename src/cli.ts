@@ -73,11 +73,9 @@ export async function runCli(
         ? await promptConfirm({ title: 'Drift check complete?', defaultValue: false })
         : parsed.driftCheck === 'yes';
       if (!completedDriftCheck) {
-        await workspace.closeCycle(parsed.cycle, completedDriftCheck, parsed.outcome ?? 'partial');
-      } else if (parsed.outcome === undefined) {
-        throw new Error('Outcome is required. Pass --outcome hill-met|partial|not-met.');
+        throw new Error('Cannot close a cycle without completing the drift check.');
       }
-      const cycle = await workspace.closeCycle(parsed.cycle, completedDriftCheck, parsed.outcome ?? 'partial');
+      const cycle = await workspace.closeCycle(parsed.cycle, completedDriftCheck, parsed.outcome);
       stdout.write(`${alert(`Closed ${cycle.name}`, { variant: 'success', ctx })}\n`);
       stdout.write(`${relative(root, cycle.retroDoc)}\n`);
       return 0;
