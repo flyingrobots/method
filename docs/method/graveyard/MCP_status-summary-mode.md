@@ -1,7 +1,7 @@
 ---
 title: "method_status Summary Mode"
 legend: MCP
-lane: up-next
+lane: graveyard
 ---
 
 # MCP: method_status summary mode
@@ -12,6 +12,13 @@ legend, slug, lane. For git-warp this is 68KB of JSON (215 backlog items).
 Most callers just want lane counts and active cycle names. The full
 expansion blows through agent context windows and adds no value for the
 common "where are we?" check.
+
+## Disposition
+
+Retired as a separate backlog item in cycle `0032-mcp-tool-result-contract`.
+The summary-mode behavior was absorbed into the broader MCP structured
+result contract, so `method_status` now defaults to compact structured
+summary output instead of needing a standalone follow-on.
 
 ## Proposal
 

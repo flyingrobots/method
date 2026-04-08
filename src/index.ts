@@ -240,7 +240,7 @@ export class Workspace {
     const changelogPath = resolve(this.root, 'CHANGELOG.md');
     const bearingPath = resolve(this.root, 'docs/BEARING.md');
     const status = this.status();
-    const closedCycles = this.allCycles().filter((cycle) => existsSync(cycle.retroDoc));
+    const closedCycles = this.closedCycles();
     const commitSha = await this.currentCommitSha();
 
     const newShips = this.findNewShips(closedCycles);
@@ -379,6 +379,10 @@ export class Workspace {
 
   openCycles(): Cycle[] {
     return this.allCycles().filter((cycle) => existsSync(cycle.designDoc) && !existsSync(cycle.retroDoc));
+  }
+
+  closedCycles(): Cycle[] {
+    return this.allCycles().filter((cycle) => existsSync(cycle.retroDoc));
   }
 
   private findNewShips(closedCycles: Cycle[]): Cycle[] {
