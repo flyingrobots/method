@@ -1,7 +1,7 @@
 ---
 title: "MCP Tool Result Contract"
 legend: PROCESS
-lane: up-next
+lane: asap
 ---
 
 # MCP Tool Result Contract

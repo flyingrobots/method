@@ -1,7 +1,7 @@
 ---
 title: "BEARING Truthfulness"
 legend: PROCESS
-lane: up-next
+lane: asap
 ---
 
 # BEARING Truthfulness

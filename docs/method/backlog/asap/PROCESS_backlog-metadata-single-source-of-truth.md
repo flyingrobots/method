@@ -1,7 +1,7 @@
 ---
 title: "Backlog Metadata Single Source Of Truth"
 legend: PROCESS
-lane: bad-code
+lane: asap
 ---
 
 # Backlog Metadata Single Source Of Truth
