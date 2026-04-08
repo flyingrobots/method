@@ -1,6 +1,7 @@
 ---
 title: "i18n String Extraction"
 legend: PROCESS
+lane: inbox
 ---
 
 # i18n String Extraction

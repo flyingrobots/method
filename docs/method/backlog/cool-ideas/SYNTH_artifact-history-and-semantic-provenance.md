@@ -1,6 +1,7 @@
 ---
 title: "Artifact History And Semantic Provenance"
 legend: SYNTH
+lane: cool-ideas
 ---
 
 Define two provenance levels for METHOD instead of treating everything

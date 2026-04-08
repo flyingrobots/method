@@ -1,6 +1,7 @@
 ---
 title: "Interactive Scaffolder"
 legend: PROCESS
+lane: inbox
 ---
 
 # Interactive Scaffolder

@@ -1,6 +1,7 @@
 ---
 title: "Retro conversational closeout"
 legend: PROCESS
+lane: cool-ideas
 ---
 
 METHOD's `close` flow currently handles the mechanical part of a retro:

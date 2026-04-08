@@ -1,6 +1,7 @@
 ---
 title: "Semantic Drift Detector"
 legend: PROCESS
+lane: inbox
 ---
 
 # Semantic Drift Detector

@@ -1,6 +1,7 @@
 ---
 title: "Review Config Hardening"
 legend: PROCESS
+lane: cool-ideas
 ---
 
 Harden repo review configuration so automated review tools understand

@@ -169,7 +169,7 @@ export class Workspace {
       throw new MethodError(`${relative(this.root, backlogItem)} is missing a heading.`);
     }
 
-    const { legend, slug } = splitLegend(fileStem(backlogItem));
+    const { legend, slug } = this.readBacklogItem(backlogItem, inferBacklogLane(this.paths.backlog, backlogItem));
     const cycleName = `${String(this.nextCycleNumber()).padStart(4, '0')}-${slug}`;
     const designDir = resolve(this.paths.design, cycleName);
     const designDoc = resolve(designDir, `${slug}.md`);
@@ -311,13 +311,13 @@ export class Workspace {
       root: [],
     };
 
-    for (const lane of LANES) {
-      backlog[lane] = this.collectBacklogItems(resolve(this.paths.backlog, lane), lane);
+    const backlogItems = this.collectBacklogItems();
+    for (const item of backlogItems) {
+      backlog[item.lane].push(item);
     }
-    backlog.root = this.collectBacklogItems(this.paths.backlog, 'root', false);
 
     const activeCycles = this.openCycles();
-    const legendHealth = this.calculateLegendHealth(activeCycles);
+    const legendHealth = this.calculateLegendHealth(backlogItems, activeCycles);
 
     return {
       root: this.root,
@@ -345,6 +345,7 @@ export class Workspace {
       throw new MethodError(`Backlog item not found: ${path}`);
     }
 
+    const metadata = this.readBacklogItem(fullPath, inferBacklogLane(this.paths.backlog, fullPath));
     const fileName = basename(fullPath);
     let targetDir: string;
     if (targetLane === 'graveyard') {
@@ -367,6 +368,11 @@ export class Workspace {
     }
 
     renameSync(fullPath, targetPath);
+    const frontmatterUpdates: Record<string, string> = { lane: targetLane };
+    if (metadata.legend !== undefined) {
+      frontmatterUpdates.legend = metadata.legend;
+    }
+    fmUpdateFrontmatter(targetPath, frontmatterUpdates);
     return relative(this.root, targetPath);
   }
 
@@ -480,32 +486,33 @@ export class Workspace {
     throw new MethodError(`Could not find active cycle ${JSON.stringify(cycleName)}.`);
   }
 
-  private collectBacklogItems(dir: string, lane: Lane | 'root', recursive = true): BacklogItem[] {
-    if (!existsSync(dir)) {
+  private collectBacklogItems(): BacklogItem[] {
+    if (!existsSync(this.paths.backlog)) {
       return [];
     }
-    const files = recursive ? collectMarkdownFiles(dir) : readdirSync(dir, { withFileTypes: true })
-      .filter(e => e.isFile() && e.name.endsWith('.md'))
-      .map(e => resolve(dir, e.name));
-    
-    return files.map(file => {
-      const stem = fileStem(file);
-      const { legend, slug } = splitLegend(stem);
-      return {
-        stem,
-        lane,
-        path: relative(this.root, file),
-        legend,
-        slug
-      };
-    });
+
+    return collectMarkdownFiles(this.paths.backlog).map((file) =>
+      this.readBacklogItem(file, inferBacklogLane(this.paths.backlog, file)));
   }
 
-  private calculateLegendHealth(activeCycles: readonly Cycle[]): LegendHealth[] {
+  private readBacklogItem(path: string, fallbackLane: Lane | 'root'): BacklogItem {
+    const stem = fileStem(path);
+    const filenameMetadata = splitLegend(stem);
+    const frontmatter = fmReadFrontmatter(path);
+
+    return {
+      stem,
+      lane: normalizeBacklogLane(frontmatter.lane) ?? fallbackLane,
+      path: relative(this.root, path),
+      legend: normalizeLegend(frontmatter.legend) ?? filenameMetadata.legend,
+      slug: filenameMetadata.slug,
+    };
+  }
+
+  private calculateLegendHealth(backlogItems: readonly BacklogItem[], activeCycles: readonly Cycle[]): LegendHealth[] {
     const counts = new Map<string, { backlog: number; active: number }>();
-    for (const file of collectMarkdownFiles(this.paths.backlog)) {
-      const { legend } = splitLegend(fileStem(file));
-      const key = legend ?? 'untagged';
+    for (const item of backlogItems) {
+      const key = item.legend ?? 'untagged';
       const current = counts.get(key) ?? { backlog: 0, active: 0 };
       current.backlog += 1;
       counts.set(key, current);
@@ -580,6 +587,11 @@ export const readHeading = fmReadHeading;
 export const readBody = fmReadBody;
 
 function readDesignLegend(path: string): string | undefined {
+  const frontmatterLegend = normalizeLegend(fmReadFrontmatter(path).legend);
+  if (frontmatterLegend !== undefined) {
+    return frontmatterLegend === 'NONE' ? undefined : frontmatterLegend;
+  }
+
   for (const line of readFileSync(path, 'utf8').split(/\r?\n/u)) {
     if (!line.startsWith('Legend: ')) {
       continue;
@@ -601,4 +613,31 @@ function slugify(value: string): string {
 function fileStem(path: string): string {
   const name = basename(path);
   return name.endsWith('.md') ? name.slice(0, -3) : name;
+}
+
+function inferBacklogLane(backlogRoot: string, path: string): Lane | 'root' {
+  const [firstSegment] = relative(backlogRoot, path).split(/[\\/]/u);
+  if (firstSegment !== undefined && (LANES as readonly string[]).includes(firstSegment)) {
+    return firstSegment as Lane;
+  }
+  return 'root';
+}
+
+function normalizeBacklogLane(value: string | undefined): Lane | 'root' | undefined {
+  const normalized = value?.trim();
+  if (normalized === undefined || normalized.length === 0) {
+    return undefined;
+  }
+  if (normalized === 'root') {
+    return normalized;
+  }
+  if ((LANES as readonly string[]).includes(normalized)) {
+    return normalized as Lane;
+  }
+  return undefined;
+}
+
+function normalizeLegend(value: string | undefined): string | undefined {
+  const normalized = value?.trim().toUpperCase();
+  return normalized === undefined || normalized.length === 0 ? undefined : normalized;
 }

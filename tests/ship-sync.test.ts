@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -49,10 +49,7 @@ describe('Ship Sync', () => {
 
     // Create a backlog item and move it to up-next
     workspace.captureIdea('Next priority', 'FEAT', 'Up Next');
-    renameSync(
-      join(root, 'docs/method/backlog/inbox/FEAT_up-next.md'),
-      join(root, 'docs/method/backlog/up-next/FEAT_up-next.md')
-    );
+    workspace.moveBacklogItem('docs/method/backlog/inbox/FEAT_up-next.md', 'up-next');
 
     const itemPath = workspace.captureIdea('Feature Z', 'FEAT', 'Just Shipped');
     const cycle = workspace.pullItem('FEAT_just-shipped');
