@@ -1,7 +1,7 @@
 ---
 title: "MCP Tool Result Contract"
 legend: PROCESS
-lane: bad-code
+lane: up-next
 ---
 
 # MCP Tool Result Contract

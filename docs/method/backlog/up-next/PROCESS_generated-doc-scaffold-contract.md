@@ -1,7 +1,7 @@
 ---
 title: "Generated Doc Scaffold Contract"
 legend: PROCESS
-lane: bad-code
+lane: up-next
 ---
 
 # Generated Doc Scaffold Contract

@@ -1,7 +1,7 @@
 ---
 title: "BEARING Truthfulness"
 legend: PROCESS
-lane: bad-code
+lane: up-next
 ---
 
 # BEARING Truthfulness

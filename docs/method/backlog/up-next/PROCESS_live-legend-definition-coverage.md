@@ -1,7 +1,7 @@
 ---
 title: "Live Legend Definition Coverage"
 legend: PROCESS
-lane: bad-code
+lane: up-next
 ---
 
 # Live Legend Definition Coverage
