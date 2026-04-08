@@ -1,3 +1,7 @@
+---
+title: "Feedback Archive"
+---
+
 # Feedback Archive
 
 Processed feedback documents live here.

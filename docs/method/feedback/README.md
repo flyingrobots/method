@@ -1,3 +1,7 @@
+---
+title: "Feedback Inbox"
+---
+
 # Feedback Inbox
 
 Store raw feedback documents here until they are processed.
