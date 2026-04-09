@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Breaking Changes
+
+- `Workspace.closeCycle(cycleName, completedDriftCheck, outcome)` now
+  requires the `outcome` argument. Downstream `Workspace` consumers must
+  update any direct calls to pass one of `hill-met`, `partial`, or
+  `not-met`. Treat the first published release containing this API
+  change as semver-major, or ship an explicit migration note if the
+  release plan changes before publication.
+
 ### Fixed
 
 - Tightened MCP runtime behavior around GitHub sync flag parsing,
