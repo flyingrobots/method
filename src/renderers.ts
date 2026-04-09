@@ -78,6 +78,7 @@ export function renderWitnessDoc(options: {
   driftResult: string;
 }): string {
   const title = readHeading(options.cycle.designDoc) || titleCase(options.cycle.slug);
+  const driftResult = options.driftResult.trim() || 'No drift output captured.';
   return [
     '---',
     `title: "Verification Witness for Cycle ${options.cycle.number}"`,
@@ -90,14 +91,14 @@ export function renderWitnessDoc(options: {
     '',
     '## Test Results',
     '',
-    '```',
+    '```text',
     options.testResult.trim(),
     '```',
     '',
     '## Drift Results',
     '',
-    '```',
-    options.driftResult.trim(),
+    '```text',
+    driftResult,
     '```',
     '',
     '## Manual Verification',
@@ -179,6 +180,9 @@ export function renderRetroDoc(options: {
   outcome: Outcome;
   witnessDir: string;
 }): string {
+  if (options.outcome !== 'hill-met' && options.outcome !== 'partial' && options.outcome !== 'not-met') {
+    throw new Error('Outcome is required and must be one of: hill-met, partial, not-met.');
+  }
   const title = readHeading(options.cycle.designDoc) || titleCase(options.cycle.slug);
   const designDoc = relative(options.root, options.cycle.designDoc);
   return [
@@ -191,10 +195,6 @@ export function renderRetroDoc(options: {
     '---',
     '',
     `# ${title} Retro`,
-    '',
-    `Design: \`${designDoc}\``,
-    `Outcome: ${options.outcome}`,
-    'Drift check: yes',
     '',
     '## Summary',
     '',
@@ -226,5 +226,10 @@ export function renderRetroDoc(options: {
 }
 
 function yamlString(value: string): string {
-  return `"${value.replace(/\\/gu, '\\\\').replace(/"/gu, '\\"')}"`;
+  return `"${value
+    .replace(/\\/gu, '\\\\')
+    .replace(/"/gu, '\\"')
+    .replace(/\r\n/gu, '\\r\\n')
+    .replace(/\r/gu, '\\r')
+    .replace(/\n/gu, '\\n')}"`;
 }

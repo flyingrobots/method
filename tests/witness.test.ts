@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { initWorkspace, Workspace } from '../src/index.js';
+import { renderDesignDoc, renderWitnessDoc } from '../src/renderers.js';
 
 const tempRoots: string[] = [];
 
@@ -57,5 +58,37 @@ describe('Automated Witness Capture', () => {
     expect(content).toContain('[MOCK] Output for npm test');
     expect(content).toContain('[MOCK] Output for tsx src/cli.ts drift 0001-witness-test');
     expect(content).toContain('- [x] Automated capture completed successfully.');
+  });
+
+  it('Does the witness scaffold label fenced output as text and avoid an empty drift-results fence?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.captureIdea('Witness Fence Test', 'PROCESS', 'Witness Fence Test');
+    const cycle = workspace.pullItem('PROCESS_witness-fence-test');
+
+    const content = renderWitnessDoc({
+      cycle,
+      testResult: 'npm test output',
+      driftResult: '',
+    });
+
+    expect(content).toContain('## Test Results');
+    expect(content).toContain('```text\nnpm test output\n```');
+    expect(content).toContain('## Drift Results');
+    expect(content).toContain('```text\nNo drift output captured.\n```');
+  });
+
+  it('Does YAML frontmatter escape embedded line breaks instead of letting YAML fold them away?', () => {
+    const content = renderDesignDoc({
+      cycleName: '0001-line-breaks',
+      title: 'Line 1\nLine 2',
+      source: 'docs/method/backlog/asap/PROCESS_line-1\nline-2.md',
+      backlogBody: 'Body',
+    });
+
+    expect(content).toContain('title: "Line 1\\nLine 2"');
+    expect(content).toContain('source_backlog: "docs/method/backlog/asap/PROCESS_line-1\\nline-2.md"');
   });
 });

@@ -157,7 +157,9 @@ describe('method CLI', () => {
     expect(retroDoc).toMatch(/^outcome:\s+partial$/mu);
     expect(retroDoc).toMatch(/^drift_check:\s+yes$/mu);
     expect(retroDoc).toMatch(/^design_doc:\s+"docs\/design\/0001-method-cli\/method-cli\.md"$/mu);
-    expect(retroDoc).toContain('Outcome: partial');
+    expect(retroDoc).not.toContain('Design: `docs/design/0001-method-cli/method-cli.md`');
+    expect(retroDoc).not.toContain('Outcome: partial');
+    expect(retroDoc).not.toContain('Drift check: yes');
   });
 
   it('Can I rely on scaffolded design docs to satisfy the repo docs contract without manual patching?', async () => {
