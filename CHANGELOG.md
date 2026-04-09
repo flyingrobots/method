@@ -9,7 +9,8 @@
   update any direct calls to pass one of `hill-met`, `partial`, or
   `not-met`. Treat the first published release containing this API
   change as semver-major, or ship an explicit migration note if the
-  release plan changes before publication.
+  release plan changes before publication. Migration example:
+  `await workspace.closeCycle('0033-bearing-truthfulness', true, 'hill-met')`.
 
 ### Fixed
 
