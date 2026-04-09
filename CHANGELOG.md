@@ -6,7 +6,7 @@
 
 ## v1.0.0
 
-First semver-major release. Thirty-five cycles are closed, there are no
+First semver-major release. Thirty-six cycles are closed, there are no
 open cycle packets on this branch, and the package/runtime surface is
 now shaped for durable external use.
 
@@ -37,6 +37,9 @@ now shaped for durable external use.
 - Added bounded legacy frontmatter-title repair on read so older METHOD
   docs do not require a tracked one-off backfill script just to recover
   a missing `title`.
+- Witness packets now capture the actual drift report for the active
+  cycle instead of dropping to `No drift output captured.` when `tsx` is
+  unavailable on PATH.
 - Slimmed the packed npm artifact so it ships the built `dist/` runtime
   plus essential metadata instead of repo source, tests, and internal
   docs.
@@ -51,6 +54,7 @@ now shaped for durable external use.
 - BEARING Truthfulness (0033-bearing-truthfulness)
 - Review State Query (0034-review-state-query)
 - METHOD Repo Self Discipline (0035-method-repo-self-discipline)
+- Witness Drift Output Capture (0036-witness-drift-output-capture)
 
 ## v0.3.0
 

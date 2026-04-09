@@ -33,6 +33,9 @@ docs and tests stop treating open cycle packets on `main` as acceptable.
 - 0035: Repo self-discipline docs/tests now treat open cycle packets on
   `main` as stop-and-repair defects, remove tracked local tool junk, and
   tolerate legacy missing-title frontmatter on read.
+- 0036: Witness capture now records the direct drift report instead of
+  shelling out through a missing `tsx` binary and falling back to the
+  empty drift placeholder.
 - Merged PR #20: agent-first backlog and workflow follow-ons were
   recorded explicitly instead of staying tribal knowledge.
 - Merged PR #17: dependency updates for `hono` and `@hono/node-server`.
@@ -47,6 +50,9 @@ docs and tests stop treating open cycle packets on `main` as acceptable.
   hand.
 - The packed artifact is now intentionally small and excludes repo-local
   implementation sources, tests, and internal docs.
+- Witness packets are now more trustworthy because the close flow
+  records the actual drift report it observed instead of a silent empty
+  fallback.
 - Repo signposts and release surfaces are updated for the current
   post-`v0.3.0` state instead of pointing at an older maturity snapshot.
 - The METHOD repo itself now documents and tests the rule that `main`

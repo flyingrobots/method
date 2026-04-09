@@ -6,9 +6,9 @@ title: "v1.0.0 Release Verification"
 
 ## Scope
 
-This packet records release-prep discovery and validation on
-`maint-v1-0-0-release-prep`. Final tag, push, and GitHub Release
-evidence must be completed from `main` after this prep branch lands.
+This packet records release-prep discovery plus final pre-tag validation
+on `main`. Final tag and GitHub Release evidence must be completed after
+the release commit is pushed.
 
 ## Discovery
 
@@ -22,23 +22,24 @@ evidence must be completed from `main` after this prep branch lands.
 - Base `main` head at prep start: `39cb47c572c1ddf6e89ea4aeca3b6ecba20863bd`
 - Release-prep commit carrying the version bump and package hardening:
   `95610cb6817943db932b42934da120e08f6b1e23`
-- Current release-prep head after closing cycles `0034` and `0035`:
-  `507dac54fdd37d80796f3ada3e35ab8692399f1c`
+- Main head after merging cycle `0036-witness-drift-output-capture` and
+  refreshing release surfaces:
+  `8a80012d1e9e5ee8cd00cb473072e1c822af9b22`
 
 ## Guards
 
 - Clean working tree before release-prep edits: PASS
-- Branch is `main`: NOT YET
+- Branch is `main`: PASS
 - HEAD matches `origin/main`: NOT YET
 - Tag signing required: no repo-local requirement discovered
 
 ## Validation
 
 - Build (`npm run build`): PASS
-- Tests (`npm test`): PASS, 182/182 tests across 16 files
+- Tests (`npm test`): PASS, 183/183 tests across 16 files
 - Pack dry-run (`npm pack --dry-run --json`): PASS,
-  `flyingrobots-method-1.0.0.tgz`, 35 files, 47,359 bytes packed /
-  182,250 bytes
+  `flyingrobots-method-1.0.0.tgz`, 35 files, 47,459 bytes packed /
+  182,548 bytes
   unpacked
 - Audit (`npm audit`): PASS, 0 vulnerabilities
 - Diff whitespace check (`git diff --check`): PASS
@@ -74,6 +75,8 @@ Observed exclusions during dry-run:
 Observed release-prep cleanup state:
 
 - no active cycle packets remain open on this branch
+- cycle `0036-witness-drift-output-capture` is now closed and included
+  in the release scope
 - local tool files such as `.mcp.json` and `.claude/settings.local.json`
   are ignored rather than tracked
 - the ad hoc `backfill_frontmatter.cjs` script is no longer a repo
@@ -81,11 +84,11 @@ Observed release-prep cleanup state:
 
 ## Final Release Steps Pending
 
-- Merge release prep to `main`
 - Re-run guard checks from `main`
 - Create the release commit if additional finalization is needed
 - Create tag `v1.0.0`
-- Push `main` and `v1.0.0`
+- Push `main`
+- Push `v1.0.0`
 - Create the GitHub Release using `docs/releases/v1.0.0.md`
 - Verify downstream delivery directly
 
