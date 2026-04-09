@@ -6,7 +6,7 @@ owner: "METHOD maintainers"
 priority: low
 acceptance_criteria:
   - "The command accepts explicit retro packet IDs, glob selectors, and filesystem paths resolved to retro packet roots, plus --dry-run."
-  - "Refresh rewrites only scaffold-managed retro frontmatter keys (`title`, `cycle`, `design_doc`, `outcome`, `drift_check`) and section bodies that still match the exact scaffold placeholder text."
+  - "Refresh rewrites only scaffold-managed retro frontmatter keys (`title`, `cycle`, `design_doc`, `outcome`, `drift_check`) and section bodies that are explicitly marked scaffold-managed or that match a supported placeholder signature for that heading."
   - "Human-authored section bodies and all files under witness/ remain byte-for-byte unchanged."
   - "Batch mode reports per-packet outcomes and exits 3 when any matched packet fails during write."
 ---
@@ -49,13 +49,23 @@ into a repeatable maintenance move.
   and `## Backlog Maintenance`, plus every file already stored under the
   retro packet's `witness/` directory.
 - Placeholder detection and regenerated content:
-  the command may rewrite a section only when the section body still
-  matches the exact scaffold placeholder text for that heading:
-  `## Summary` -> `TBD`; `## Playback Witness` -> `Add artifacts under
-  \`<witnessDir>\` and link them here.`; `## Drift`, `## New Debt`, and
-  `## Cool Ideas` -> `- None recorded.`; `## Backlog Maintenance` -> the
-  scaffold checklist block. Missing required headings are inserted with
-  the current scaffold placeholder text.
+  new scaffolds should emit
+  `<!-- method:scaffold-managed section=<heading> -->` immediately
+  under each placeholder-owned heading. The refresh command first
+  checks for that marker; if it is absent, it normalizes surrounding
+  whitespace and matches the section body against supported historical
+  placeholder signatures for that heading:
+  `## Summary` -> `TBD`, `TODO`, or `To be written.`;
+  `## Playback Witness` -> `Add artifacts under \`<witnessDir>\` and
+  link them here.` plus earlier variants that match
+  `Add artifacts under \`.+\` and link .* here.`;
+  `## Drift`, `## New Debt`, and `## Cool Ideas` -> `- None recorded.`,
+  `- None.`, or `None recorded.`;
+  `## Backlog Maintenance` -> the current scaffold checklist block or an
+  earlier checklist variant that still contains the same scaffold action
+  list. Bodies outside that marker/signature set are treated as
+  human-authored and preserved unchanged. Missing required headings are
+  inserted with the current scaffold placeholder text.
 - Expected diff behavior:
   `--dry-run` prints `Would refresh: <retro-doc>` lines plus the exact
   frontmatter keys and headings it would touch, then exits without
@@ -137,8 +147,9 @@ Exit 3
       output plus the exact keys/headings it would touch.
 - [ ] Write mode rewrites only `title`, `cycle`, `design_doc`,
       `outcome`, and `drift_check` in frontmatter.
-- [ ] Section bodies are rewritten only when they still match the exact
-      scaffold placeholder text for that heading.
+- [ ] Section bodies are rewritten only when they carry the
+      `method:scaffold-managed` marker or match a supported placeholder
+      signature for that heading.
 - [ ] Human-authored section bodies and every file under `witness/`
       remain byte-for-byte unchanged.
 - [ ] Missing required headings are inserted with the current scaffold
