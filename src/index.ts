@@ -359,16 +359,14 @@ export class Workspace {
     
     mkdirSync(targetDir, { recursive: true });
     const targetPath = resolve(targetDir, fileName);
-    
-    if (fullPath === targetPath) {
-      return relative(this.root, targetPath);
-    }
 
-    if (existsSync(targetPath)) {
+    if (fullPath !== targetPath && existsSync(targetPath)) {
       throw new MethodError(`Destination already exists: ${relative(this.root, targetPath)}`);
     }
 
-    renameSync(fullPath, targetPath);
+    if (fullPath !== targetPath) {
+      renameSync(fullPath, targetPath);
+    }
     const frontmatterUpdates: Record<string, string> = { lane: targetLane };
     if (metadata.legend !== undefined) {
       frontmatterUpdates.legend = metadata.legend;
@@ -504,12 +502,15 @@ export class Workspace {
     const stem = fileStem(path);
     const filenameMetadata = splitLegend(stem);
     const frontmatter = fmReadFrontmatter(path);
+    const hasExplicitLegend = Object.prototype.hasOwnProperty.call(frontmatter, 'legend');
 
     return {
       stem,
       lane: normalizeBacklogLane(frontmatter.lane) ?? fallbackLane,
       path: relative(this.root, path),
-      legend: normalizeLegend(frontmatter.legend) ?? filenameMetadata.legend,
+      legend: hasExplicitLegend
+        ? normalizeLegend(frontmatter.legend)
+        : filenameMetadata.legend,
       slug: filenameMetadata.slug,
     };
   }
@@ -592,9 +593,9 @@ export const readHeading = fmReadHeading;
 export const readBody = fmReadBody;
 
 function readDesignLegend(path: string): string | undefined {
-  const frontmatterLegend = normalizeLegend(fmReadFrontmatter(path).legend);
-  if (frontmatterLegend !== undefined) {
-    return frontmatterLegend === 'NONE' ? undefined : frontmatterLegend;
+  const frontmatter = fmReadFrontmatter(path);
+  if (Object.prototype.hasOwnProperty.call(frontmatter, 'legend')) {
+    return normalizeLegend(frontmatter.legend);
   }
 
   for (const line of readFileSync(path, 'utf8').split(/\r?\n/u)) {
@@ -644,7 +645,9 @@ function normalizeBacklogLane(value: string | undefined): Lane | 'root' | undefi
 
 function normalizeLegend(value: string | undefined): string | undefined {
   const normalized = value?.trim().toUpperCase();
-  return normalized === undefined || normalized.length === 0 ? undefined : normalized;
+  return normalized === undefined || normalized.length === 0 || normalized === 'NONE'
+    ? undefined
+    : normalized;
 }
 
 function sanitizeWitnessOutput(value: string, root: string): string {

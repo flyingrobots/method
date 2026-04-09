@@ -125,6 +125,38 @@ describe('Method API', () => {
     });
   });
 
+  it('If I move an item to the lane it is already in, does METHOD still repair stale or missing frontmatter metadata?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_same-lane-repair.md'),
+      [
+        '---',
+        'title: "Same Lane Repair"',
+        'lane: inbox',
+        '---',
+        '',
+        '# Same Lane Repair',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const moved = workspace.moveBacklogItem(
+      'docs/method/backlog/up-next/PROCESS_same-lane-repair.md',
+      'up-next',
+    );
+
+    expect(moved).toBe('docs/method/backlog/up-next/PROCESS_same-lane-repair.md');
+    expect(workspace.readFrontmatter(moved)).toMatchObject({
+      lane: 'up-next',
+      legend: 'PROCESS',
+    });
+  });
+
   it('If a backlog card has stale filename legend text, does `method pull` still carry the YAML legend into the design packet?', () => {
     const root = createTempRoot();
     initWorkspace(root);
@@ -149,6 +181,42 @@ describe('Method API', () => {
     const cycle = workspace.pullItem('PROCESS_frontmatter-pull');
     expect(cycle.name).toBe('0001-frontmatter-pull');
     expect(readFileSync(cycle.designDoc, 'utf8')).toContain('Legend: SYNTH');
+  });
+
+  it('If frontmatter explicitly clears a legacy filename legend with `NONE`, does METHOD stop falling back to the filename prefix?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    writeFileSync(
+      join(root, 'docs/method/backlog/asap/PROCESS_frontmatter-clears-legend.md'),
+      [
+        '---',
+        'title: "Frontmatter Clears Legend"',
+        'legend: NONE',
+        'lane: asap',
+        '---',
+        '',
+        '# Frontmatter Clears Legend',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const status = workspace.status();
+    expect(status.backlog.asap).toContainEqual({
+      stem: 'PROCESS_frontmatter-clears-legend',
+      lane: 'asap',
+      path: 'docs/method/backlog/asap/PROCESS_frontmatter-clears-legend.md',
+      legend: undefined,
+      slug: 'frontmatter-clears-legend',
+    });
+
+    const cycle = workspace.pullItem('PROCESS_frontmatter-clears-legend');
+    const designDoc = readFileSync(cycle.designDoc, 'utf8');
+    expect(designDoc).toContain('legend: none');
+    expect(designDoc).toContain('Legend: none');
   });
 
   it('Can I consume backlog lane and legend from `Workspace.status()` without reverse-engineering filename prefixes or folder names?', () => {
