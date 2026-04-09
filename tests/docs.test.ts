@@ -753,4 +753,11 @@ describe('METHOD docs', () => {
     expect(releasesGuide).toContain('Migration');
     expect(releasesGuide).toContain('No migration required.');
   });
+
+  it('keeps `CHANGELOG.md` Unreleased notes ahead of tagged releases', () => {
+    const changelog = readRepoFile('CHANGELOG.md');
+    const sections = [...changelog.matchAll(/^##\s+(.+)$/gmu)].map((match) => match[1] ?? '');
+
+    expect(sections[0]).toBe('Unreleased');
+  });
 });
