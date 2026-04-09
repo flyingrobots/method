@@ -7,6 +7,7 @@ priority: medium
 acceptance_criteria:
   - "The lint scope is explicitly limited to cycle packet markdown under docs/design/[0-9][0-9][0-9][0-9]-*/**/*.md and docs/method/retro/[0-9][0-9][0-9][0-9]-*/**/*.md."
   - "The gate enforces markdownlint rules MD040 and MD031 plus cycle-packet frontmatter key checks."
+  - "Retro frontmatter key checks apply only to top-level retro docs; witness/**/*.md files are linted for markdown rules only unless they gain their own explicit frontmatter contract."
   - "The chosen entrypoint exits 0 on clean packets and non-zero with file/rule-localized failures when any packet violates the contract."
 ---
 
@@ -24,6 +25,7 @@ of landing as manual review cleanup.
 ## Proposed Contract
 
 - Scope globs:
+  markdown rules cover
   `docs/design/[0-9][0-9][0-9][0-9]-*/**/*.md` and
   `docs/method/retro/[0-9][0-9][0-9][0-9]-*/**/*.md`.
 - Rules:
@@ -32,8 +34,11 @@ of landing as manual review cleanup.
   packet checks for required frontmatter keys on generated docs.
 - Frontmatter checks:
   design docs require `title`, `legend`, `cycle`, and `source_backlog`;
-  retro docs require `title`, `cycle`, `design_doc`, `outcome`, and
-  `drift_check`.
+  top-level retro docs at
+  `docs/method/retro/[0-9][0-9][0-9][0-9]-*/*.md` require `title`,
+  `cycle`, `design_doc`, `outcome`, and `drift_check`; witness
+  artifacts under `**/witness/**/*.md` are linted for markdown rules
+  only unless they later get their own explicit frontmatter contract.
 - Integration point:
   a dedicated `method validate markdown` entrypoint that can be invoked
   locally, from pre-commit, and from a CI job such as
