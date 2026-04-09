@@ -27,6 +27,13 @@ universal outline.
 
 ## Proposed Contract
 
+- Enforcement level:
+  each template's "Must contain" list defines scaffold prompts and
+  review expectations, not an immediate hard validator. A design doc
+  using `contract-surface` or another template SHOULD address those
+  topics, but authors may merge or omit headings when reviewers accept
+  the rationale. A later validation slice may choose to turn those
+  prompts into explicit heading checks once template metadata is stable.
 - Shared core across all templates:
   all templates keep the current frontmatter contract
   (`title`, `legend`, `cycle`, `source_backlog`) plus the shared
@@ -112,9 +119,13 @@ universal outline.
 ## Selection Rules
 
 - Default selection:
-  if no template is specified, `method pull` should continue using the
-  current general-purpose design scaffold, treated as
-  `default-change`.
+  this note does not claim that today's `renderDesignDoc()` scaffold
+  already satisfies the `default-change` prompts. When template support
+  lands, the no-template path must either update `renderDesignDoc()` to
+  emit prompts for intended behavior or contract, main happy path,
+  expected failures or edge cases, and verification plan, or introduce
+  a distinct legacy template for the current scaffold instead of
+  pretending it is already `default-change`.
 - Explicit selection:
   a future `method pull --template <id>` or interactive scaffolder can
   choose a more specific template when the backlog item clearly fits a

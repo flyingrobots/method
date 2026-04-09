@@ -34,6 +34,23 @@ coordination move.
   default behavior is read-only and returns a closeout plan or summary.
   Replying to comments, resolving threads, or posting a rollup comment
   should be explicit write actions, not hidden side effects of a read.
+- Write surface:
+  write behavior must stay explicit. The CLI should require named write
+  actions such as `--reply`, `--resolve`, and `--post-summary`, plus an
+  overall `--apply` switch. MCP should expose the same mutations as
+  explicit action fields rather than implicit side effects of a read.
+- Write semantics:
+  write actions operate per thread in declared order, with summary
+  comment posting last after reply or resolve work succeeds. CLI write
+  mode must support `--dry-run` and require confirmation through
+  `--yes` before mutating GitHub state. Exit codes should distinguish
+  success or no-op (`0`), partial write failure (`2`), validation or
+  mapping error (`3`), and remote auth or permission failure (`4`).
+- Idempotency:
+  retrying a closeout should be safe. Re-resolving an already resolved
+  thread or reusing an existing SHA-backed reply should be treated as a
+  no-op, and duplicate rollup comments should require explicit operator
+  confirmation rather than being posted silently.
 - Shared result:
   the structured result should include
   `pr_number`,
@@ -43,6 +60,15 @@ coordination move.
   `pending_threads`,
   and a `round_summary` array that maps thread or comment identifiers to
   an outcome like `fixed`, `explained`, `left-open`, or `not-applicable`.
+- Outcome rules:
+  `round_summary[*].outcome` should be determined by explicit operator
+  input first, then by helper inference if the operator did not set it.
+  `fixed` requires at least one mapped commit SHA and target comment or
+  thread id, `explained` requires a posted explanation or prepared reply,
+  `left-open` means the thread remains unresolved or was intentionally
+  deferred, and `not-applicable` requires a short rationale. Each
+  summary entry should record actor, timestamp, and confidence so later
+  automation can audit how the outcome was chosen.
 
 ## Coordination Features
 
@@ -51,8 +77,13 @@ coordination move.
   comment URL so a human or agent can see the review round as a bounded
   worklist.
 - Commit mapping:
-  allow a closeout summary to associate one or more commit SHAs with
-  each addressed thread so the audit trail is not trapped in prose.
+  use explicit mapping supplied by the operator or agent, not silent
+  heuristic guessing, to associate one or more commit SHAs with each
+  addressed thread in the closeout summary. Read mode may suggest
+  possible mappings, but write mode should only post mappings that were
+  explicitly confirmed. When no confident mapping exists, the thread
+  remains unmapped and stays in the pending set instead of inventing a
+  commit relationship.
 - Summary comment generation:
   generate a concise markdown table or bullet summary suitable for a PR
   comment, but keep actual posting as an explicit write step.

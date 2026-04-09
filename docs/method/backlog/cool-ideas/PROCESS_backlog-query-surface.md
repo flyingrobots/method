@@ -32,15 +32,25 @@ markdown ad hoc.
 - Shared output:
   CLI `--json` and MCP return the same structured result object with
   item arrays plus summary counts.
+- Schema dependency:
+  implementing the richer item shape requires extending
+  `BacklogItem` in `src/domain.ts` with `title`, `priority`, `owner`,
+  and `has_acceptance_criteria`, and depends on typed frontmatter access
+  being available for those fields.
 - Item shape:
-  each returned item includes at minimum
-  `path`, `title`, `lane`, `legend`, `priority`, `owner`, and a
-  `has_acceptance_criteria` boolean when that frontmatter is present or
-  absent.
+  each returned item includes existing backlog identity fields
+  (`path`, `stem`, `slug`, `lane`, `legend`) plus extended metadata
+  fields `title`, `priority`, `owner`, and
+  `has_acceptance_criteria: boolean` where that boolean is `true` when
+  the `acceptance_criteria` field exists in frontmatter and `false`
+  otherwise.
 - Filtering:
   the first slice should support bounded filtering by lane, legend, and
-  priority. Unfiltered output should remain bounded or paged rather than
-  dumping arbitrarily large result sets without control.
+  priority. Unfiltered output must stay bounded rather than dumping the
+  entire backlog at once: accept `limit` / `--limit` with default `50`
+  and maximum `100`, return at most that many items, and include
+  `truncated: boolean` plus optional `total_count` when additional
+  matches exist.
 - Relationship to higher-level features:
   surfaces like `method next` may build on this query result, but the
   query surface should remain useful on its own as a plain inventory and

@@ -8,7 +8,7 @@ acceptance_criteria:
   - "The note names the current bad behavior: refreshing generated reference docs like docs/MCP.md or docs/CLI.md currently requires `method sync ship`, which also mutates repo-level ship surfaces such as BEARING and CHANGELOG."
   - "The proposal defines a bounded way to regenerate reference docs without touching ship-only artifacts that are supposed to move on merged main."
   - "The contract keeps full `method sync ship` as the post-merge main maneuver rather than weakening that workflow."
-  - "The slice includes regression coverage proving a scoped reference-doc refresh leaves BEARING and CHANGELOG unchanged on branch-local runs."
+  - "The contract specifies regression expectations proving a scoped reference-doc refresh leaves BEARING and CHANGELOG unchanged on branch-local runs."
 ---
 
 # Generated Reference Sync Coupling
@@ -32,16 +32,21 @@ confident about running the generator they actually need.
   require mutating ship-only artifacts whose truth is tied to merged
   `main`.
 - Desired split:
-  keep `method sync ship` as the full post-merge ship maneuver, but add
-  or define a narrower reference-doc generation path for branch-local
-  use.
+  keep `method sync ship` as the full post-merge ship maneuver, and add
+  a dedicated branch-local reference-doc refresh surface such as
+  `method sync refs`, backed by a TypeScript helper such as
+  `generateReferenceDocs()`, for regenerating reference docs without
+  mutating ship-only artifacts.
 - Scoped outputs:
-  the narrower path should be able to refresh generated reference docs
+  `method sync refs` should be able to refresh generated reference docs
   such as `docs/CLI.md` and `docs/MCP.md` without editing
   `docs/BEARING.md`, `CHANGELOG.md`, or other ship-only summaries.
 - Safety:
-  the command or code path should make the scope visible in output so it
-  is obvious which generated surfaces were intentionally refreshed.
+  `method sync refs` MUST print the list of refreshed targets, and
+  `generateReferenceDocs()` MUST return the same target list for MCP or
+  other callers. That surfaced scope must name generated reference docs
+  such as `docs/CLI.md` or `docs/MCP.md` and exclude ship-only files
+  such as `docs/BEARING.md` and `CHANGELOG.md`.
 
 ## Non-goals
 

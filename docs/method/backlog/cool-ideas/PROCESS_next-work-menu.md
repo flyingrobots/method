@@ -38,6 +38,23 @@ queue currently contains, and what evidence supported the ranking.
   recommendations plus repo summary stats. `--limit` may widen the menu
   within a bounded maximum.
 
+## Implementation Prerequisites
+
+- Typed frontmatter dependency:
+  the surface depends on typed frontmatter access for fields such as
+  `acceptance_criteria`, `priority`, and `owner`. It should either wait
+  for `PROCESS_typed-frontmatter-access` to land first or include the
+  required typed-read support in the same implementation slice.
+- Backlog item schema extension:
+  the result shape assumes backlog items can expose `priority`, `owner`,
+  and `has_acceptance_criteria` in addition to the current
+  `BacklogItem` identity fields, so the slice must extend that schema or
+  provide an equivalent typed query object.
+- Backlog query reuse:
+  `PROCESS_backlog-query-surface` is reusable but not mandatory. The
+  next-work slice may either build on that shared query surface or ship
+  equivalent backlog enumeration logic in the same bounded change.
+
 ## Repo-Truth Inputs
 
 - Backlog lanes:
@@ -49,7 +66,7 @@ queue currently contains, and what evidence supported the ranking.
   `acceptance_criteria` so the recommendations are grounded in declared
   metadata rather than filename heuristics alone.
 - `BEARING`:
-  treat [BEARING.md](/Users/james/git/method/docs/BEARING.md) as a
+  treat [BEARING.md](../../../BEARING.md) as a
   directional signal, not an override. If `BEARING` names a current
   priority or describes repo discomfort, that should influence the menu
   and be cited as evidence when it materially changes ranking.
@@ -79,6 +96,14 @@ queue currently contains, and what evidence supported the ranking.
   `why_now: string[]`,
   `signals: Array<{ type: string, value: string | number | boolean, source: string }>`,
   and `score_band: "highest" | "strong" | "worth-considering"`.
+- Score band rules:
+  `score_band` is a relative ranking within the returned menu, not an
+  absolute score. The menu MUST be sorted by score band in the order
+  `highest`, `strong`, `worth-considering`, and then by lane precedence
+  inside each band. Multiple recommendations may share a band. A typical
+  menu gives the top `1-2` items `highest`, the next `2-3` items
+  `strong`, and the rest `worth-considering`, but those bands remain
+  relative to the current menu rather than fixed numeric thresholds.
 - CLI rendering:
   print a short summary block first, then a numbered menu where each
   item shows the backlog file, lane, priority, and 2-4 concise `why
@@ -87,11 +112,12 @@ queue currently contains, and what evidence supported the ranking.
 ## Ranking Rules
 
 - Deterministic first-pass ordering:
-  if `up-next` contains items and there is no competing higher-urgency
-  lane like `asap`, those items should dominate the top of the menu.
-  `asap` outranks everything else when populated. `bad-code` should rank
-  above `cool-ideas` when the repo is carrying meaningful maintenance
-  debt, unless `BEARING` explicitly points elsewhere.
+  when `BEARING` does not explicitly elevate another lane, lane
+  precedence is `asap`, then `up-next`, then `bad-code`, then `inbox`,
+  then `cool-ideas`. If a lane is empty, the next non-empty lane
+  provides candidates. If `BEARING` materially changes that order, the
+  output must cite the exact bearing evidence that justified the
+  override.
 - Evidence before heuristics:
   every recommendation must cite the concrete repo facts that pushed it
   upward, such as `lane=up-next`, `priority=medium`, `BEARING current
