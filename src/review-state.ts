@@ -588,7 +588,7 @@ function analyzeBotSignals(reviews: GhReview[], comments: GhComment[], checks: G
   const latestBotCheck = latestTimedSignal(botChecks);
   const latestSignal = latestTimedSignal([...botComments, ...botReviews, ...botChecks]);
   const cooldownMessage = latestSignal?.body === undefined ? undefined : extractCooldownMessage(latestSignal.body);
-  const latestHumanMeaningfulTimestamp = Math.max(latestBotReview?.timestamp ?? 0, latestBotComment?.timestamp ?? 0);
+  const latestBotMeaningfulTimestamp = Math.max(latestBotReview?.timestamp ?? 0, latestBotComment?.timestamp ?? 0);
 
   if (cooldownMessage !== undefined) {
     return {
@@ -598,7 +598,7 @@ function analyzeBotSignals(reviews: GhReview[], comments: GhComment[], checks: G
     };
   }
 
-  if (latestBotCheck !== undefined && isPendingBotStatus(latestBotCheck.status) && latestBotCheck.timestamp >= latestHumanMeaningfulTimestamp) {
+  if (latestBotCheck !== undefined && isPendingBotStatus(latestBotCheck.status) && latestBotCheck.timestamp >= latestBotMeaningfulTimestamp) {
     return { state: 'pending', source: latestBotCheck.source };
   }
 
@@ -608,7 +608,7 @@ function analyzeBotSignals(reviews: GhReview[], comments: GhComment[], checks: G
   if (latestBotReview?.state === 'CHANGES_REQUESTED') {
     return { state: 'changes_requested', source: latestBotReview.source };
   }
-  if (latestBotCheck !== undefined && isSuccessfulBotStatus(latestBotCheck.status) && latestBotCheck.timestamp >= latestHumanMeaningfulTimestamp) {
+  if (latestBotCheck !== undefined && isSuccessfulBotStatus(latestBotCheck.status) && latestBotCheck.timestamp >= latestBotMeaningfulTimestamp) {
     return { state: 'approved', source: latestBotCheck.source };
   }
   if (latestSignal !== undefined) {
