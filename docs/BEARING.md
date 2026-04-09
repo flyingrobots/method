@@ -1,8 +1,8 @@
 ---
 title: "BEARING"
-generated_at: 2026-04-09T14:35:23.486Z
+generated_at: 2026-04-09T15:48:05.659Z
 generator: "method sync ship (renderBearing)"
-generated_from_commit: "507dac54fdd37d80796f3ada3e35ab8692399f1c"
+generated_from_commit: "33e3dd883dd1fdeb48a2ca781fc29e5c0ed791b5"
 provenance_level: artifact_history
 ---
 
@@ -13,7 +13,7 @@ replace backlog items, design docs, retros, or CLI status.
 
 ## Where are we going?
 
-Current priority: pull `PROCESS_live-legend-definition-coverage` to continue the system's maturity.
+Current priority: no explicit `asap` or `up-next` item is currently recorded.
 
 ## What just shipped?
 

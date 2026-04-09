@@ -232,7 +232,9 @@ describe('Ship Sync', () => {
     const workspace = new Workspace(root);
 
     const bearing = renderBearing(workspace.status(), [], 'test-sha');
+    expect(bearing).toContain('Current priority: no explicit `asap` or `up-next` item is currently recorded.');
     expect(bearing).toContain('No acute coordination pain is currently recorded.');
+    expect(bearing).not.toContain('Current priority: pull TBD');
     expect(bearing).not.toContain('Backlog maintenance is still largely manual.');
     expect(bearing).not.toContain('Witness generation is not yet automated.');
   });

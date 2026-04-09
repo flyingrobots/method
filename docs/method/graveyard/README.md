@@ -42,6 +42,9 @@ still matters.
 - `MCP_status-summary-mode.md`
   Retired because cycle `0032-mcp-tool-result-contract` absorbed the
   summary-mode behavior into the broader MCP result contract.
+- `PROCESS_live-legend-definition-coverage.md`
+  Retired because the live repo no longer uses `MCP` as an active
+  legend, so the note's premise stopped being true.
 - `PROCESS_legend-should-be-in-frontmatter-yaml.md`
   Retired because cycle `0030-backlog-metadata-single-source-of-truth`
   absorbed the legend-frontmatter follow-on directly.

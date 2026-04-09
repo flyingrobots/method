@@ -14,8 +14,9 @@ export function renderBearing(status: WorkspaceStatus, closedCycles: Cycle[], co
   const latestShips = [...closedCycles].reverse().slice(0, 3);
   const nextUp = [...status.backlog.asap, ...status.backlog['up-next']].slice(0, 2);
   const frictionLines = deriveBearingFriction(status);
-
-  const priority = nextUp.length > 0 ? nextUp.map(i => `\`${i.stem}\``).join(' or ') : 'TBD';
+  const priorityLine = nextUp.length > 0
+    ? `Current priority: pull ${nextUp.map(i => `\`${i.stem}\``).join(' or ')} to continue the system's maturity.`
+    : 'Current priority: no explicit `asap` or `up-next` item is currently recorded.';
 
   const shipLines = latestShips.map(cycle => {
     const title = readHeading(cycle.designDoc) || titleCase(cycle.slug);
@@ -38,7 +39,7 @@ export function renderBearing(status: WorkspaceStatus, closedCycles: Cycle[], co
     '',
     '## Where are we going?',
     '',
-    `Current priority: pull ${priority} to continue the system's maturity.`,
+    priorityLine,
     '',
     '## What just shipped?',
     '',
