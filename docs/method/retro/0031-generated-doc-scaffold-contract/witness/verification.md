@@ -9,7 +9,7 @@ behavior and adheres to the repo invariants.
 
 ## Test Results
 
-```
+```text
 > method@0.3.0 test
 > vitest run --config vitest.config.ts
 
@@ -25,7 +25,8 @@ behavior and adheres to the repo invariants.
 
 ## Drift Results
 
-```
+```text
+No drift output captured.
 
 ```
 

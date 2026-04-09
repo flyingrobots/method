@@ -8,10 +8,6 @@ drift_check: yes
 
 # Backlog Metadata Single Source Of Truth Retro
 
-Design: `docs/design/0030-backlog-metadata-single-source-of-truth/backlog-metadata-single-source-of-truth.md`
-Outcome: hill-met
-Drift check: yes
-
 ## Summary
 
 This cycle made backlog metadata frontmatter-first across the live

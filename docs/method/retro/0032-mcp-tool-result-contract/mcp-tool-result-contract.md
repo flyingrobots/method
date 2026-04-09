@@ -8,10 +8,6 @@ drift_check: yes
 
 # MCP Tool Result Contract Retro
 
-Design: `docs/design/0032-mcp-tool-result-contract/mcp-tool-result-contract.md`
-Outcome: hill-met
-Drift check: yes
-
 ## Summary
 
 This cycle replaced MCP text-blob responses with a stable
@@ -30,11 +26,11 @@ fix.
 
 - None recorded.
 
-## New Debt
+## Observed Debt
 
 - `PROCESS_witness-drift-output-capture` remains open: the close-time
-  verification witness still records an empty `## Drift Results` block
-  even when the standalone drift command returns output.
+  verification witness in cycle `0032` re-observed an already-filed
+  drift-output capture gap from cycle `0031`.
 
 ## Cool Ideas
 

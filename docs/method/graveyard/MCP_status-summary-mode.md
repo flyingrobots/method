@@ -20,7 +20,7 @@ The summary-mode behavior was absorbed into the broader MCP structured
 result contract, so `method_status` now defaults to compact structured
 summary output instead of needing a standalone follow-on.
 
-## Proposal
+## Original Proposal
 
 Add an optional `summary` parameter (default `true`) to `method_status`.
 

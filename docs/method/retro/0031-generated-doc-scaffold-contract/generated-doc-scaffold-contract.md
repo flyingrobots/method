@@ -8,10 +8,6 @@ drift_check: yes
 
 # Generated Doc Scaffold Contract Retro
 
-Design: `docs/design/0031-generated-doc-scaffold-contract/generated-doc-scaffold-contract.md`
-Outcome: hill-met
-Drift check: yes
-
 ## Summary
 
 This cycle brought METHOD's generated design and retro scaffolds back

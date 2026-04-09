@@ -12,7 +12,7 @@ conceptually identical.
 
 ## Matching Rules
 
-- **Automatic Match**: Cosine similarity >= 0.80 or LLM confidence >= 0.9.
+- **Automatic Match**: Cosine similarity >= 0.80 or LLM confidence >= 0.90.
 - **Human Review**: Similarity between 0.65 and 0.80 triggers a "Near Miss" 
   hint requiring manual confirmation.
 - **Non-Match**: Marked as drift if confidence is below 0.65.

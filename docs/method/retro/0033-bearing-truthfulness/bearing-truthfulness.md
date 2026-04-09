@@ -8,10 +8,6 @@ drift_check: yes
 
 # BEARING Truthfulness Retro
 
-Design: `docs/design/0033-bearing-truthfulness/bearing-truthfulness.md`
-Outcome: hill-met
-Drift check: yes
-
 ## Summary
 
 This cycle made `renderBearing` stop speaking beyond repo truth. The
@@ -30,10 +26,11 @@ sync after merge on `main`.
 
 - None recorded.
 
-## New Debt
+## Observed Debt
 
 - `PROCESS_witness-drift-output-capture` remains open: close-time
-  verification witnesses still record an empty `## Drift Results` block.
+  verification witnesses in cycle `0033` still re-observed the existing
+  drift-output capture gap.
 
 ## Cool Ideas
 
