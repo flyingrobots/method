@@ -119,7 +119,7 @@ export function renderDesignDoc(options: {
   return [
     '---',
     `title: ${yamlString(options.title)}`,
-    `legend: ${legendValue}`,
+    `legend: ${yamlString(legendValue)}`,
     `cycle: ${yamlString(options.cycleName)}`,
     `source_backlog: ${yamlString(options.source)}`,
     '---',

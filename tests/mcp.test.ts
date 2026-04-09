@@ -1,7 +1,8 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { GitHubAdapter } from '../src/adapters/github.js';
 import { createMcpServer } from '../src/mcp.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -14,6 +15,7 @@ afterEach(() => {
     rmSync(root, { recursive: true, force: true });
   }
   tempRoots.length = 0;
+  vi.restoreAllMocks();
 });
 
 function createTempRoot(): string {
@@ -270,5 +272,38 @@ describe('MCP Server', () => {
     expect(badCycle.structuredContent.error.message).toContain('cycle must be a string');
 
     vi.restoreAllMocks();
+  });
+
+  it('Does `method_sync_github` respect explicit false flags instead of treating them as omitted defaults?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    writeFileSync(
+      join(root, '.method.json'),
+      JSON.stringify({ github_token: 'test-token', github_repo: 'owner/repo' }),
+      'utf8',
+    );
+
+    const pushBacklog = vi.spyOn(GitHubAdapter.prototype, 'pushBacklog').mockResolvedValue([]);
+    const pullBacklog = vi.spyOn(GitHubAdapter.prototype, 'pullBacklog').mockResolvedValue([]);
+    const callToolHandler = createCallToolHarness();
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_sync_github',
+        arguments: {
+          workspace: root,
+          push: false,
+          pull: false,
+        },
+      },
+    });
+
+    expect(result.isError).toBe(false);
+    expect(result.structuredContent.tool).toBe('method_sync_github');
+    expect(result.structuredContent.result.pushRequested).toBe(false);
+    expect(result.structuredContent.result.pullRequested).toBe(false);
+    expect(pushBacklog).not.toHaveBeenCalled();
+    expect(pullBacklog).not.toHaveBeenCalled();
+    expect(result.content[0].text).toContain('No changes.');
   });
 });

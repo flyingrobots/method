@@ -91,4 +91,17 @@ describe('Automated Witness Capture', () => {
     expect(content).toContain('title: "Line 1\\nLine 2"');
     expect(content).toContain('source_backlog: "docs/method/backlog/asap/PROCESS_line-1\\nline-2.md"');
   });
+
+  it('Does design-doc frontmatter YAML-escape legends instead of writing raw scalar text?', () => {
+    const content = renderDesignDoc({
+      cycleName: '0001-legend-escape',
+      title: 'Legend Escape',
+      legend: 'FEAT:alpha #quoted "value"',
+      source: 'docs/method/backlog/asap/PROCESS_legend-escape.md',
+      backlogBody: 'Body',
+    });
+
+    expect(content).toContain('legend: "FEAT:alpha #quoted \\"value\\""');
+    expect(content).toContain('Legend: FEAT:alpha #quoted "value"');
+  });
 });

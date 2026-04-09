@@ -3,7 +3,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { basename, relative } from 'node:path';
 import { Workspace } from './index.js';
 import { GitHubAdapter, type GitHubSyncResult } from './adapters/github.js';
-import type { Outcome, WorkspaceStatus } from './domain.js';
+import type { Cycle, Outcome, WorkspaceStatus } from './domain.js';
 
 const workspaceProperty = { workspace: { type: 'string' as const, description: 'Absolute path to the METHOD workspace root directory' } };
 
@@ -121,7 +121,7 @@ export function createMcpServer() {
         const status = workspace.status();
         const summary = args.summary === true;
         if (summary) {
-          const summaryResult = summarizeStatus(workspace, status);
+          const summaryResult = summarizeStatus(status, workspace.closedCycles());
           return successResult(
             'method_status',
             renderStatusSummaryText(summaryResult),
@@ -210,8 +210,8 @@ export function createMcpServer() {
       }
 
       if (request.params.name === 'method_sync_github') {
-        const push = (args.push as boolean | undefined) || (!args.push && !args.pull);
-        const pull = (args.pull as boolean | undefined) || false;
+        const push = (args.push as boolean | undefined) ?? !(args.pull as boolean | undefined);
+        const pull = (args.pull as boolean | undefined) ?? false;
 
         const token = workspace.config.github_token;
         const repoFull = workspace.config.github_repo;
@@ -278,7 +278,7 @@ export function createMcpServer() {
   return server;
 }
 
-function summarizeStatus(workspace: Workspace, status: WorkspaceStatus): McpStatusSummary {
+function summarizeStatus(status: WorkspaceStatus, closedCycles: Cycle[]): McpStatusSummary {
   const laneCounts = Object.fromEntries(
     Object.entries(status.backlog).map(([lane, items]) => [lane, items.length]),
   );
@@ -287,7 +287,7 @@ function summarizeStatus(workspace: Workspace, status: WorkspaceStatus): McpStat
     root: status.root,
     laneCounts,
     activeCycles: status.activeCycles.map((cycle) => ({ name: cycle.name, slug: cycle.slug })),
-    retroCount: workspace.closedCycles().length,
+    retroCount: closedCycles.length,
     legendHealth: status.legendHealth,
   };
 }

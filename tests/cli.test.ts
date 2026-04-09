@@ -118,7 +118,7 @@ describe('method CLI', () => {
     const designDoc = readFile(root, 'docs/design/0001-strand-lifecycle/strand-lifecycle.md');
     expect(designDoc).toMatch(/^---\n[\s\S]+?\n---\n/u);
     expect(designDoc).toMatch(/^title:\s+"Strand Lifecycle"$/mu);
-    expect(designDoc).toMatch(/^legend:\s+PROTO$/mu);
+    expect(designDoc).toMatch(/^legend:\s+"PROTO"$/mu);
     expect(designDoc).toMatch(/^cycle:\s+"0001-strand-lifecycle"$/mu);
     expect(designDoc).toMatch(/^source_backlog:\s+"docs\/method\/backlog\/asap\/PROTO_strand-lifecycle\.md"$/mu);
     expect(designDoc).toContain('Legend: PROTO');
@@ -189,7 +189,7 @@ describe('method CLI', () => {
 
     expect(exitCode).toBe(0);
     const designDoc = readFile(root, 'docs/design/0001-scaffold-contract/scaffold-contract.md');
-    expect(designDoc).toMatch(/^legend:\s+PROCESS$/mu);
+    expect(designDoc).toMatch(/^legend:\s+"PROCESS"$/mu);
     expect(designDoc).toMatch(/^cycle:\s+"0001-scaffold-contract"$/mu);
     expect(designDoc).not.toContain('- Human: TBD');
     expect(designDoc).not.toContain('- Agent: TBD');

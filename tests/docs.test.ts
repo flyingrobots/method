@@ -354,6 +354,9 @@ describe('METHOD docs', () => {
       'outcome',
       'drift_check',
       'lane',
+      'owner',
+      'priority',
+      'acceptance_criteria',
       'github_issue_id',
       'github_issue_url',
       'github_labels',
@@ -725,8 +728,10 @@ describe('METHOD docs', () => {
     expect(mcp).toContain('method_sync_ship');
     expect(mcp).toContain('method_sync_github');
     expect(mcp).toContain('method_capture_witness');
-    expect(mcp).toContain('summary');
-    expect(mcp).toContain('structuredContent');
+    expect(mcp).toMatch(/### `method_status`[\s\S]*- `summary` \(optional\) `boolean`/u);
+    expect(mcp).toMatch(/Machine-readable callers should consume `structuredContent`\./u);
+    expect(mcp).toMatch(/On success, `structuredContent` includes:[\s\S]*- `tool`[\s\S]*- `ok: true`[\s\S]*- `result`/u);
+    expect(mcp).toMatch(/On failure, tools set `isError: true` and `structuredContent` includes:[\s\S]*- `tool`[\s\S]*- `ok: false`[\s\S]*- `error\.message`/u);
 
     // README references both docs
     expect(readme).toContain('docs/CLI.md');

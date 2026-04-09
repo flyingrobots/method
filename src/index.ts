@@ -53,6 +53,7 @@ function resolvePaths(root: string, paths: PathsConfig): ResolvedPaths {
   };
 }
 
+const LEGEND_CODE_PATTERN = /^[A-Z][A-Z0-9]*$/u;
 const LEGEND_PATTERN = /^(?<legend>[A-Z][A-Z0-9]*)_(?<slug>.+)$/;
 const CYCLE_PATTERN = /^(?<number>\d{4})-(?<slug>[a-z0-9][a-z0-9-]*)$/;
 
@@ -140,7 +141,7 @@ export class Workspace {
     let prefix = '';
     if (legend !== undefined) {
       const normalized = legend.trim().toUpperCase();
-      if (!/^[A-Z][A-Z0-9]*$/u.test(normalized)) {
+      if (!LEGEND_CODE_PATTERN.test(normalized)) {
         throw new MethodError('Legend codes must be uppercase letters and numbers.');
       }
       prefix = `${normalized}_`;
@@ -603,7 +604,7 @@ function readDesignLegend(path: string): string | undefined {
       continue;
     }
     const value = line.slice('Legend: '.length).trim();
-    return value === 'none' ? undefined : value;
+    return normalizeLegend(value);
   }
   return undefined;
 }
@@ -645,7 +646,10 @@ function normalizeBacklogLane(value: string | undefined): Lane | 'root' | undefi
 
 function normalizeLegend(value: string | undefined): string | undefined {
   const normalized = value?.trim().toUpperCase();
-  return normalized === undefined || normalized.length === 0 || normalized === 'NONE'
+  return normalized === undefined
+    || normalized.length === 0
+    || normalized === 'NONE'
+    || !LEGEND_CODE_PATTERN.test(normalized)
     ? undefined
     : normalized;
 }

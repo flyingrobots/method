@@ -215,7 +215,43 @@ describe('Method API', () => {
 
     const cycle = workspace.pullItem('PROCESS_frontmatter-clears-legend');
     const designDoc = readFileSync(cycle.designDoc, 'utf8');
-    expect(designDoc).toContain('legend: none');
+    expect(designDoc).toContain('legend: "none"');
+    expect(designDoc).toContain('Legend: none');
+  });
+
+  it('Invalid explicit frontmatter legends do not override backlog filename truth or leak into pulled design docs.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    writeFileSync(
+      join(root, 'docs/method/backlog/asap/PROCESS_invalid-frontmatter-legend.md'),
+      [
+        '---',
+        'title: "Invalid Frontmatter Legend"',
+        'legend: human review',
+        'lane: asap',
+        '---',
+        '',
+        '# Invalid Frontmatter Legend',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const status = workspace.status();
+    expect(status.backlog.asap).toContainEqual({
+      stem: 'PROCESS_invalid-frontmatter-legend',
+      lane: 'asap',
+      path: 'docs/method/backlog/asap/PROCESS_invalid-frontmatter-legend.md',
+      legend: undefined,
+      slug: 'invalid-frontmatter-legend',
+    });
+
+    const cycle = workspace.pullItem('PROCESS_invalid-frontmatter-legend');
+    const designDoc = readFileSync(cycle.designDoc, 'utf8');
+    expect(designDoc).toContain('legend: "none"');
     expect(designDoc).toContain('Legend: none');
   });
 
