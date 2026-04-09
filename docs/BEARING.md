@@ -1,8 +1,8 @@
 ---
 title: "BEARING"
-generated_at: 2026-04-09T13:56:09.182Z
+generated_at: 2026-04-09T13:57:15.374Z
 generator: "method sync ship (renderBearing)"
-generated_from_commit: "39cb47c572c1ddf6e89ea4aeca3b6ecba20863bd"
+generated_from_commit: "95610cb6817943db932b42934da120e08f6b1e23"
 provenance_level: artifact_history
 ---
 

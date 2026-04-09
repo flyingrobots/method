@@ -20,6 +20,8 @@ evidence must be completed from `main` after this prep branch lands.
 - Previous tag: `v0.3.0` -> `1955ec1cd9c067f03db76a13e626a53e6b298b9d`
 - Prep branch: `maint-v1-0-0-release-prep`
 - Base `main` head at prep start: `39cb47c572c1ddf6e89ea4aeca3b6ecba20863bd`
+- Release-prep commit carrying the version bump and package hardening:
+  `95610cb6817943db932b42934da120e08f6b1e23`
 
 ## Guards
 
@@ -30,10 +32,13 @@ evidence must be completed from `main` after this prep branch lands.
 
 ## Validation
 
-- Build (`npm run build`): PENDING
-- Tests (`npm test`): PENDING
-- Pack dry-run (`npm pack --dry-run --json`): PENDING
-- Audit (`npm audit`): PENDING
+- Build (`npm run build`): PASS
+- Tests (`npm test`): PASS, 175/175 tests across 15 files
+- Pack dry-run (`npm pack --dry-run --json`): PASS,
+  `method-1.0.0.tgz`, 35 files, 46,980 bytes packed / 180,947 bytes
+  unpacked
+- Audit (`npm audit`): PASS, 0 vulnerabilities
+- Diff whitespace check (`git diff --check`): PASS
 
 ## Packaging Expectations
 
@@ -54,6 +59,14 @@ It should exclude:
 - `docs/`
 - local tool metadata such as `.mcp.json` or editor settings
 - TypeScript source maps unless intentionally added later
+
+Observed exclusions during dry-run:
+
+- no `src/` files
+- no `tests/` files
+- no `docs/` files
+- no dotfiles
+- no `.map` files
 
 ## Final Release Steps Pending
 

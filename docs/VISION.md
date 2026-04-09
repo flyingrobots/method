@@ -1,8 +1,8 @@
 ---
 title: "METHOD - Executive Summary"
-generated_at: 2026-04-09T06:50:15-07:00
+generated_at: 2026-04-09T06:57:14-07:00
 generator: "manual synthesis following Executive Summary Protocol (Cycle 0013)"
-generated_from_commit: "39cb47c572c1ddf6e89ea4aeca3b6ecba20863bd"
+generated_from_commit: "95610cb6817943db932b42934da120e08f6b1e23"
 provenance_level: artifact_history
 witness_ref: docs/method/retro/0033-bearing-truthfulness/witness/verification.md
 source_files:
