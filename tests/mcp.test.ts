@@ -137,7 +137,28 @@ describe('MCP Server', () => {
     });
     expect(statusResult.structuredContent.result.summary.backlog).toBeUndefined();
     expect(statusResult.content[0].text).toContain('Lane counts:');
+    expect(statusResult.content[0].text).toContain('Legend health:');
     vi.restoreAllMocks();
+  });
+
+  it('Does `method_status` reject non-boolean summary flags instead of silently expanding to full mode?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const callToolHandler = createCallToolHarness();
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_status',
+        arguments: {
+          workspace: root,
+          summary: 'true',
+        },
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent.tool).toBe('method_status');
+    expect(result.structuredContent.error.message).toContain('summary must be a boolean');
   });
 
   it('Do mutation tools (`method_inbox`, `method_pull`, `method_close`, `method_capture_witness`) return stable field-level structured content for persisted paths and cycles?', async () => {
@@ -335,6 +356,34 @@ describe('MCP Server', () => {
       JSON.stringify({ github_token: 'test-token', github_repo: 'owner/repo' }),
       'utf8',
     );
+
+    const pushBacklog = vi.spyOn(GitHubAdapter.prototype, 'pushBacklog').mockResolvedValue([]);
+    const pullBacklog = vi.spyOn(GitHubAdapter.prototype, 'pullBacklog').mockResolvedValue([]);
+    const callToolHandler = createCallToolHarness();
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_sync_github',
+        arguments: {
+          workspace: root,
+          push: false,
+          pull: false,
+        },
+      },
+    });
+
+    expect(result.isError).toBe(false);
+    expect(result.structuredContent.tool).toBe('method_sync_github');
+    expect(result.structuredContent.result.pushRequested).toBe(false);
+    expect(result.structuredContent.result.pullRequested).toBe(false);
+    expect(pushBacklog).not.toHaveBeenCalled();
+    expect(pullBacklog).not.toHaveBeenCalled();
+    expect(result.content[0].text).toContain('No changes.');
+  });
+
+  it('Does `method_sync_github` allow an explicit no-op sync without GitHub credentials?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
 
     const pushBacklog = vi.spyOn(GitHubAdapter.prototype, 'pushBacklog').mockResolvedValue([]);
     const pullBacklog = vi.spyOn(GitHubAdapter.prototype, 'pullBacklog').mockResolvedValue([]);

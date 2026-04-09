@@ -119,7 +119,7 @@ export function createMcpServer() {
 
       if (request.params.name === 'method_status') {
         const status = workspace.status();
-        const summary = args.summary === true;
+        const summary = validateOptionalBoolean(args.summary, 'summary') ?? false;
         if (summary) {
           const summaryResult = summarizeStatus(status, workspace.closedCycles());
           return successResult(
@@ -215,6 +215,20 @@ export function createMcpServer() {
         const pull = validatedPull ?? false;
         const push = validatedPush ?? !pull;
 
+        if (!push && !pull) {
+          return toolResult(
+            'method_sync_github',
+            'No changes.',
+            {
+              pushRequested: false,
+              pullRequested: false,
+              pushResults: [],
+              pullResults: [],
+            },
+            false,
+          );
+        }
+
         const token = workspace.config.github_token;
         const repoFull = workspace.config.github_repo;
 
@@ -301,11 +315,17 @@ function renderStatusSummaryText(summary: McpStatusSummary): string {
   const activeCycles = summary.activeCycles.length === 0
     ? '-'
     : summary.activeCycles.map((cycle) => cycle.name).join(', ');
+  const legendHealth = summary.legendHealth.length === 0
+    ? '-'
+    : summary.legendHealth
+      .map(({ legend, backlog, active }) => `${legend} backlog=${backlog} active=${active}`)
+      .join('; ');
   return [
     `Status summary for ${summary.root}.`,
     `Lane counts: ${laneCounts}`,
     `Active cycles: ${activeCycles}`,
     `Retros: ${summary.retroCount}`,
+    `Legend health: ${legendHealth}`,
   ].join('\n');
 }
 

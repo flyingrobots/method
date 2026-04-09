@@ -125,7 +125,7 @@ describe('Automated Witness Capture', () => {
 
   it('Normalizes generated frontmatter paths to POSIX separators.', () => {
     const root = createTempRoot();
-    const designDocPath = join(root, 'docs\\design\\0001-windows-paths\\windows-paths.md');
+    const designDocPath = join(root, 'docs', 'design', '0001-windows-paths', 'windows-paths.md');
     mkdirSync(dirname(designDocPath), { recursive: true });
     writeFileSync(designDocPath, '# Windows Paths\n', 'utf8');
 
