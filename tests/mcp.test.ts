@@ -218,4 +218,57 @@ describe('MCP Server', () => {
 
     vi.restoreAllMocks();
   });
+
+  it('Does `method_close` reject invalid runtime argument types instead of trusting MCP schema declarations?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+    workspace.captureIdea('close validation', 'PROCESS', 'Close Validation');
+    workspace.pullItem('PROCESS_close-validation');
+    const callToolHandler = createCallToolHarness();
+
+    const badDriftCheck = await callToolHandler({
+      params: {
+        name: 'method_close',
+        arguments: {
+          workspace: root,
+          cycle: '0001-close-validation',
+          driftCheck: 'false',
+          outcome: 'hill-met',
+        },
+      },
+    });
+    expect(badDriftCheck.isError).toBe(true);
+    expect(badDriftCheck.structuredContent.error.message).toContain('driftCheck must be a boolean');
+
+    const badOutcome = await callToolHandler({
+      params: {
+        name: 'method_close',
+        arguments: {
+          workspace: root,
+          cycle: '0001-close-validation',
+          driftCheck: true,
+          outcome: 'done',
+        },
+      },
+    });
+    expect(badOutcome.isError).toBe(true);
+    expect(badOutcome.structuredContent.error.message).toContain('outcome must be one of');
+
+    const badCycle = await callToolHandler({
+      params: {
+        name: 'method_close',
+        arguments: {
+          workspace: root,
+          cycle: 42,
+          driftCheck: true,
+          outcome: 'hill-met',
+        },
+      },
+    });
+    expect(badCycle.isError).toBe(true);
+    expect(badCycle.structuredContent.error.message).toContain('cycle must be a string');
+
+    vi.restoreAllMocks();
+  });
 });

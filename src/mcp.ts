@@ -176,10 +176,13 @@ export function createMcpServer() {
       }
 
       if (request.params.name === 'method_close') {
+        const cycleName = validateOptionalString(args.cycle, 'cycle');
+        const driftCheck = validateBoolean(args.driftCheck, 'driftCheck');
+        const outcome = validateOutcome(args.outcome);
         const cycle = await workspace.closeCycle(
-          args.cycle as string | undefined,
-          args.driftCheck as boolean,
-          args.outcome as Outcome,
+          cycleName,
+          driftCheck,
+          outcome,
         );
         return successResult(
           'method_close',
@@ -375,4 +378,28 @@ function splitBacklogStem(stem: string): { legend?: string; slug: string } {
     return { slug: stem };
   }
   return { legend: match.groups.legend, slug: match.groups.slug };
+}
+
+function validateOptionalString(value: unknown, name: string): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value !== 'string') {
+    throw new Error(`${name} must be a string when provided.`);
+  }
+  return value;
+}
+
+function validateBoolean(value: unknown, name: string): boolean {
+  if (typeof value !== 'boolean') {
+    throw new Error(`${name} must be a boolean.`);
+  }
+  return value;
+}
+
+function validateOutcome(value: unknown): Outcome {
+  if (value === 'hill-met' || value === 'partial' || value === 'not-met') {
+    return value;
+  }
+  throw new Error('outcome must be one of: hill-met, partial, not-met.');
 }
