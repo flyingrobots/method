@@ -208,6 +208,45 @@ describe('MCP Server', () => {
     }
   });
 
+  it('Does `method_inbox` normalize persisted legends before returning structured content?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const persistedPath = join(root, 'docs/method/backlog/inbox/PROCESS_tampered-legend.md');
+    writeFileSync(
+      persistedPath,
+      [
+        '---',
+        'title: Tampered Legend',
+        'lane: inbox',
+        'legend: foo-bar',
+        '---',
+        '',
+        'Body',
+        '',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const captureIdea = vi.spyOn(Workspace.prototype, 'captureIdea').mockReturnValue(persistedPath);
+    const callToolHandler = createCallToolHarness();
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_inbox',
+        arguments: {
+          workspace: root,
+          idea: 'ignored by mock',
+        },
+      },
+    });
+
+    expect(result.isError).toBe(false);
+    expect(result.structuredContent.tool).toBe('method_inbox');
+    expect(result.structuredContent.result.path).toBe('docs/method/backlog/inbox/PROCESS_tampered-legend.md');
+    expect(result.structuredContent.result.legend).toBe('PROCESS');
+    expect(captureIdea).toHaveBeenCalled();
+  });
+
   it('On MCP errors, can I inspect a structured error object instead of only a prose message?', async () => {
     const callToolHandler = createCallToolHarness();
 
@@ -346,6 +385,21 @@ describe('MCP Server', () => {
 
     expect(badPush.isError).toBe(true);
     expect(badPush.structuredContent.error.message).toContain('push must be a boolean');
+    expect(pushBacklog).not.toHaveBeenCalled();
+    expect(pullBacklog).not.toHaveBeenCalled();
+
+    const badPull = await callToolHandler({
+      params: {
+        name: 'method_sync_github',
+        arguments: {
+          workspace: root,
+          pull: 'false',
+        },
+      },
+    });
+
+    expect(badPull.isError).toBe(true);
+    expect(badPull.structuredContent.error.message).toContain('pull must be a boolean');
     expect(pushBacklog).not.toHaveBeenCalled();
     expect(pullBacklog).not.toHaveBeenCalled();
   });

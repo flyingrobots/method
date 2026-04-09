@@ -1,6 +1,6 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { initWorkspace, Workspace } from '../src/index.js';
 import { renderDesignDoc, renderRetroDoc, renderWitnessDoc } from '../src/renderers.js';
@@ -80,6 +80,24 @@ describe('Automated Witness Capture', () => {
     expect(content).toContain('```text\nNo drift output captured.\n```');
   });
 
+  it('Preserves non-empty witness command output verbatim while only trimming for blank detection.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.captureIdea('Witness Payload Test', 'PROCESS', 'Witness Payload Test');
+    const cycle = workspace.pullItem('PROCESS_witness-payload-test');
+
+    const content = renderWitnessDoc({
+      cycle,
+      testResult: '  indented output\n',
+      driftResult: '\t drift output\n',
+    });
+
+    expect(content).toMatch(/## Test Results\n\n```text\n  indented output\n\n```/u);
+    expect(content).toMatch(/## Drift Results\n\n```text\n\t drift output\n\n```/u);
+  });
+
   it('Does YAML frontmatter escape embedded line breaks instead of letting YAML fold them away?', () => {
     const content = renderDesignDoc({
       cycleName: '0001-line-breaks',
@@ -108,6 +126,7 @@ describe('Automated Witness Capture', () => {
   it('Normalizes generated frontmatter paths to POSIX separators.', () => {
     const root = createTempRoot();
     const designDocPath = join(root, 'docs\\design\\0001-windows-paths\\windows-paths.md');
+    mkdirSync(dirname(designDocPath), { recursive: true });
     writeFileSync(designDocPath, '# Windows Paths\n', 'utf8');
 
     const designContent = renderDesignDoc({

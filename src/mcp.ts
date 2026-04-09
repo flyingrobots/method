@@ -313,11 +313,12 @@ function readPersistedInboxResult(workspace: Workspace, relativePath: string) {
   const frontmatter = workspace.readFrontmatter(relativePath);
   const stem = fileStem(relativePath);
   const { legend, slug } = splitBacklogStem(stem);
+  const persistedLegend = normalizePersistedLegend(frontmatter.legend);
 
   return {
     path: relativePath,
     lane: frontmatter.lane ?? 'inbox',
-    legend: frontmatter.legend ?? legend,
+    legend: persistedLegend ?? legend,
     title: frontmatter.title,
     stem,
     slug,
@@ -380,6 +381,16 @@ function splitBacklogStem(stem: string): { legend?: string; slug: string } {
     return { slug: stem };
   }
   return { legend: match.groups.legend, slug: match.groups.slug };
+}
+
+function normalizePersistedLegend(value: string | undefined): string | undefined {
+  const normalized = value?.trim().toUpperCase();
+  return normalized === undefined
+    || normalized.length === 0
+    || normalized === 'NONE'
+    || !/^[A-Z][A-Z0-9]*$/u.test(normalized)
+    ? undefined
+    : normalized;
 }
 
 function validateOptionalString(value: unknown, name: string): string | undefined {

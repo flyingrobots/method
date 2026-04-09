@@ -78,8 +78,12 @@ export function renderWitnessDoc(options: {
   driftResult: string;
 }): string {
   const title = readHeading(options.cycle.designDoc) || titleCase(options.cycle.slug);
-  const testResult = options.testResult.trim() || 'No test output captured.';
-  const driftResult = options.driftResult.trim() || 'No drift output captured.';
+  const testResult = options.testResult.trim().length === 0
+    ? 'No test output captured.'
+    : options.testResult;
+  const driftResult = options.driftResult.trim().length === 0
+    ? 'No drift output captured.'
+    : options.driftResult;
   return [
     '---',
     `title: "Verification Witness for Cycle ${options.cycle.number}"`,
