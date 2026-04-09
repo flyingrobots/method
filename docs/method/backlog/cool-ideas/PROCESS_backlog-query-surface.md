@@ -37,6 +37,14 @@ markdown ad hoc.
   `BacklogItem` in `src/domain.ts` with `title`, `priority`, `owner`,
   and `has_acceptance_criteria`, and depends on typed frontmatter access
   being available for those fields.
+- Implementation phasing:
+  this surface may ship in two phases. Phase one may return only the
+  current `BacklogItem` identity fields (`path`, `stem`, `slug`, `lane`,
+  `legend`) without waiting for typed frontmatter. Phase two adds
+  `title`, `priority`, `owner`, and `has_acceptance_criteria` once
+  typed frontmatter and the `BacklogItem` extension land. If those
+  dependencies are already available, the full surface may ship in one
+  slice instead.
 - Item shape:
   each returned item includes existing backlog identity fields
   (`path`, `stem`, `slug`, `lane`, `legend`) plus extended metadata

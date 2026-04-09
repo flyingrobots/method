@@ -40,9 +40,9 @@ hand-reconstructed strings.
   bounded scalar and collection types METHOD actually uses.
 - Supported first-cut types:
   strings, booleans, numeric YAML scalars, and arrays of strings for
-  fields like `acceptance_criteria` or `source_files`. Quoted
-  number-looking strings remain strings, and `null` does not become a
-  supported typed value in the first cut.
+  fields like `acceptance_criteria` or `source_files`. Quoted numeric
+  literals such as `"123"` remain strings per YAML parsing semantics,
+  and `null` does not become a supported typed value in the first cut.
 - Compatibility:
   existing callers that only need simple string metadata do not have to
   migrate in the same slice.
@@ -53,6 +53,8 @@ hand-reconstructed strings.
   MUST fail by default with an error that names the field, expected
   shape, and attempted shape. A later explicit opt-in downgrade path may
   exist, but it must be deliberate rather than silent.
+  Example error:
+  `Cannot downgrade typed field 'acceptance_criteria': expected array<string>, attempted string`.
 - Legacy helpers:
   `updateFrontmatter()` remains available for plain string-only metadata
   but MUST NOT be used for schema-backed typed fields such as

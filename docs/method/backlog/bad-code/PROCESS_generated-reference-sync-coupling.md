@@ -38,15 +38,17 @@ confident about running the generator they actually need.
   `generateReferenceDocs()`, for regenerating reference docs without
   mutating ship-only artifacts.
 - Scoped outputs:
-  `method sync refs` should be able to refresh generated reference docs
-  such as `docs/CLI.md` and `docs/MCP.md` without editing
-  `docs/BEARING.md`, `CHANGELOG.md`, or other ship-only summaries.
+  `method sync refs` should refresh the current generated reference
+  signposts exactly: `ARCHITECTURE.md`, `docs/CLI.md`, `docs/MCP.md`,
+  and `docs/GUIDE.md`. It must not edit ship-only artifacts such as
+  `docs/BEARING.md` or `CHANGELOG.md`.
 - Safety:
   `method sync refs` MUST print the list of refreshed targets, and
   `generateReferenceDocs()` MUST return the same target list for MCP or
-  other callers. That surfaced scope must name generated reference docs
-  such as `docs/CLI.md` or `docs/MCP.md` and exclude ship-only files
-  such as `docs/BEARING.md` and `CHANGELOG.md`.
+  other callers. That surfaced scope must name the exact refreshed
+  targets (`ARCHITECTURE.md`, `docs/CLI.md`, `docs/MCP.md`,
+  `docs/GUIDE.md`) and exclude ship-only files such as
+  `docs/BEARING.md` and `CHANGELOG.md`.
 
 ## Non-goals
 

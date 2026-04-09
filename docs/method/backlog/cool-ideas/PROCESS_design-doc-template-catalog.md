@@ -58,6 +58,14 @@ universal outline.
   the intended behavior or contract, the main happy path, expected
   failure or edge cases, and a verification plan that proves the slice
   actually landed.
+- Recommended scaffold sections:
+  `## Intended Behavior`,
+  `## Happy Path`,
+  `## Edge Cases and Failure Modes`,
+  `## Verification Plan`.
+  Authors may merge or rename these sections when reviewers accept the
+  rationale, but the scaffold should present them as the default
+  structure.
 - Optional emphasis:
   examples, sequence diagrams, rollout notes, or migration notes when
   the change is user-visible.
@@ -71,6 +79,12 @@ universal outline.
   an explicit surface inventory, required input and output shapes,
   compatibility expectations, failure modes, and concrete examples of
   the resulting contract.
+- Recommended scaffold sections:
+  `## Surface Inventory`,
+  `## Input and Output Contract`,
+  `## Compatibility Expectations`,
+  `## Failure Modes`,
+  `## Examples`.
 - Optional emphasis:
   deprecation notes, migration windows, or parity requirements across
   multiple surfaces such as CLI and MCP.
@@ -85,6 +99,11 @@ universal outline.
   true after the refactor, the planned cut boundaries, and the
   regression checks that prove the cleanup did not create behavioral
   drift.
+- Recommended scaffold sections:
+  `## Current Pain`,
+  `## Invariants`,
+  `## Cut Boundaries`,
+  `## Regression Checks`.
 - Optional emphasis:
   before/after module maps, ownership boundaries, or dependency
   simplification notes.
@@ -98,6 +117,11 @@ universal outline.
   the affected audiences, the truth sources that must stay aligned, the
   semantic wording changes being made, and any regeneration or sync
   surfaces that must remain consistent after the edit.
+- Recommended scaffold sections:
+  `## Audience`,
+  `## Truth Sources`,
+  `## Wording Changes`,
+  `## Regeneration and Sync Impact`.
 - Optional emphasis:
   before/after wording examples, cross-reference tables, or explicit
   reader journeys.
@@ -112,6 +136,12 @@ universal outline.
   the question being investigated, the working hypothesis, the evidence
   collection plan, the exit criteria for the spike, and the expected
   handoff into a later implementation or backlog decision.
+- Recommended scaffold sections:
+  `## Question`,
+  `## Working Hypothesis`,
+  `## Evidence Plan`,
+  `## Exit Criteria`,
+  `## Expected Handoff`.
 - Optional emphasis:
   rejected alternatives, benchmark notes, or criteria that would cancel
   the follow-on implementation entirely.

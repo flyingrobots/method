@@ -118,6 +118,19 @@ queue currently contains, and what evidence supported the ranking.
   provides candidates. If `BEARING` materially changes that order, the
   output must cite the exact bearing evidence that justified the
   override.
+- BEARING detection:
+  the first slice should stay deterministic. It MUST populate
+  `signals` entries with `type: "bearing_mention"` only by literal
+  substring matching of backlog item stems against the `## Where are we
+  going?` and `## What feels wrong?` sections of `docs/BEARING.md`. It
+  MUST NOT use LLM inference, fuzzy matching, or hidden manual
+  overrides.
+- BEARING override threshold:
+  a BEARING signal counts as materially changing ranking only when it
+  moves an item above at least one item from a higher-precedence lane or
+  moves the item into the top `3` recommendations. When that happens,
+  the recommendation must include the matching `bearing_mention` signal
+  plus the quoted source section name.
 - Evidence before heuristics:
   every recommendation must cite the concrete repo facts that pushed it
   upward, such as `lane=up-next`, `priority=medium`, `BEARING current

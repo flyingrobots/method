@@ -43,9 +43,17 @@ coordination move.
   write actions operate per thread in declared order, with summary
   comment posting last after reply or resolve work succeeds. CLI write
   mode must support `--dry-run` and require confirmation through
-  `--yes` before mutating GitHub state. Exit codes should distinguish
-  success or no-op (`0`), partial write failure (`2`), validation or
-  mapping error (`3`), and remote auth or permission failure (`4`).
+  `--yes` before mutating GitHub state. Exit code `0` means all
+  requested mutations applied or no mutations were needed, with stdout
+  or JSON explicitly noting no-op status. Exit code `2` means partial
+  write failure: successful writes remain in place, failed thread ids
+  are reported individually, and no automatic rollback is attempted.
+  Exit code `3` means validation or mapping failed before any write
+  happened. Exit code `4` means auth or permission failed before writes
+  began; if auth or permission fails mid-batch after some writes
+  succeeded, treat the run as partial failure (`2`). `--json` keeps the
+  same numeric exit codes and must include per-thread result objects and
+  machine-readable error codes.
 - Idempotency:
   retrying a closeout should be safe. Re-resolving an already resolved
   thread or reusing an existing SHA-backed reply should be treated as a
@@ -67,8 +75,12 @@ coordination move.
   thread id, `explained` requires a posted explanation or prepared reply,
   `left-open` means the thread remains unresolved or was intentionally
   deferred, and `not-applicable` requires a short rationale. Each
-  summary entry should record actor, timestamp, and confidence so later
-  automation can audit how the outcome was chosen.
+  summary entry should record actor, timestamp, and
+  `confidence: "confirmed" | "inferred-high" | "inferred-low" | "unknown"`
+  so later automation can audit how the outcome was chosen. Operator-set
+  outcomes use `confirmed`; helper-inferred outcomes use
+  `inferred-high`, `inferred-low`, or `unknown`. Audit tooling should
+  flag `inferred-low` and `unknown` for human review.
 
 ## Coordination Features
 
