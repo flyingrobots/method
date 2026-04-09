@@ -39,3 +39,10 @@ First public release. 29 cycles closed, 127 tests passing.
 - docs/VISION.md: generated executive synthesis.
 
 ## Unreleased
+
+### Fixed
+
+- Tightened MCP runtime behavior around GitHub sync flag parsing,
+  explicit legend normalization, and design-doc frontmatter escaping.
+- Hardened the review-facing docs backlog items so their acceptance
+  criteria and historical notes match the live contract.
