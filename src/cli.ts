@@ -72,6 +72,9 @@ export async function runCli(
       const completedDriftCheck = parsed.driftCheck === undefined
         ? await promptConfirm({ title: 'Drift check complete?', defaultValue: false })
         : parsed.driftCheck === 'yes';
+      if (!completedDriftCheck) {
+        throw new Error('Cannot close a cycle without completing the drift check.');
+      }
       const cycle = await workspace.closeCycle(parsed.cycle, completedDriftCheck, parsed.outcome);
       stdout.write(`${alert(`Closed ${cycle.name}`, { variant: 'success', ctx })}\n`);
       stdout.write(`${relative(root, cycle.retroDoc)}\n`);

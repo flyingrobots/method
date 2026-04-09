@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+### Breaking Changes
+
+- `Workspace.closeCycle(cycleName, completedDriftCheck, outcome)` now
+  requires the `outcome` argument. Downstream `Workspace` consumers must
+  update any direct calls to pass one of `hill-met`, `partial`, or
+  `not-met`. Treat the first published release containing this API
+  change as semver-major, or ship an explicit migration note if the
+  release plan changes before publication. Migration example:
+  `await workspace.closeCycle('0033-bearing-truthfulness', true, 'hill-met')`.
+
+### Fixed
+
+- Tightened MCP runtime behavior around GitHub sync flag parsing,
+  explicit legend normalization, and design-doc frontmatter escaping.
+- Hardened the review-facing docs backlog items so their acceptance
+  criteria and historical notes match the live contract.
+
 ## v0.3.0
 
 First public release. 29 cycles closed, 127 tests passing.
@@ -37,5 +56,3 @@ First public release. 29 cycles closed, 127 tests passing.
 - docs/GUIDE.md: operator advice with generated signpost inventory.
 - docs/BEARING.md: generated direction signpost.
 - docs/VISION.md: generated executive synthesis.
-
-## Unreleased

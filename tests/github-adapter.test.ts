@@ -171,5 +171,6 @@ describe('GitHub Adapter Two-way Sync', () => {
     expect(existsSync(graveyardPath), 'file should exist in graveyard').toBe(true);
     expect(existsSync(inboxPath), 'file should no longer exist in inbox').toBe(false);
     expect(readFileSync(graveyardPath, 'utf8')).toContain('Closed Item');
+    expect(workspace.readFrontmatter('docs/method/graveyard/FEAT_closed.md').lane).toBe('graveyard');
   });
 });

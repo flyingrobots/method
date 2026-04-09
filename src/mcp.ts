@@ -1,11 +1,19 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { relative } from 'node:path';
+import { basename, relative } from 'node:path';
 import { Workspace } from './index.js';
-import { GitHubAdapter } from './adapters/github.js';
-import type { Outcome } from './domain.js';
+import { GitHubAdapter, type GitHubSyncResult } from './adapters/github.js';
+import type { Cycle, Outcome, WorkspaceStatus } from './domain.js';
 
 const workspaceProperty = { workspace: { type: 'string' as const, description: 'Absolute path to the METHOD workspace root directory' } };
+
+interface McpStatusSummary {
+  root: string;
+  laneCounts: Record<string, number>;
+  activeCycles: Array<{ name: string; slug: string }>;
+  retroCount: number;
+  legendHealth: WorkspaceStatus['legendHealth'];
+}
 
 export interface McpToolDef {
   name: string;
@@ -21,7 +29,14 @@ export const MCP_TOOLS: McpToolDef[] = [
   {
     name: 'method_status',
     description: 'Get the current status of the METHOD workspace (backlog lanes, active cycles, legend health)',
-    inputSchema: { type: 'object', properties: { ...workspaceProperty }, required: ['workspace'] },
+    inputSchema: {
+      type: 'object',
+      properties: {
+        ...workspaceProperty,
+        summary: { type: 'boolean', description: 'Return a compact structured summary instead of the fully expanded workspace status (default: false)' },
+      },
+      required: ['workspace'],
+    },
   },
   {
     name: 'method_inbox',
@@ -104,7 +119,20 @@ export function createMcpServer() {
 
       if (request.params.name === 'method_status') {
         const status = workspace.status();
-        return { content: [{ type: 'text', text: JSON.stringify(status, null, 2) }] };
+        const summary = validateOptionalBoolean(args.summary, 'summary') ?? false;
+        if (summary) {
+          const summaryResult = summarizeStatus(status, workspace.closedCycles());
+          return successResult(
+            'method_status',
+            renderStatusSummaryText(summaryResult),
+            { mode: 'summary', summary: summaryResult },
+          );
+        }
+        return successResult(
+          'method_status',
+          `Returned full workspace status for ${workspace.root}.`,
+          { mode: 'full', status },
+        );
       }
 
       if (request.params.name === 'method_inbox') {
@@ -113,44 +141,93 @@ export function createMcpServer() {
           args.legend as string | undefined,
           args.title as string | undefined,
         );
-        return { content: [{ type: 'text', text: `Captured to ${relative(workspace.root, path)}` }] };
+        const relativePath = relative(workspace.root, path);
+        const persistedItem = readPersistedInboxResult(workspace, relativePath);
+        return successResult(
+          'method_inbox',
+          `Captured to ${relativePath}`,
+          persistedItem,
+        );
       }
 
       if (request.params.name === 'method_pull') {
         const cycle = workspace.pullItem(args.item as string);
-        return { content: [{ type: 'text', text: `Pulled into ${cycle.name}\nDesign: ${relative(workspace.root, cycle.designDoc)}` }] };
+        return successResult(
+          'method_pull',
+          `Pulled into ${cycle.name}`,
+          {
+            cycle: relativizeCycle(workspace, cycle),
+          },
+        );
       }
 
       if (request.params.name === 'method_drift') {
         const report = workspace.detectDrift(args.cycle as string | undefined);
-        return {
-          content: [{ type: 'text', text: report.output }],
-          isError: report.exitCode !== 0,
-        };
+        return toolResult(
+          'method_drift',
+          report.output,
+          {
+            exitCode: report.exitCode,
+            output: report.output,
+            clean: report.exitCode === 0,
+          },
+          report.exitCode !== 0,
+        );
       }
 
       if (request.params.name === 'method_close') {
+        const cycleName = validateOptionalString(args.cycle, 'cycle');
+        const driftCheck = validateBoolean(args.driftCheck, 'driftCheck');
+        const outcome = validateOutcome(args.outcome);
         const cycle = await workspace.closeCycle(
-          args.cycle as string | undefined,
-          args.driftCheck as boolean,
-          args.outcome as Outcome,
+          cycleName,
+          driftCheck,
+          outcome,
         );
-        return { content: [{ type: 'text', text: `Closed ${cycle.name}\nRetro: ${relative(workspace.root, cycle.retroDoc)}` }] };
+        return successResult(
+          'method_close',
+          `Closed ${cycle.name}`,
+          {
+            cycle: relativizeCycle(workspace, cycle),
+          },
+        );
       }
 
       if (request.params.name === 'method_sync_ship') {
         const result = await workspace.shipSync();
-        const text = [
-          `Updated: ${result.updated.join(', ')}`,
-          ...result.newShips.map((c) => `- Shipped ${c.name}`),
-          result.newShips.length === 0 ? 'No new ships.' : '',
-        ].join('\n');
-        return { content: [{ type: 'text', text }] };
+        const newShips = result.newShips.map((cycle) => relativizeCycle(workspace, cycle));
+        const text = result.newShips.length === 0
+          ? 'No new ships.'
+          : `Shipped ${result.newShips.map((cycle) => cycle.name).join(', ')}`;
+        return successResult(
+          'method_sync_ship',
+          text,
+          {
+            updated: result.updated,
+            newShips,
+          },
+        );
       }
 
       if (request.params.name === 'method_sync_github') {
-        const push = (args.push as boolean | undefined) || (!args.push && !args.pull);
-        const pull = (args.pull as boolean | undefined) || false;
+        const validatedPush = validateOptionalBoolean(args.push, 'push');
+        const validatedPull = validateOptionalBoolean(args.pull, 'pull');
+        const pull = validatedPull ?? false;
+        const push = validatedPush ?? !pull;
+
+        if (!push && !pull) {
+          return toolResult(
+            'method_sync_github',
+            'No changes.',
+            {
+              pushRequested: false,
+              pullRequested: false,
+              pushResults: [],
+              pullResults: [],
+            },
+            false,
+          );
+        }
 
         const token = workspace.config.github_token;
         const repoFull = workspace.config.github_repo;
@@ -170,55 +247,206 @@ export function createMcpServer() {
           repo: repo!,
         });
 
-        const log: string[] = [];
         let hasError = false;
+        let pushResults: GitHubSyncResult[] = [];
+        let pullResults: GitHubSyncResult[] = [];
 
         if (push) {
-          const results = await adapter.pushBacklog();
-          for (const r of results) {
-            if (r.skipped) continue;
-            if (r.error) {
-              log.push(`Error pushing ${r.path}: ${r.error}`);
-              hasError = true;
-            } else {
-              const issueLabel = r.issue?.number ?? '<unknown>';
-              const verb = r.action === 'create' ? 'Created' : 'Updated';
-              log.push(`${verb} GitHub Issue #${issueLabel} for ${r.path}`);
-            }
-          }
+          pushResults = await adapter.pushBacklog();
+          hasError = hasError || pushResults.some((result) => result.error !== undefined);
         }
 
         if (pull) {
-          const results = await adapter.pullBacklog();
-          for (const r of results) {
-            if (r.skipped) continue;
-            if (r.error) {
-              log.push(`Error pulling ${r.path}: ${r.error}`);
-              hasError = true;
-            } else {
-              const issueLabel = r.issue?.number ?? '<unknown>';
-              log.push(`Pulled remote changes from GitHub Issue #${issueLabel} into ${r.path}`);
-            }
-          }
+          pullResults = await adapter.pullBacklog();
+          hasError = hasError || pullResults.some((result) => result.error !== undefined);
         }
 
-        return {
-          content: [{ type: 'text', text: log.join('\n') || 'No changes.' }],
-          isError: hasError,
-        };
+        return toolResult(
+          'method_sync_github',
+          summarizeGitHubSync(pushResults, pullResults),
+          {
+            pushRequested: push,
+            pullRequested: pull,
+            pushResults,
+            pullResults,
+          },
+          hasError,
+        );
       }
 
       if (request.params.name === 'method_capture_witness') {
         const path = await workspace.captureWitness(args.cycle as string | undefined);
-        return { content: [{ type: 'text', text: `Captured witness to ${relative(workspace.root, path)}` }] };
+        const relativePath = relative(workspace.root, path);
+        return successResult(
+          'method_capture_witness',
+          `Captured witness to ${relativePath}`,
+          { path: relativePath },
+        );
       }
 
       throw new Error(`Unknown tool: ${request.params.name}`);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : String(error);
-      return { content: [{ type: 'text', text: message }], isError: true };
+      return errorResult(request.params.name, message);
     }
   });
 
   return server;
+}
+
+function summarizeStatus(status: WorkspaceStatus, closedCycles: Cycle[]): McpStatusSummary {
+  const laneCounts = Object.fromEntries(
+    Object.entries(status.backlog).map(([lane, items]) => [lane, items.length]),
+  );
+
+  return {
+    root: status.root,
+    laneCounts,
+    activeCycles: status.activeCycles.map((cycle) => ({ name: cycle.name, slug: cycle.slug })),
+    retroCount: closedCycles.length,
+    legendHealth: status.legendHealth,
+  };
+}
+
+function renderStatusSummaryText(summary: McpStatusSummary): string {
+  const laneCounts = Object.entries(summary.laneCounts)
+    .map(([lane, count]) => `${lane}=${count}`)
+    .join(', ');
+  const activeCycles = summary.activeCycles.length === 0
+    ? '-'
+    : summary.activeCycles.map((cycle) => cycle.name).join(', ');
+  const legendHealth = summary.legendHealth.length === 0
+    ? '-'
+    : summary.legendHealth
+      .map(({ legend, backlog, active }) => `${legend} backlog=${backlog} active=${active}`)
+      .join('; ');
+  return [
+    `Status summary for ${summary.root}.`,
+    `Lane counts: ${laneCounts}`,
+    `Active cycles: ${activeCycles}`,
+    `Retros: ${summary.retroCount}`,
+    `Legend health: ${legendHealth}`,
+  ].join('\n');
+}
+
+function readPersistedInboxResult(workspace: Workspace, relativePath: string) {
+  const frontmatter = workspace.readFrontmatter(relativePath);
+  const stem = fileStem(relativePath);
+  const { legend, slug } = splitBacklogStem(stem);
+  const persistedLegend = normalizePersistedLegend(frontmatter.legend);
+
+  return {
+    path: relativePath,
+    lane: frontmatter.lane ?? 'inbox',
+    legend: persistedLegend ?? legend,
+    title: frontmatter.title,
+    stem,
+    slug,
+  };
+}
+
+function relativizeCycle(workspace: Workspace, cycle: { name: string; number: number; slug: string; designDoc: string; retroDoc: string }) {
+  return {
+    ...cycle,
+    designDoc: relative(workspace.root, cycle.designDoc),
+    retroDoc: relative(workspace.root, cycle.retroDoc),
+  };
+}
+
+function summarizeGitHubSync(pushResults: GitHubSyncResult[], pullResults: GitHubSyncResult[]): string {
+  const changed = [...pushResults, ...pullResults].filter((result) => !result.skipped);
+  if (changed.length === 0) {
+    return 'No changes.';
+  }
+  const failures = changed.filter((result) => result.error !== undefined).length;
+  return `GitHub sync processed ${changed.length} item(s) with ${failures} error(s).`;
+}
+
+function successResult(tool: string, text: string, result: Record<string, unknown>) {
+  return toolResult(tool, text, result, false);
+}
+
+function errorResult(tool: string, message: string) {
+  return {
+    content: [{ type: 'text' as const, text: message }],
+    structuredContent: {
+      tool,
+      ok: false,
+      error: { message },
+    },
+    isError: true,
+  };
+}
+
+function toolResult(tool: string, text: string, result: Record<string, unknown>, isError: boolean) {
+  return {
+    content: [{ type: 'text' as const, text }],
+    structuredContent: {
+      tool,
+      ok: !isError,
+      result,
+    },
+    isError,
+  };
+}
+
+function fileStem(path: string): string {
+  const name = basename(path);
+  return name.endsWith('.md') ? name.slice(0, -3) : name;
+}
+
+function splitBacklogStem(stem: string): { legend?: string; slug: string } {
+  const match = /^(?<legend>[A-Z][A-Z0-9]*)_(?<slug>.+)$/u.exec(stem);
+  if (match?.groups === undefined) {
+    return { slug: stem };
+  }
+  return { legend: match.groups.legend, slug: match.groups.slug };
+}
+
+function normalizePersistedLegend(value: string | undefined): string | undefined {
+  const normalized = value?.trim().toUpperCase();
+  return normalized === undefined
+    || normalized.length === 0
+    || normalized === 'NONE'
+    || !/^[A-Z][A-Z0-9]*$/u.test(normalized)
+    ? undefined
+    : normalized;
+}
+
+function validateOptionalString(value: unknown, name: string): string | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value !== 'string') {
+    throw new Error(`${name} must be a string when provided.`);
+  }
+  const normalized = value.trim();
+  if (normalized.length === 0) {
+    throw new Error(`${name} must not be empty.`);
+  }
+  return normalized;
+}
+
+function validateOptionalBoolean(value: unknown, name: string): boolean | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value !== 'boolean') {
+    throw new Error(`${name} must be a boolean.`);
+  }
+  return value;
+}
+
+function validateBoolean(value: unknown, name: string): boolean {
+  if (typeof value !== 'boolean') {
+    throw new Error(`${name} must be a boolean.`);
+  }
+  return value;
+}
+
+function validateOutcome(value: unknown): Outcome {
+  if (value === 'hill-met' || value === 'partial' || value === 'not-met') {
+    return value;
+  }
+  throw new Error('outcome must be one of: hill-met, partial, not-met.');
 }

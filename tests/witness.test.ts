@@ -1,8 +1,9 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { initWorkspace, Workspace } from '../src/index.js';
+import { renderDesignDoc, renderRetroDoc, renderWitnessDoc } from '../src/renderers.js';
 
 const tempRoots: string[] = [];
 
@@ -57,5 +58,98 @@ describe('Automated Witness Capture', () => {
     expect(content).toContain('[MOCK] Output for npm test');
     expect(content).toContain('[MOCK] Output for tsx src/cli.ts drift 0001-witness-test');
     expect(content).toContain('- [x] Automated capture completed successfully.');
+  });
+
+  it('Does the witness scaffold label fenced output as text and avoid empty test or drift fences?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.captureIdea('Witness Fence Test', 'PROCESS', 'Witness Fence Test');
+    const cycle = workspace.pullItem('PROCESS_witness-fence-test');
+
+    const content = renderWitnessDoc({
+      cycle,
+      testResult: '',
+      driftResult: '',
+    });
+
+    expect(content).toContain('## Test Results');
+    expect(content).toContain('```text\nNo test output captured.\n```');
+    expect(content).toContain('## Drift Results');
+    expect(content).toContain('```text\nNo drift output captured.\n```');
+  });
+
+  it('Preserves non-empty witness command output verbatim while only trimming for blank detection.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.captureIdea('Witness Payload Test', 'PROCESS', 'Witness Payload Test');
+    const cycle = workspace.pullItem('PROCESS_witness-payload-test');
+
+    const content = renderWitnessDoc({
+      cycle,
+      testResult: '  indented output\n',
+      driftResult: '\t drift output\n',
+    });
+
+    expect(content).toMatch(/## Test Results\n\n```text\n  indented output\n\n```/u);
+    expect(content).toMatch(/## Drift Results\n\n```text\n\t drift output\n\n```/u);
+  });
+
+  it('Does YAML frontmatter escape embedded line breaks instead of letting YAML fold them away?', () => {
+    const content = renderDesignDoc({
+      cycleName: '0001-line-breaks',
+      title: 'Line 1\nLine 2',
+      source: 'docs/method/backlog/asap/PROCESS_line-1\nline-2.md',
+      backlogBody: 'Body',
+    });
+
+    expect(content).toContain('title: "Line 1\\nLine 2"');
+    expect(content).toContain('source_backlog: "docs/method/backlog/asap/PROCESS_line-1\\nline-2.md"');
+  });
+
+  it('Does design-doc frontmatter YAML-escape legends instead of writing raw scalar text?', () => {
+    const content = renderDesignDoc({
+      cycleName: '0001-legend-escape',
+      title: 'Legend Escape',
+      legend: 'FEAT:alpha #quoted "value"',
+      source: 'docs/method/backlog/asap/PROCESS_legend-escape.md',
+      backlogBody: 'Body',
+    });
+
+    expect(content).toContain('legend: "FEAT:alpha #quoted \\"value\\""');
+    expect(content).toContain('Legend: FEAT:alpha #quoted "value"');
+  });
+
+  it('Normalizes generated frontmatter paths to POSIX separators.', () => {
+    const root = createTempRoot();
+    const designDocPath = join(root, 'docs', 'design', '0001-windows-paths', 'windows-paths.md');
+    mkdirSync(dirname(designDocPath), { recursive: true });
+    writeFileSync(designDocPath, '# Windows Paths\n', 'utf8');
+
+    const designContent = renderDesignDoc({
+      cycleName: '0001-windows-paths',
+      title: 'Windows Paths',
+      source: 'docs\\method\\backlog\\asap\\PROTO_windows-paths.md',
+      backlogBody: 'Body',
+    });
+    expect(designContent).toContain('source_backlog: "docs/method/backlog/asap/PROTO_windows-paths.md"');
+
+    const retroContent = renderRetroDoc({
+      cycle: {
+        name: '0001-windows-paths',
+        number: 1,
+        slug: 'windows-paths',
+        designDoc: designDocPath,
+        retroDoc: join(root, 'unused.md'),
+      },
+      root,
+      outcome: 'partial',
+      witnessDir: 'docs\\method\\retro\\0001-windows-paths\\witness',
+    });
+    expect(retroContent).toContain('design_doc: "docs/design/0001-windows-paths/windows-paths.md"');
+    expect(retroContent).toContain('Add artifacts under `docs/method/retro/0001-windows-paths/witness`');
   });
 });

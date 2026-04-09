@@ -1,4 +1,4 @@
-import { relative } from 'node:path';
+import * as path from 'node:path';
 import type { Cycle, Outcome, WorkspaceStatus } from './domain.js';
 import { readHeading } from './frontmatter.js';
 
@@ -13,6 +13,7 @@ export function titleCase(value: string): string {
 export function renderBearing(status: WorkspaceStatus, closedCycles: Cycle[], commitSha: string): string {
   const latestShips = [...closedCycles].reverse().slice(0, 3);
   const nextUp = [...status.backlog.asap, ...status.backlog['up-next']].slice(0, 2);
+  const frictionLines = deriveBearingFriction(status);
 
   const priority = nextUp.length > 0 ? nextUp.map(i => `\`${i.stem}\``).join(' or ') : 'TBD';
 
@@ -45,10 +46,30 @@ export function renderBearing(status: WorkspaceStatus, closedCycles: Cycle[], co
     '',
     '## What feels wrong?',
     '',
-    '- Backlog maintenance is still largely manual.',
-    '- Witness generation is not yet automated.',
+    ...frictionLines,
     '',
   ].join('\n');
+}
+
+function deriveBearingFriction(status: WorkspaceStatus): string[] {
+  const lines: string[] = [];
+
+  if (status.backlog.inbox.length > 0) {
+    lines.push(`- Inbox still holds ${status.backlog.inbox.length} untriaged item(s).`);
+  }
+  if (status.backlog.asap.length > 0) {
+    lines.push(`- ${status.backlog.asap.length} ASAP backlog item(s) are still unresolved.`);
+  }
+  if (status.backlog['bad-code'].length > 0) {
+    lines.push(`- ${status.backlog['bad-code'].length} bad-code item(s) remain tracked.`);
+  }
+  if (status.activeCycles.length > 0) {
+    lines.push(`- ${status.activeCycles.length} active cycle(s) are still open.`);
+  }
+
+  return lines.length > 0
+    ? lines
+    : ['- No acute coordination pain is currently recorded.'];
 }
 
 export function renderWitnessDoc(options: {
@@ -57,6 +78,12 @@ export function renderWitnessDoc(options: {
   driftResult: string;
 }): string {
   const title = readHeading(options.cycle.designDoc) || titleCase(options.cycle.slug);
+  const testResult = options.testResult.trim().length === 0
+    ? 'No test output captured.'
+    : options.testResult;
+  const driftResult = options.driftResult.trim().length === 0
+    ? 'No drift output captured.'
+    : options.driftResult;
   return [
     '---',
     `title: "Verification Witness for Cycle ${options.cycle.number}"`,
@@ -69,14 +96,14 @@ export function renderWitnessDoc(options: {
     '',
     '## Test Results',
     '',
-    '```',
-    options.testResult.trim(),
+    '```text',
+    testResult,
     '```',
     '',
     '## Drift Results',
     '',
-    '```',
-    options.driftResult.trim(),
+    '```text',
+    driftResult,
     '```',
     '',
     '## Manual Verification',
@@ -87,22 +114,31 @@ export function renderWitnessDoc(options: {
 }
 
 export function renderDesignDoc(options: {
+  cycleName: string;
   title: string;
   legend?: string;
   source: string;
   backlogBody: string;
 }): string {
   const legendValue = options.legend ?? 'none';
+  const sourcePath = normalizeRepoPath(options.source);
   return [
+    '---',
+    `title: ${yamlString(options.title)}`,
+    `legend: ${yamlString(legendValue)}`,
+    `cycle: ${yamlString(options.cycleName)}`,
+    `source_backlog: ${yamlString(sourcePath)}`,
+    '---',
+    '',
     `# ${options.title}`,
     '',
-    `Source backlog item: \`${options.source}\``,
+    `Source backlog item: \`${sourcePath}\``,
     `Legend: ${legendValue}`,
     '',
     '## Sponsors',
     '',
-    '- Human: TBD',
-    '- Agent: TBD',
+    '- Human: Backlog operator',
+    '- Agent: Implementation agent',
     '',
     '## Hill',
     '',
@@ -147,16 +183,25 @@ export function renderDesignDoc(options: {
 export function renderRetroDoc(options: {
   cycle: Cycle;
   root: string;
-  outcome?: Outcome;
+  outcome: Outcome;
   witnessDir: string;
 }): string {
+  if (options.outcome !== 'hill-met' && options.outcome !== 'partial' && options.outcome !== 'not-met') {
+    throw new Error('Outcome is required and must be one of: hill-met, partial, not-met.');
+  }
   const title = readHeading(options.cycle.designDoc) || titleCase(options.cycle.slug);
+  const designDoc = normalizeRepoPath(path.relative(options.root, options.cycle.designDoc));
+  const witnessDir = normalizeRepoPath(options.witnessDir);
   return [
-    `# ${title} Retro`,
+    '---',
+    `title: ${yamlString(title)}`,
+    `cycle: ${yamlString(options.cycle.name)}`,
+    `design_doc: ${yamlString(designDoc)}`,
+    `outcome: ${options.outcome}`,
+    'drift_check: yes',
+    '---',
     '',
-    `Design: \`${relative(options.root, options.cycle.designDoc)}\``,
-    `Outcome: ${options.outcome ?? 'TBD'}`,
-    'Drift check: yes',
+    `# ${title} Retro`,
     '',
     '## Summary',
     '',
@@ -164,7 +209,7 @@ export function renderRetroDoc(options: {
     '',
     '## Playback Witness',
     '',
-    `Add artifacts under \`${options.witnessDir}\` and link them here.`,
+    `Add artifacts under \`${witnessDir}\` and link them here.`,
     '',
     '## Drift',
     '',
@@ -185,4 +230,17 @@ export function renderRetroDoc(options: {
     '- [ ] Dead work buried or merged',
     '',
   ].join('\n');
+}
+
+function yamlString(value: string): string {
+  return `"${value
+    .replace(/\\/gu, '\\\\')
+    .replace(/"/gu, '\\"')
+    .replace(/\r\n/gu, '\\r\\n')
+    .replace(/\r/gu, '\\r')
+    .replace(/\n/gu, '\\n')}"`;
+}
+
+function normalizeRepoPath(value: string): string {
+  return value.replace(/\\/gu, '/');
 }

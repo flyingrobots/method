@@ -6,7 +6,7 @@ export type ParsedCommand =
   | { command: 'init'; path: string }
   | { command: 'inbox'; idea: string; legend?: string; title?: string }
   | { command: 'pull'; item: string }
-  | { command: 'close'; cycle?: string; driftCheck?: 'yes' | 'no'; outcome?: Outcome }
+  | { command: 'close'; cycle?: string; driftCheck?: 'yes' | 'no'; outcome: Outcome }
   | { command: 'drift'; cycle?: string }
   | { command: 'status' }
   | { command: 'mcp' }
@@ -90,7 +90,7 @@ export function usage(topic?: string): string {
     return 'Usage: method pull <item>\n\nPromote a backlog item into the next numbered design cycle.';
   }
   if (topic === 'close') {
-    return 'Usage: method close [cycle] [--drift-check yes|no] [--outcome hill-met|partial|not-met]\n\nClose an active cycle into docs/method/retro/.';
+    return 'Usage: method close [cycle] [--drift-check yes|no] --outcome hill-met|partial|not-met\n\nClose an active cycle into docs/method/retro/. `--outcome` is required.';
   }
   if (topic === 'status') {
     return 'Usage: method status\n\nShow backlog lanes, active cycles, and legend health.';
@@ -219,9 +219,13 @@ function parseCloseArgs(args: readonly string[]): ParsedCommand {
       throw new MethodError(`Unknown option: ${value}`);
     }
     if (cycle !== undefined) {
-      throw new MethodError('Usage: method close [cycle] [--drift-check yes|no] [--outcome hill-met|partial|not-met]');
+      throw new MethodError(usage('close'));
     }
     cycle = value;
+  }
+
+  if (outcome === undefined) {
+    throw new MethodError(usage('close'));
   }
 
   return { command: 'close', cycle, driftCheck, outcome };

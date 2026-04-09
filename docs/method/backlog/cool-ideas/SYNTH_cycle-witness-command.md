@@ -1,6 +1,7 @@
 ---
 title: "Cycle Witness Command"
 legend: SYNTH
+lane: cool-ideas
 ---
 
 Explore a `method witness` command that can package the rerunnable

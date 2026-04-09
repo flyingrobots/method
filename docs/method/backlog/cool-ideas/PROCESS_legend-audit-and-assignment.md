@@ -1,6 +1,7 @@
 ---
 title: "Legend Audit And Assignment"
 legend: PROCESS
+lane: cool-ideas
 ---
 
 Legend management needs first-class tooling: create legends, assign

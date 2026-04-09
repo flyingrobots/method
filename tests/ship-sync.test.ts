@@ -1,8 +1,9 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { initWorkspace, Workspace } from '../src/index.js';
+import { renderBearing } from '../src/renderers.js';
 
 const tempRoots: string[] = [];
 
@@ -49,10 +50,7 @@ describe('Ship Sync', () => {
 
     // Create a backlog item and move it to up-next
     workspace.captureIdea('Next priority', 'FEAT', 'Up Next');
-    renameSync(
-      join(root, 'docs/method/backlog/inbox/FEAT_up-next.md'),
-      join(root, 'docs/method/backlog/up-next/FEAT_up-next.md')
-    );
+    workspace.moveBacklogItem('docs/method/backlog/inbox/FEAT_up-next.md', 'up-next');
 
     const itemPath = workspace.captureIdea('Feature Z', 'FEAT', 'Just Shipped');
     const cycle = workspace.pullItem('FEAT_just-shipped');
@@ -107,5 +105,101 @@ describe('Ship Sync', () => {
     expect(result.newShips.length).toBe(0);
     expect(result.updated).toContain('docs/BEARING.md');
     expect(result.updated).not.toContain('CHANGELOG.md');
+  });
+
+  it('Does generated `BEARING.md` stop claiming witness generation is not automated?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    await workspace.shipSync();
+
+    const bearing = readFileSync(join(root, 'docs/BEARING.md'), 'utf8');
+    expect(bearing).not.toContain('Witness generation is not yet automated.');
+  });
+
+  it('When backlog pressure changes, does `BEARING.md` describe concrete live repo state instead of hardcoded stale complaints?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.captureIdea('Inbox pressure', 'PROCESS', 'Inbox Pressure');
+    writeFileSync(
+      join(root, 'docs/method/backlog/asap/PROCESS_asap-pressure.md'),
+      [
+        '---',
+        'title: "ASAP Pressure"',
+        'legend: PROCESS',
+        'lane: asap',
+        '---',
+        '',
+        '# ASAP Pressure',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(root, 'docs/method/backlog/bad-code/PROCESS_bad-code-pressure.md'),
+      [
+        '---',
+        'title: "Bad Code Pressure"',
+        'legend: PROCESS',
+        'lane: bad-code',
+        '---',
+        '',
+        '# Bad Code Pressure',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+
+    await workspace.shipSync();
+
+    const bearing = readFileSync(join(root, 'docs/BEARING.md'), 'utf8');
+    expect(bearing).toContain('Inbox still holds 1 untriaged item(s).');
+    expect(bearing).toContain('1 ASAP backlog item(s) are still unresolved.');
+    expect(bearing).toContain('1 bad-code item(s) remain tracked.');
+    expect(bearing).not.toContain('Backlog maintenance is still largely manual.');
+  });
+
+  it('Can I point to the exact backlog counts that caused each `What feels wrong?` line?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.captureIdea('Inbox pressure', 'PROCESS', 'Inbox Pressure');
+    writeFileSync(
+      join(root, 'docs/method/backlog/asap/PROCESS_asap-pressure.md'),
+      [
+        '---',
+        'title: "ASAP Pressure"',
+        'legend: PROCESS',
+        'lane: asap',
+        '---',
+        '',
+        '# ASAP Pressure',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const bearing = renderBearing(workspace.status(), [], 'test-sha');
+    expect(bearing).toContain('Inbox still holds 1 untriaged item(s).');
+    expect(bearing).toContain('1 ASAP backlog item(s) are still unresolved.');
+    expect(bearing).not.toContain('2 ASAP backlog item(s) are still unresolved.');
+  });
+
+  it('Does `renderBearing` only emit derived or tightly bounded statements instead of unaudited repo assertions?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    const bearing = renderBearing(workspace.status(), [], 'test-sha');
+    expect(bearing).toContain('No acute coordination pain is currently recorded.');
+    expect(bearing).not.toContain('Backlog maintenance is still largely manual.');
+    expect(bearing).not.toContain('Witness generation is not yet automated.');
   });
 });

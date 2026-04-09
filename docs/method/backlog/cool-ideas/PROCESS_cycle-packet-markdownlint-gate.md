@@ -1,0 +1,66 @@
+---
+title: "Cycle Packet Markdownlint Gate"
+legend: PROCESS
+lane: cool-ideas
+owner: "METHOD maintainers"
+priority: medium
+acceptance_criteria:
+  - "The lint scope is explicitly limited to cycle packet markdown under docs/design/[0-9][0-9][0-9][0-9]-*/**/*.md and docs/method/retro/[0-9][0-9][0-9][0-9]-*/**/*.md."
+  - "The gate enforces markdownlint rules MD040 and MD031 plus cycle-packet frontmatter key checks."
+  - "Retro frontmatter key checks apply only to top-level retro docs; witness/**/*.md files are linted for markdown rules only unless they gain their own explicit frontmatter contract."
+  - "The spec explicitly declares that `method validate markdown` depends on the parent `PROCESS_validate-command.md` contract and that `src/cli.ts` must expose the `validate` command surface."
+  - "The chosen entrypoint exits 0 on clean packets and non-zero with file/rule-localized failures when any packet violates the contract."
+---
+
+# Cycle Packet Markdownlint Gate
+
+This review round caught witness and retro packet issues that a small
+markdown lint pass could have surfaced before PR review: unlabeled code
+fences, empty placeholder blocks, and wording drift inside committed
+artifacts.
+
+Idea: add a bounded markdown validation step for cycle packets and other
+generated repo artifacts so contract-level doc issues fail fast instead
+of landing as manual review cleanup.
+
+## Proposed Contract
+
+## Prerequisites
+
+- `PROCESS_validate-command.md` defines the parent `method validate`
+  surface. This item assumes that contract lands first or in the same
+  slice.
+
+- Scope globs:
+  markdown rules cover
+  `docs/design/[0-9][0-9][0-9][0-9]-*/**/*.md` and
+  `docs/method/retro/[0-9][0-9][0-9][0-9]-*/**/*.md`.
+- Rules:
+  `MD040` (fenced code blocks need a language),
+  `MD031` (fenced code blocks need surrounding blank lines), and custom
+  packet checks for required frontmatter keys on generated docs.
+- Frontmatter checks:
+  design docs require `title`, `legend`, `cycle`, and `source_backlog`;
+  top-level retro docs at
+  `docs/method/retro/[0-9][0-9][0-9][0-9]-*/*.md` require `title`,
+  `cycle`, `design_doc`, `outcome`, and `drift_check`; witness
+  artifacts under `**/witness/**/*.md` are linted for markdown rules
+  only unless they later get their own explicit frontmatter contract.
+- Integration point:
+  this item depends on `PROCESS_validate-command.md`. The intended
+  surface is `method validate markdown` as a subcommand of the parent
+  `method validate` CLI implemented in `src/cli.ts`, not a separate
+  top-level verb. Implementers should either land both contracts in the
+  same slice or wire this markdown gate into the existing `validate`
+  command surface before invoking it locally, from pre-commit, or from
+  a CI job such as `markdown-contract`.
+- Pass / fail behavior:
+  exit `0` when all scoped files satisfy the bounded rule set; exit
+  non-zero when any scoped file violates one of the named rules or
+  frontmatter checks, with output that names the file and failing rule.
+
+## Non-goals
+
+- [ ] Lint every markdown file in the repository.
+- [ ] Replace broader review judgment on cycle quality with style-only
+      checks.

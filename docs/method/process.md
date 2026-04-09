@@ -13,6 +13,9 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
 - Drift is checked explicitly at close, not hand-waved after the fact.
   Invariant preservation is part of the drift check.
 - Backlog maintenance happens at cycle boundaries, not continuously.
+- Feedback capture can happen anytime, but processing feedback into
+  backlog, design, signpost, or release work should happen at cycle
+  boundaries or on a dedicated triage branch.
 - Repo-level ship surfaces such as `BEARING.md` and `CHANGELOG.md`
   reflect merged `main` state, not branch-local closeout state.
 - Review visibility is currently outside METHOD's repo-native
@@ -61,6 +64,21 @@ METHOD uses Git for distributed coordination but remains forge-agnostic.
 3. **Execute:** Perform the loop (design, tests, act, playback).
 4. **Close:** Run `method close` to write the retro and witness metadata.
 5. **Merge:** Open a PR/Review. Once approved, merge to `main`.
+
+### Feedback Processing
+
+1. **Capture:** Store raw review notes, critique, or outside-in
+   observations as markdown files under `docs/method/feedback/`.
+2. **Classify:** Treat each feedback doc as unprocessed input, not as
+   backlog or doctrine on its own.
+3. **Process:** During a maintenance pass, convert accepted feedback
+   into explicit repo artifacts such as backlog items, design edits,
+   signpost updates, or release notes.
+4. **Record disposition:** Add a short note to the feedback document
+   describing what changed, what was rejected, or why no action was
+   taken.
+5. **Archive:** Move the processed document to
+   `docs/method/feedback/archive/` instead of deleting it.
 
 ### The Ship Sync Maneuver
 

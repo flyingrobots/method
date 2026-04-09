@@ -354,6 +354,9 @@ describe('METHOD docs', () => {
       'outcome',
       'drift_check',
       'lane',
+      'owner',
+      'priority',
+      'acceptance_criteria',
       'github_issue_id',
       'github_issue_url',
       'github_labels',
@@ -714,6 +717,7 @@ describe('METHOD docs', () => {
     expect(cli).toContain('--push');
     expect(cli).toContain('--pull');
     expect(cli).toContain('Ship Sync');
+    expect(cli).toContain('method close [cycle] [--drift-check yes|no] --outcome hill-met|partial|not-met');
 
     // MCP doc names every tool
     expect(mcp).toContain('method_status');
@@ -724,6 +728,10 @@ describe('METHOD docs', () => {
     expect(mcp).toContain('method_sync_ship');
     expect(mcp).toContain('method_sync_github');
     expect(mcp).toContain('method_capture_witness');
+    expect(mcp).toMatch(/### `method_status`[\s\S]*- `summary` \(optional\) `boolean`/u);
+    expect(mcp).toMatch(/Machine-readable callers should consume `structuredContent`\./u);
+    expect(mcp).toMatch(/On success, `structuredContent` includes:[\s\S]*- `tool`[\s\S]*- `ok: true`[\s\S]*- `result`/u);
+    expect(mcp).toMatch(/On failure, tools set `isError: true` and `structuredContent` includes:[\s\S]*- `tool`[\s\S]*- `ok: false`[\s\S]*- `error\.message`/u);
 
     // README references both docs
     expect(readme).toContain('docs/CLI.md');
@@ -744,5 +752,12 @@ describe('METHOD docs', () => {
     expect(releasesGuide).toContain('Why It Matters');
     expect(releasesGuide).toContain('Migration');
     expect(releasesGuide).toContain('No migration required.');
+  });
+
+  it('keeps `CHANGELOG.md` Unreleased notes ahead of tagged releases', () => {
+    const changelog = readRepoFile('CHANGELOG.md');
+    const sections = [...changelog.matchAll(/^##\s+(.+)$/gmu)].map((match) => match[1] ?? '');
+
+    expect(sections[0]).toBe('Unreleased');
   });
 });
