@@ -7,7 +7,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, '..');
 
 type PackFile = { path: string };
-type PackResult = { files: PackFile[] };
+type PackResult = { files: PackFile[]; filename: string };
 
 describe('METHOD package', () => {
   it('packs only the built runtime surface and essential metadata', () => {
@@ -22,6 +22,7 @@ describe('METHOD package', () => {
     const pack = parsed[0];
     const packedPaths = pack.files.map((entry) => entry.path).sort((left, right) => left.localeCompare(right));
 
+    expect(pack.filename).toBe('flyingrobots-method-1.0.0.tgz');
     expect(packedPaths).toContain('package.json');
     expect(packedPaths).toContain('README.md');
     expect(packedPaths).toContain('CHANGELOG.md');

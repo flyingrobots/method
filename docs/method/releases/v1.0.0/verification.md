@@ -15,7 +15,7 @@ evidence must be completed from `main` after this prep branch lands.
 - Repository type: TypeScript (ESM)
 - Package manager: npm (`package-lock.json`)
 - Version manifests: `package.json`, `package-lock.json`
-- Publishable unit: npm package named `method`
+- Publishable unit: npm package named `@flyingrobots/method`
 - Registry posture: publishable manifest; no package-level `private` guard
 - Previous tag: `v0.3.0` -> `1955ec1cd9c067f03db76a13e626a53e6b298b9d`
 - Prep branch: `maint-v1-0-0-release-prep`
@@ -37,7 +37,8 @@ evidence must be completed from `main` after this prep branch lands.
 - Build (`npm run build`): PASS
 - Tests (`npm test`): PASS, 182/182 tests across 16 files
 - Pack dry-run (`npm pack --dry-run --json`): PASS,
-  `method-1.0.0.tgz`, 35 files, 47,357 bytes packed / 182,236 bytes
+  `flyingrobots-method-1.0.0.tgz`, 35 files, 47,359 bytes packed /
+  182,250 bytes
   unpacked
 - Audit (`npm audit`): PASS, 0 vulnerabilities
 - Diff whitespace check (`git diff --check`): PASS
@@ -93,3 +94,5 @@ Observed release-prep cleanup state:
 - Registry publication itself is still a separate operational step. This
   packet only proves the manifest is publishable and the packed artifact
   is intentionally slim.
+- The unscoped npm package name `method` is already taken upstream, so
+  this release is prepared for the scoped name `@flyingrobots/method`.

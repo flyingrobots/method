@@ -37,7 +37,8 @@ docs and tests stop treating open cycle packets on `main` as acceptable.
   recorded explicitly instead of staying tribal knowledge.
 - Merged PR #17: dependency updates for `hono` and `@hono/node-server`.
 - Release-prep hardening on this branch: package contents were narrowed
-  to the built runtime and essential top-level metadata.
+  to the built runtime and essential top-level metadata, and the
+  publishable package name was scoped to `@flyingrobots/method`.
 
 ## Hills Advanced
 
@@ -56,6 +57,8 @@ docs and tests stop treating open cycle packets on `main` as acceptable.
 - Direct library consumers of `Workspace`.
 - CLI and MCP operators who need review-state visibility.
 - Maintainers preparing releases or sanity-checking the packed artifact.
+- Consumers installing from npm, who should use the scoped package name
+  `@flyingrobots/method`.
 - Human/agent pairs relying on signposts to understand current repo
   state quickly.
 - Maintainers of older METHOD repos whose docs may still be missing
