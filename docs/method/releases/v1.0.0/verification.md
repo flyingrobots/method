@@ -16,7 +16,7 @@ evidence must be completed from `main` after this prep branch lands.
 - Package manager: npm (`package-lock.json`)
 - Version manifests: `package.json`, `package-lock.json`
 - Publishable unit: npm package named `method`
-- Registry posture: packable, still intentionally `"private": true`
+- Registry posture: publishable manifest; no package-level `private` guard
 - Previous tag: `v0.3.0` -> `1955ec1cd9c067f03db76a13e626a53e6b298b9d`
 - Prep branch: `maint-v1-0-0-release-prep`
 - Base `main` head at prep start: `39cb47c572c1ddf6e89ea4aeca3b6ecba20863bd`
@@ -35,7 +35,7 @@ evidence must be completed from `main` after this prep branch lands.
 - Build (`npm run build`): PASS
 - Tests (`npm test`): PASS, 175/175 tests across 15 files
 - Pack dry-run (`npm pack --dry-run --json`): PASS,
-  `method-1.0.0.tgz`, 35 files, 46,980 bytes packed / 180,947 bytes
+  `method-1.0.0.tgz`, 35 files, 46,971 bytes packed / 180,928 bytes
   unpacked
 - Audit (`npm audit`): PASS, 0 vulnerabilities
 - Diff whitespace check (`git diff --check`): PASS
@@ -80,5 +80,6 @@ Observed exclusions during dry-run:
 
 ## Non-blocking Warnings
 
-- The package remains `"private": true`, so this release packet does not
-  claim npm publication.
+- Registry publication itself is still a separate operational step. This
+  packet only proves the manifest is publishable and the packed artifact
+  is intentionally slim.
