@@ -48,14 +48,14 @@ describe('Method API', () => {
     initWorkspace(root);
     const workspace = new Workspace(root);
 
-    const path = workspace.captureIdea('Test idea', 'PROTO', 'My Title');
-    expect(path).toContain('PROTO_my-title.md');
+    const path = workspace.captureIdea('Test idea', 'PROCESS', 'My Title');
+    expect(path).toContain('PROCESS_my-title.md');
 
     const statusBefore = workspace.status();
     expect(statusBefore.backlog.inbox.length).toBe(1);
-    expect(statusBefore.backlog.inbox[0].stem).toBe('PROTO_my-title');
+    expect(statusBefore.backlog.inbox[0].stem).toBe('PROCESS_my-title');
 
-    const cycle = workspace.pullItem('PROTO_my-title');
+    const cycle = workspace.pullItem('PROCESS_my-title');
     expect(cycle.name).toMatch(/^0001-my-title$/);
 
     const statusAfter = workspace.status();

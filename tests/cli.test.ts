@@ -69,13 +69,13 @@ describe('method CLI', () => {
     const stdout = new MemoryWriter();
 
     const exitCode = await runCli(
-      ['inbox', 'What if Method had a CLI?', '--legend', 'PROTO'],
+      ['inbox', 'What if Method had a CLI?', '--legend', 'PROCESS'],
       { cwd: root, stdout, stderr: new MemoryWriter() },
     );
 
     expect(exitCode).toBe(0);
     expect(stdout.output).toContain('Captured');
-    expect(readFile(root, 'docs/method/backlog/inbox/PROTO_what-if-method-had-a-cli.md'))
+    expect(readFile(root, 'docs/method/backlog/inbox/PROCESS_what-if-method-had-a-cli.md'))
       .toContain('# What if Method had a CLI?');
   });
 
@@ -96,17 +96,17 @@ describe('method CLI', () => {
     expectFile(root, 'docs/method/backlog/inbox/backfill-the-missing-inbox-lane.md');
   });
 
-  it('Does `method pull` create a design doc that already includes required frontmatter fields like `title`, `legend`, `cycle`, and `source_backlog`?', async () => {
+  it('Does `method pull` preserve live legends in scaffolded design docs instead of carrying obsolete fixture taxonomy?', async () => {
     const root = createTempRoot();
     await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
     writeFileSync(
-      join(root, 'docs/method/backlog/asap/PROTO_strand-lifecycle.md'),
+      join(root, 'docs/method/backlog/asap/PROCESS_strand-lifecycle.md'),
       '# Strand Lifecycle\n\nMechanical state transitions for strands.\n',
       'utf8',
     );
 
     const stdout = new MemoryWriter();
-    const exitCode = await runCli(['pull', 'PROTO_strand-lifecycle'], {
+    const exitCode = await runCli(['pull', 'PROCESS_strand-lifecycle'], {
       cwd: root,
       stdout,
       stderr: new MemoryWriter(),
@@ -118,10 +118,10 @@ describe('method CLI', () => {
     const designDoc = readFile(root, 'docs/design/0001-strand-lifecycle/strand-lifecycle.md');
     expect(designDoc).toMatch(/^---\n[\s\S]+?\n---\n/u);
     expect(designDoc).toMatch(/^title:\s+"Strand Lifecycle"$/mu);
-    expect(designDoc).toMatch(/^legend:\s+"PROTO"$/mu);
+    expect(designDoc).toMatch(/^legend:\s+"PROCESS"$/mu);
     expect(designDoc).toMatch(/^cycle:\s+"0001-strand-lifecycle"$/mu);
-    expect(designDoc).toMatch(/^source_backlog:\s+"docs\/method\/backlog\/asap\/PROTO_strand-lifecycle\.md"$/mu);
-    expect(designDoc).toContain('Legend: PROTO');
+    expect(designDoc).toMatch(/^source_backlog:\s+"docs\/method\/backlog\/asap\/PROCESS_strand-lifecycle\.md"$/mu);
+    expect(designDoc).toContain('Legend: PROCESS');
     expect(designDoc).toContain('- Human: Backlog operator');
     expect(designDoc).toContain('- Agent: Implementation agent');
     expect(designDoc).toContain('Mechanical state transitions for strands.');
@@ -234,14 +234,18 @@ describe('method CLI', () => {
     expect(retroDoc).not.toContain('Outcome: TBD');
   });
 
-  it('shows backlog, active cycles, and legend health in status', async () => {
+  it('Does `method status` report legend health using the live repo legends rather than stale historical codes?', async () => {
     const root = createTempRoot();
     await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
-    writeFileSync(join(root, 'docs/method/backlog/inbox/VIZ_braille.md'), '# Braille\n\nIdea\n', 'utf8');
+    writeFileSync(
+      join(root, 'docs/method/backlog/inbox/SYNTH_braille.md'),
+      '# Braille\n\nIdea\n',
+      'utf8',
+    );
     mkdirSync(join(root, 'docs/design/0001-method-cli'), { recursive: true });
     writeFileSync(
       join(root, 'docs/design/0001-method-cli/method-cli.md'),
-      '# Method CLI\n\nLegend: TUI\n\n## Hill\n\nTBD\n',
+      '# Method CLI\n\nLegend: PROCESS\n\n## Hill\n\nTBD\n',
       'utf8',
     );
 
@@ -251,8 +255,8 @@ describe('method CLI', () => {
     expect(exitCode).toBe(0);
     expect(stdout.output).toContain('Backlog');
     expect(stdout.output).toContain('0001-method-cli');
-    expect(stdout.output).toContain('VIZ');
-    expect(stdout.output).toContain('TUI');
+    expect(stdout.output).toContain('SYNTH');
+    expect(stdout.output).toContain('PROCESS');
   });
 
   it('shows status for a clone-like workspace even when empty lane directories are absent', async () => {
