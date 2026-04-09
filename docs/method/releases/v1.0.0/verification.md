@@ -30,7 +30,7 @@ the release commit is pushed.
 
 - Clean working tree before release-prep edits: PASS
 - Branch is `main`: PASS
-- HEAD matches `origin/main`: NOT YET
+- HEAD matches `origin/main`: PASS
 - Tag signing required: no repo-local requirement discovered
 
 ## Validation
@@ -84,13 +84,25 @@ Observed release-prep cleanup state:
 
 ## Final Release Steps Pending
 
-- Re-run guard checks from `main`
-- Create the release commit if additional finalization is needed
-- Create tag `v1.0.0`
-- Push `main`
-- Push `v1.0.0`
-- Create the GitHub Release using `docs/releases/v1.0.0.md`
-- Verify downstream delivery directly
+- None for the GitHub/source release.
+- npm publication remains intentionally deferred.
+
+## Release Evidence
+
+- Release commit on `main`:
+  `ddd55c33ef47b903f9b8744fb5b394d567bcd01d`
+- Release tag:
+  `v1.0.0` -> `ddd55c33ef47b903f9b8744fb5b394d567bcd01d`
+- GitHub Release:
+  `https://github.com/flyingrobots/method/releases/tag/v1.0.0`
+- GitHub Release published at:
+  `2026-04-09T21:34:08Z`
+- Release-commit CI:
+  `CI` run `24214431980` passed for
+  `ddd55c33ef47b903f9b8744fb5b394d567bcd01d`
+  at `https://github.com/flyingrobots/method/actions/runs/24214431980`
+- Final witness update recorded from local `main` at:
+  `2026-04-09T14:34:18-07:00`
 
 ## Non-blocking Warnings
 
