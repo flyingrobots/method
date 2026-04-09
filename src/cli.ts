@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-
 import { realpathSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -12,17 +11,16 @@ import { initWorkspace, Workspace } from './index.js';
 import { loadConfig } from './config.js';
 import { createMcpServer } from './mcp.js';
 import { GitHubAdapter } from './adapters/github.js';
-
+import { queryReviewState, renderReviewStateText, type ReviewStateQueryOptions, type ReviewStateResult } from './review-state.js';
 type Writer = Pick<NodeJS.WritableStream, 'write'>;
 type ConfirmPrompt = (options: { title: string; defaultValue: boolean }) => Promise<boolean>;
-
 export interface RunCliOptions {
   cwd?: string;
   stdout?: Writer;
   stderr?: Writer;
   confirmPrompt?: ConfirmPrompt;
+  reviewStateQuery?: (options: ReviewStateQueryOptions) => Promise<ReviewStateResult>;
 }
-
 export async function runCli(
   argv: readonly string[],
   options: RunCliOptions = {},
@@ -33,7 +31,6 @@ export async function runCli(
   const ctx = createNodeContext();
   const promptConfirm = options.confirmPrompt
     ?? ((promptOptions) => confirm({ title: promptOptions.title, defaultValue: promptOptions.defaultValue, ctx }));
-
   try {
     const parsed = parseCliArgs(argv);
     if (parsed.command === 'help') {
@@ -87,8 +84,23 @@ export async function runCli(
       return report.exitCode;
     }
 
+    if (parsed.command === 'review-state') {
+      const reviewStateQuery = options.reviewStateQuery ?? queryReviewState;
+      const result = await reviewStateQuery({
+        cwd: root,
+        pr: parsed.pr,
+        currentBranch: parsed.currentBranch,
+      });
+      if (parsed.json) {
+        stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+      } else {
+        stdout.write(`${renderReviewStateText(result)}\n`);
+      }
+      return 0;
+    }
+
     if (parsed.command === 'mcp') {
-      const server = createMcpServer();
+      const server = createMcpServer({ reviewStateQuery: options.reviewStateQuery ?? queryReviewState });
       const transport = new StdioServerTransport();
       await server.connect(transport);
       // Let it run indefinitely
@@ -163,7 +175,6 @@ export async function runCli(
         return 0;
       }
     }
-
     const status = workspace.status();
     stdout.write(renderStatus(status));
     return 0;
@@ -173,11 +184,9 @@ export async function runCli(
     return 1;
   }
 }
-
 export async function main(argv: readonly string[] = process.argv.slice(2)): Promise<number> {
   return runCli(argv);
 }
-
 if (process.argv[1] !== undefined && fileURLToPath(import.meta.url) === realpathSync(resolve(process.argv[1]))) {
   main().then((code) => {
     process.exitCode = code;

@@ -21,6 +21,15 @@ workspace-agnostic — a single instance can serve multiple projects.
 ## Tools
 
 <!-- generate:mcp-tools -->
+### `method_review_state`
+
+Get PR review / merge-readiness state for the current branch or an explicit PR
+
+**Parameters:**
+
+- `pr` (optional) `number` — Explicit PR number to inspect
+- `currentBranch` (optional) `boolean` — Resolve the PR from the current branch (default when pr is omitted)
+
 ### `method_status`
 
 Get the current status of the METHOD workspace (backlog lanes, active cycles, legend health)

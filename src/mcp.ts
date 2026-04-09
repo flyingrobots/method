@@ -4,6 +4,7 @@ import { basename, relative } from 'node:path';
 import { Workspace } from './index.js';
 import { GitHubAdapter, type GitHubSyncResult } from './adapters/github.js';
 import type { Cycle, Outcome, WorkspaceStatus } from './domain.js';
+import { queryReviewState, renderReviewStateText, type ReviewStateQueryOptions } from './review-state.js';
 
 const workspaceProperty = { workspace: { type: 'string' as const, description: 'Absolute path to the METHOD workspace root directory' } };
 
@@ -26,6 +27,19 @@ export interface McpToolDef {
 }
 
 export const MCP_TOOLS: McpToolDef[] = [
+  {
+    name: 'method_review_state',
+    description: 'Get PR review / merge-readiness state for the current branch or an explicit PR',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        ...workspaceProperty,
+        pr: { type: 'number', description: 'Explicit PR number to inspect' },
+        currentBranch: { type: 'boolean', description: 'Resolve the PR from the current branch (default when pr is omitted)' },
+      },
+      required: ['workspace'],
+    },
+  },
   {
     name: 'method_status',
     description: 'Get the current status of the METHOD workspace (backlog lanes, active cycles, legend health)',
@@ -96,7 +110,11 @@ export const MCP_TOOLS: McpToolDef[] = [
   },
 ];
 
-export function createMcpServer() {
+export interface CreateMcpServerOptions {
+  reviewStateQuery?: (options: ReviewStateQueryOptions) => Promise<Awaited<ReturnType<typeof queryReviewState>>>;
+}
+
+export function createMcpServer(options: CreateMcpServerOptions = {}) {
   const server = new Server(
     { name: 'method', version: '0.3.0' },
     { capabilities: { tools: {} } }
@@ -116,6 +134,25 @@ export function createMcpServer() {
 
       const workspace = new Workspace(workspacePath);
       workspace.ensureInitialized();
+
+      if (request.params.name === 'method_review_state') {
+        const pr = validateOptionalInteger(args.pr, 'pr');
+        const currentBranch = validateOptionalBoolean(args.currentBranch, 'currentBranch');
+        if (pr !== undefined && currentBranch === true) {
+          throw new Error('method_review_state accepts either pr or currentBranch, not both.');
+        }
+        const reviewStateQuery = options.reviewStateQuery ?? queryReviewState;
+        const result = await reviewStateQuery({
+          cwd: workspace.root,
+          pr,
+          currentBranch,
+        });
+        return successResult(
+          'method_review_state',
+          renderReviewStateText(result),
+          result,
+        );
+      }
 
       if (request.params.name === 'method_status') {
         const status = workspace.status();
@@ -362,7 +399,7 @@ function summarizeGitHubSync(pushResults: GitHubSyncResult[], pullResults: GitHu
   return `GitHub sync processed ${changed.length} item(s) with ${failures} error(s).`;
 }
 
-function successResult(tool: string, text: string, result: Record<string, unknown>) {
+function successResult(tool: string, text: string, result: unknown) {
   return toolResult(tool, text, result, false);
 }
 
@@ -378,7 +415,7 @@ function errorResult(tool: string, message: string) {
   };
 }
 
-function toolResult(tool: string, text: string, result: Record<string, unknown>, isError: boolean) {
+function toolResult(tool: string, text: string, result: unknown, isError: boolean) {
   return {
     content: [{ type: 'text' as const, text }],
     structuredContent: {
@@ -440,6 +477,16 @@ function validateOptionalBoolean(value: unknown, name: string): boolean | undefi
 function validateBoolean(value: unknown, name: string): boolean {
   if (typeof value !== 'boolean') {
     throw new Error(`${name} must be a boolean.`);
+  }
+  return value;
+}
+
+function validateOptionalInteger(value: unknown, name: string): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
+    throw new Error(`${name} must be a positive integer.`);
   }
   return value;
 }

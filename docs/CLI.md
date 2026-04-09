@@ -40,6 +40,11 @@ Show backlog lanes, active cycles, and legend health.
 Check active cycle playback questions against test descriptions in tests/.
 First cut scans tests/**/*.test.* and tests/**/*.spec.* only.
 
+### `method review-state [--pr NUMBER | --current-branch] [--json]`
+
+Query PR review / merge-readiness state for the current branch or an explicit PR.
+Defaults to --current-branch when no selector flag is provided.
+
 ### `method mcp`
 
 Start an MCP (Model Context Protocol) server on stdio.

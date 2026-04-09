@@ -90,11 +90,11 @@ describe('METHOD docs', () => {
     expect(readme).toContain('5. **Close** - write the retro and witness packet on the branch.');
     expect(readme).toContain('6. **PR / review** - review the full cycle packet until merge or');
     expect(readme).toContain('7. **Ship sync on `main`** - after merge, update repo-level ship');
-    expect(readme).toContain('Review-stage visibility is not yet a repo-native METHOD query.');
-    expect(readme).toContain('Branch and PR context carry that state for now.');
+    expect(readme).toContain('Review-stage visibility now has a repo-native METHOD query:');
+    expect(readme).toContain('`method review-state`');
     expect(readme).toContain('What is actively open in this workspace? -> `method status`');
-    expect(readme).not.toContain('What is under review? -> the branch and its closed cycle packet');
-    expect(readme).toContain('Review state is not yet part of METHOD\'s repo-native coordination');
+    expect(readme).toContain('What is under review? -> `method review-state`');
+    expect(readme).toContain('Review state now has a repo-native query surface through');
     expect(readme).not.toContain('5. **PR -> main** - review until merge.');
     expect(readme).not.toContain('6. **Close** - merge. Retro in `docs/method/retro/<cycle>/`.');
     expect(readme).toContain('It is updated during ship sync after merge.');
@@ -104,7 +104,7 @@ describe('METHOD docs', () => {
     expect(process).toContain('7. Review the complete cycle packet on a branch or PR.');
     expect(process).toContain('8. After merge, update repo-level ship surfaces on `main` such as');
     expect(process).toContain('reflect merged `main` state, not branch-local closeout state.');
-    expect(process).toContain('Review visibility is currently outside METHOD\'s repo-native');
+    expect(process).toContain('Review visibility is available through `method review-state`');
   });
 
   it('keeps METHOD distinct from forge-specific PR tooling', () => {
@@ -711,6 +711,7 @@ describe('METHOD docs', () => {
     expect(cli).toContain('method pull');
     expect(cli).toContain('method close');
     expect(cli).toContain('method drift');
+    expect(cli).toContain('method review-state');
     expect(cli).toContain('method status');
     expect(cli).toContain('method mcp');
     expect(cli).toContain('method sync');
@@ -721,6 +722,7 @@ describe('METHOD docs', () => {
 
     // MCP doc names every tool
     expect(mcp).toContain('method_status');
+    expect(mcp).toContain('method_review_state');
     expect(mcp).toContain('method_inbox');
     expect(mcp).toContain('method_pull');
     expect(mcp).toContain('method_close');

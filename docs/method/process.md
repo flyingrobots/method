@@ -18,8 +18,9 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
   boundaries or on a dedicated triage branch.
 - Repo-level ship surfaces such as `BEARING.md` and `CHANGELOG.md`
   reflect merged `main` state, not branch-local closeout state.
-- Review visibility is currently outside METHOD's repo-native
-  coordination surface; branch and PR context carry it for now.
+- Review visibility is available through `method review-state`, which
+  summarizes branch and PR context without turning METHOD into a forge
+  cockpit.
 - All cycle work must be done on a branch named `cycles/####-slug`.
 - Once a full cycle is complete (after the retro), the operator must
   push the branch and open a PR to the target branch (usually `main`).

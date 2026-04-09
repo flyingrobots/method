@@ -307,8 +307,10 @@ in one sentence, the cycle is too big. Split it.
    - Backlog maintenance.
 
    Closing the cycle packet does not mean `main` has accepted it yet.
-   Review-stage visibility is not yet a repo-native METHOD query.
-   Branch and PR context carry that state for now.
+   Review-stage visibility now has a repo-native METHOD query:
+   `method review-state`. It summarizes branch and PR state when forge
+   context is available; the underlying review work still lives on the
+   branch and PR.
 
 6. **PR / review** - review the full cycle packet until merge or
    rejection.
@@ -364,6 +366,7 @@ If you can answer these questions by reading the repo, you do not need
 a standup:
 
 - What is actively open in this workspace? -> `method status`
+- What is under review? -> `method review-state`
 - What is committed? -> each design doc names its sponsors and hill
 - What is next? -> `ls docs/method/backlog/asap/`
 - What failed and why? -> `ls docs/method/retro/`
@@ -372,9 +375,10 @@ a standup:
 If any of these are unclear, the docs are incomplete. Fix the docs,
 not the process.
 
-Review state is not yet part of METHOD's repo-native coordination
-surface. For now it rides on branch and PR context outside the core
-filesystem queries.
+Review state now has a repo-native query surface through
+`method review-state`. It still reads branch and PR context rather than
+the filesystem alone, but that coordination question no longer requires
+ad hoc `gh` reconstruction.
 
 ### BEARING.md
 
