@@ -311,6 +311,9 @@ in one sentence, the cycle is too big. Split it.
    `method review-state`. It summarizes branch and PR state when forge
    context is available; the underlying review work still lives on the
    branch and PR.
+   If `main` is ever found carrying an open cycle packet or a
+   release-prep exception, stop and repair that state before claiming
+   repo truth, release readiness, or ship-sync cleanliness.
 
 6. **PR / review** - review the full cycle packet until merge or
    rejection.
@@ -322,6 +325,7 @@ in one sentence, the cycle is too big. Split it.
    Releases happen when externally meaningful behavior changes. Not
    every cycle is a release. Ship sync only happens on merged `main`
    state, not branch-local closeout state.
+   `main` is not a parking lot for open cycle packets.
 
 ### Disagreement at playback
 

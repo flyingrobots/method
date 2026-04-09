@@ -6,9 +6,9 @@
 
 ## v1.0.0
 
-First semver-major release. Thirty-three cycles are closed, one active
-cycle remains open on `main`, and the package/runtime surface is now
-shaped for durable external use.
+First semver-major release. Thirty-five cycles are closed, there are no
+open cycle packets on this branch, and the package/runtime surface is
+now shaped for durable external use.
 
 ### Breaking Changes
 
@@ -25,12 +25,18 @@ shaped for durable external use.
   PR resolution, unresolved-thread counts, and check summaries.
 - Internal release and migration artifacts for `v1.0.0`, including a
   user-facing migration guide.
+- Explicit repo-discipline guidance and tests so the METHOD repo treats
+  open cycle packets on `main` as stop-and-repair defects instead of
+  normal background state.
 
 ### Fixed
 
 - Tightened MCP runtime behavior around GitHub sync flag parsing,
   explicit legend normalization, backlog path confinement, and
   review-state classification.
+- Added bounded legacy frontmatter-title repair on read so older METHOD
+  docs do not require a tracked one-off backfill script just to recover
+  a missing `title`.
 - Slimmed the packed npm artifact so it ships the built `dist/` runtime
   plus essential metadata instead of repo source, tests, and internal
   docs.
@@ -43,6 +49,8 @@ shaped for durable external use.
 - Generated Doc Scaffold Contract (0031-generated-doc-scaffold-contract)
 - MCP Tool Result Contract (0032-mcp-tool-result-contract)
 - BEARING Truthfulness (0033-bearing-truthfulness)
+- Review State Query (0034-review-state-query)
+- METHOD Repo Self Discipline (0035-method-repo-self-discipline)
 
 ## v0.3.0
 

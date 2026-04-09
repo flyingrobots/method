@@ -18,6 +18,9 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
   boundaries or on a dedicated triage branch.
 - Repo-level ship surfaces such as `BEARING.md` and `CHANGELOG.md`
   reflect merged `main` state, not branch-local closeout state.
+- If merged `main` is ever found carrying an open cycle packet, treat
+  that as repo-truth drift. Stop, close or repair the packet, and only
+  then continue release or ship work.
 - Review visibility is available through `method review-state`, which
   summarizes branch and PR context without turning METHOD into a forge
   cockpit.
@@ -44,6 +47,10 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
 7. Review the complete cycle packet on a branch or PR.
 8. After merge, update repo-level ship surfaces on `main` such as
    `BEARING.md`, `CHANGELOG.md`, and release notes when relevant.
+
+Release prep and ship sync are never excuses to leave an already-merged
+cycle packet open on `main`. If that state is discovered, stop and
+repair it before continuing.
 
 ## Workflow
 
@@ -93,6 +100,10 @@ must perform a **Ship Sync** to update the repo's public signposts:
 4. **Refresh VISION:** If significant, run the Executive Summary
    Protocol to refresh `docs/VISION.md`.
 5. **Commit:** Push these updates directly to `main`.
+
+If Ship Sync discovers an open cycle packet already sitting on `main`,
+that is a stop condition. Close or repair the packet first, then resume
+repo-level signpost work.
 
 ## System-Style JavaScript
 

@@ -16,6 +16,8 @@ This release also raises the bar around the public surface instead of
 only adding features. The repo now ships native review-state visibility,
 harder MCP/runtime validation, and package metadata that constrains
 packed artifacts to the built runtime instead of the whole working tree.
+It also cleans up the repo’s own METHOD discipline so the maintainer
+docs and tests stop treating open cycle packets on `main` as acceptable.
 
 ## Included Changes
 
@@ -26,7 +28,11 @@ packed artifacts to the built runtime instead of the whole working tree.
 - 0032: MCP tools gained a stronger structured result contract.
 - 0033: `BEARING.md` stopped making stale claims and now reflects live
   repo pressure more honestly.
-- Merged PR #19: native review-state landed across CLI and MCP.
+- 0034: Native review-state landed across CLI and MCP and is now closed
+  with an honest cycle packet.
+- 0035: Repo self-discipline docs/tests now treat open cycle packets on
+  `main` as stop-and-repair defects, remove tracked local tool junk, and
+  tolerate legacy missing-title frontmatter on read.
 - Merged PR #20: agent-first backlog and workflow follow-ons were
   recorded explicitly instead of staying tribal knowledge.
 - Merged PR #17: dependency updates for `hono` and `@hono/node-server`.
@@ -42,6 +48,8 @@ packed artifacts to the built runtime instead of the whole working tree.
   implementation sources, tests, and internal docs.
 - Repo signposts and release surfaces are updated for the current
   post-`v0.3.0` state instead of pointing at an older maturity snapshot.
+- The METHOD repo itself now documents and tests the rule that `main`
+  should not carry open cycle packets as a tolerated exception.
 
 ## Affected Users
 
@@ -50,6 +58,8 @@ packed artifacts to the built runtime instead of the whole working tree.
 - Maintainers preparing releases or sanity-checking the packed artifact.
 - Human/agent pairs relying on signposts to understand current repo
   state quickly.
+- Maintainers of older METHOD repos whose docs may still be missing
+  modern frontmatter fields such as `title`.
 
 ## Migration
 

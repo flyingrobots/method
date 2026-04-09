@@ -1,10 +1,10 @@
 ---
 title: "METHOD - Executive Summary"
-generated_at: 2026-04-09T06:57:14-07:00
+generated_at: 2026-04-09T07:33:48-07:00
 generator: "manual synthesis following Executive Summary Protocol (Cycle 0013)"
-generated_from_commit: "95610cb6817943db932b42934da120e08f6b1e23"
+generated_from_commit: "88c4f00129e96858ec08567243dfd4d165b79445"
 provenance_level: artifact_history
-witness_ref: docs/method/retro/0033-bearing-truthfulness/witness/verification.md
+witness_ref: docs/method/retro/0035-method-repo-self-discipline/witness/verification.md
 source_files:
   - README.md
   - CHANGELOG.md
@@ -44,6 +44,7 @@ source_files:
   - docs/design/0032-mcp-tool-result-contract/mcp-tool-result-contract.md
   - docs/design/0033-bearing-truthfulness/bearing-truthfulness.md
   - docs/design/0034-review-state-query/review-state-query.md
+  - docs/design/0035-method-repo-self-discipline/method-repo-self-discipline.md
 ---
 
 # METHOD - Executive Summary
@@ -62,8 +63,8 @@ state of the system without replacing the underlying files.
 ## Current state
 
 METHOD has evolved from doctrine plus a working CLI into a more complete
-toolchain for human/agent repo operation. Thirty-three cycles are
-closed, and one active cycle remains open on `main`:
+toolchain for human/agent repo operation. Thirty-five cycles are
+closed, and no cycle packets are currently open on this branch:
 
 - **Foundations (0001-0007):** Established the CLI, witness
   conventions, drift detection, CI gates, and a cleaner module split.
@@ -74,13 +75,13 @@ closed, and one active cycle remains open on `main`:
   sync, branch doctrine, behavior spikes, ship sync, configuration
   management, automated witness capture, consistency fixes, near-miss
   drift hints, async exec, and configurable workspace paths.
-- **Post-release maturity work (0026-0033):** Added OSS scaffolding,
+- **Post-release maturity work (0026-0035):** Added OSS scaffolding,
   generated reference signposts, hybrid signpost generation, bad-code
   cleanup, frontmatter-first backlog metadata, scaffold contract
-  alignment, MCP result contracts, and truthful `BEARING` generation.
-- **Current live thread (0034 active):** Review-state is now a native
-  METHOD capability on `main`, but its cycle packet is still open and
-  should be closed honestly.
+  alignment, MCP result contracts, truthful `BEARING` generation,
+  native review-state, and a repo self-discipline cleanup that makes
+  open cycle packets on `main` a documented defect instead of a tolerated
+  exception.
 
 The repo is organized under two legends:
 - `PROCESS`: Workflow mechanics, adapters, and system architecture.
@@ -97,7 +98,7 @@ The repo is organized under two legends:
 ### PROCESS
 Covers cycle discipline, backlog movement, adapters (GitHub, MCP), and
 named patterns (spikes, workflow).
-- **Active:** 1 cycle (`0034-review-state-query`).
+- **Active:** None.
 - **Backlog:** 38 items across inbox, up-next, cool-ideas, and bad-code.
 
 ### SYNTH
@@ -109,8 +110,7 @@ Covers repo self-description, signposts, and provenance level.
 
 ### Active
 
-- **0034-review-state-query:** Landed on `main`, but the cycle packet is
-  still open and needs honest closeout.
+- None.
 
 ### Up Next
 
@@ -153,8 +153,8 @@ Covers repo self-description, signposts, and provenance level.
   cockpit, or stay as smaller bounded commands?
 - Should `docs/VISION.md` remain manually synthesized, or is it time to
   land a native sync command for it?
-- When should METHOD stop treating the npm package as private and claim a
-  real registry publication path?
+- What is the smallest further guard that would have prevented the repo's
+  own cycle-closeout sloppiness even earlier?
 
 ## Limits
 

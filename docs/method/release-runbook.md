@@ -14,6 +14,8 @@ release doctrine lives in `docs/method/release.md`.
   relevant output on failure.
 - Ensure the working tree is clean; abort if dirty.
 - Confirm `main` is exactly synced with `origin/main`; abort if not.
+- Abort if any cycle packets are still open on merged `main`; close or
+  repair them before continuing release work.
 - Verify required tools, credentials, signing configuration, CI
   visibility, and registry visibility are available; abort if missing.
 - Ensure every required validation and publish verification step
@@ -30,6 +32,7 @@ Before changing anything, determine and record:
 - latest reachable semver tag matching `v*`
 - current branch
 - exact sync state versus `origin/main`
+- active cycle count on `main`
 
 If any discovery item cannot be determined confidently, abort.
 
@@ -41,7 +44,8 @@ Run these in order:
 2. Verify the current branch is `main`.
 3. Fetch `origin/main` and tags.
 4. Verify `HEAD` exactly matches `origin/main`.
-5. Verify tag-signing requirements if the repository requires signed
+5. Verify zero active cycles are open on `main`.
+6. Verify tag-signing requirements if the repository requires signed
    tags.
 
 Do not continue past the first failed guard.
