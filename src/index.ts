@@ -391,7 +391,12 @@ export class Workspace {
       return closedCycles;
     }
     const content = readFileSync(changelogPath, 'utf8');
-    return closedCycles.filter((cycle) => !content.includes(`- ${cycle.name}:`) && !content.includes(`(${cycle.name})`));
+    const releasedCycleNumbers = extractReleasedCycleNumbers(content);
+    return closedCycles.filter((cycle) => (
+      !content.includes(`- ${cycle.name}:`)
+      && !content.includes(`(${cycle.name})`)
+      && !releasedCycleNumbers.has(cycle.number)
+    ));
   }
 
   private updateChangelog(path: string, newShips: Cycle[]): void {
@@ -617,6 +622,31 @@ function readDesignLegend(path: string): string | undefined {
     return normalizeLegend(value);
   }
   return undefined;
+}
+
+function extractReleasedCycleNumbers(content: string): Set<number> {
+  const released = new Set<number>();
+  const cycleReferencePattern = /\b(?<start>\d{4})(?:\s*[–-]\s*(?<end>\d{4}))?\b/gu;
+
+  for (const match of content.matchAll(cycleReferencePattern)) {
+    if (match.groups === undefined) {
+      continue;
+    }
+
+    const start = Number.parseInt(match.groups.start, 10);
+    const endValue = match.groups.end;
+    const end = endValue === undefined ? start : Number.parseInt(endValue, 10);
+
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) {
+      continue;
+    }
+
+    for (let number = start; number <= end; number += 1) {
+      released.add(number);
+    }
+  }
+
+  return released;
 }
 
 function slugify(value: string): string {

@@ -96,6 +96,40 @@ describe('Ship Sync', () => {
     expect(countSecond).toBe(1);
   });
 
+  it('treats cycle ranges and numeric references in release sections as already shipped.', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.captureIdea('Feature A', 'FEAT', 'Feature A');
+    const cycleOne = workspace.pullItem('FEAT_feature-a');
+    await workspace.closeCycle(cycleOne.name, true, 'hill-met');
+
+    workspace.captureIdea('Feature B', 'FEAT', 'Feature B');
+    const cycleTwo = workspace.pullItem('FEAT_feature-b');
+    await workspace.closeCycle(cycleTwo.name, true, 'hill-met');
+
+    writeFileSync(
+      join(root, 'CHANGELOG.md'),
+      [
+        '# Changelog',
+        '',
+        '## Unreleased',
+        '',
+        '- No externally meaningful changes recorded yet.',
+        '',
+        '## v0.1.0',
+        '',
+        'Released cycle work: 0001–0002.',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const result = await workspace.shipSync();
+    expect(result.newShips).toEqual([]);
+    expect(result.updated).not.toContain('CHANGELOG.md');
+  });
+
   it('The command correctly handles workspaces with no new ships.', async () => {
     const root = createTempRoot();
     initWorkspace(root);

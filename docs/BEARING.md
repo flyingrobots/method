@@ -1,8 +1,8 @@
 ---
 title: "BEARING"
-generated_at: 2026-04-07T07:34:43.993Z
+generated_at: 2026-04-09T13:56:09.182Z
 generator: "method sync ship (renderBearing)"
-generated_from_commit: "660243d7585e7edf0f1b94865f3b4d18e30b2da3"
+generated_from_commit: "39cb47c572c1ddf6e89ea4aeca3b6ecba20863bd"
 provenance_level: artifact_history
 ---
 
@@ -13,15 +13,16 @@ replace backlog items, design docs, retros, or CLI status.
 
 ## Where are we going?
 
-Current priority: pull TBD to continue the system's maturity.
+Current priority: pull `PROCESS_live-legend-definition-coverage` to continue the system's maturity.
 
 ## What just shipped?
 
-- `0028-hybrid-signpost-generation`: Hybrid Signpost Generation
-- `0027-generated-reference-signposts`: Generated Reference Signposts
-- `0026-oss-release-scaffolding`: OSS Release Scaffolding
+- `0033-bearing-truthfulness`: BEARING Truthfulness
+- `0032-mcp-tool-result-contract`: MCP Tool Result Contract
+- `0031-generated-doc-scaffold-contract`: Generated Doc Scaffold Contract
 
 ## What feels wrong?
 
-- Backlog maintenance is still largely manual.
-- Witness generation is not yet automated.
+- Inbox still holds 5 untriaged item(s).
+- 8 bad-code item(s) remain tracked.
+- 1 active cycle(s) are still open.

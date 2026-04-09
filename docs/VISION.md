@@ -1,14 +1,16 @@
 ---
 title: "METHOD - Executive Summary"
-generated_at: 2026-04-06T21:38:42-07:00
+generated_at: 2026-04-09T06:50:15-07:00
 generator: "manual synthesis following Executive Summary Protocol (Cycle 0013)"
-generated_from_commit: "9a7e2d4d71de0370213b609a445a3fd2381f272c"
+generated_from_commit: "39cb47c572c1ddf6e89ea4aeca3b6ecba20863bd"
 provenance_level: artifact_history
-witness_ref: docs/method/retro/0025-configurable-workspace-paths/witness/verification.md
+witness_ref: docs/method/retro/0033-bearing-truthfulness/witness/verification.md
 source_files:
   - README.md
   - CHANGELOG.md
   - docs/BEARING.md
+  - docs/releases/v1.0.0.md
+  - docs/method/releases/v1.0.0/release.md
   - docs/method/process.md
   - docs/method/legends/PROCESS.md
   - docs/method/legends/SYNTH.md
@@ -37,6 +39,11 @@ source_files:
   - docs/design/0023-drift-near-miss-hints/drift-near-miss-hints.md
   - docs/design/0024-async-exec-refactor/async-exec-refactor.md
   - docs/design/0025-configurable-workspace-paths/configurable-workspace-paths.md
+  - docs/design/0030-backlog-metadata-single-source-of-truth/backlog-metadata-single-source-of-truth.md
+  - docs/design/0031-generated-doc-scaffold-contract/generated-doc-scaffold-contract.md
+  - docs/design/0032-mcp-tool-result-contract/mcp-tool-result-contract.md
+  - docs/design/0033-bearing-truthfulness/bearing-truthfulness.md
+  - docs/design/0034-review-state-query/review-state-query.md
 ---
 
 # METHOD - Executive Summary
@@ -54,24 +61,26 @@ state of the system without replacing the underlying files.
 
 ## Current state
 
-METHOD has evolved from pure doctrine into a formal, programmable system.
-Twenty-five cycles are closed:
+METHOD has evolved from doctrine plus a working CLI into a more complete
+toolchain for human/agent repo operation. Thirty-three cycles are
+closed, and one active cycle remains open on `main`:
 
-- **CLI Foundations (0001-0004, 0007):** Established the CLI, witness
-  conventions, and separated the module structure.
-- **Enforcement (0005-0006):** Added the `drift` command and CI gates.
-- **Maturity (0008-0011, 0016, 0019):** Formalized releases, metadata
-  contracts, extracted a clean API, adopted System-Style JS, and
-  implemented a formal configuration system.
-- **Connectivity (0012, 0014, 0021):** Implemented an MCP server and full
-  two-way GitHub Issue synchronization.
-- **Workflow (0013, 0015, 0017-0018, 0020):** Formalized the Executive
-  Summary Protocol, Git branch doctrine, Behavior Spikes, Ship Sync
-  automation, and Automated Witness Capture.
-- **Hardening (0022-0025):** Unified branch naming and RED phase doctrine,
-  added drift near-miss hints, replaced blocking `execSync` with async
-  exec, and made the workspace directory layout fully configurable via
-  `.method.json`.
+- **Foundations (0001-0007):** Established the CLI, witness
+  conventions, drift detection, CI gates, and a cleaner module split.
+- **Release and provenance groundwork (0008-0013):** Formalized release
+  shaping, generated-signpost provenance, a library-facing API surface,
+  MCP support, and the executive-summary protocol.
+- **Workflow and configuration hardening (0014-0025):** Added GitHub
+  sync, branch doctrine, behavior spikes, ship sync, configuration
+  management, automated witness capture, consistency fixes, near-miss
+  drift hints, async exec, and configurable workspace paths.
+- **Post-release maturity work (0026-0033):** Added OSS scaffolding,
+  generated reference signposts, hybrid signpost generation, bad-code
+  cleanup, frontmatter-first backlog metadata, scaffold contract
+  alignment, MCP result contracts, and truthful `BEARING` generation.
+- **Current live thread (0034 active):** Review-state is now a native
+  METHOD capability on `main`, but its cycle packet is still open and
+  should be closed honestly.
 
 The repo is organized under two legends:
 - `PROCESS`: Workflow mechanics, adapters, and system architecture.
@@ -88,38 +97,64 @@ The repo is organized under two legends:
 ### PROCESS
 Covers cycle discipline, backlog movement, adapters (GitHub, MCP), and
 named patterns (spikes, workflow).
-- **Active:** None.
-- **Backlog:** 7 items across inbox and cool-ideas.
+- **Active:** 1 cycle (`0034-review-state-query`).
+- **Backlog:** 38 items across inbox, up-next, cool-ideas, and bad-code.
 
 ### SYNTH
 Covers repo self-description, signposts, and provenance level.
 - **Active:** None.
-- **Backlog:** 2 items in cool-ideas.
+- **Backlog:** 3 items in cool-ideas.
 
 ## Roadmap
 
 ### Active
-- None.
+
+- **0034-review-state-query:** Landed on `main`, but the cycle packet is
+  still open and needs honest closeout.
+
+### Up Next
+
+- **PROCESS_live-legend-definition-coverage:** tighten the repo’s live
+  legend definitions so signpost and backlog coverage stay aligned.
 
 ### Inbox
 - **PROCESS_semantic-drift-detector:** LLM-based fuzzy matching for drift.
 - **PROCESS_multi-forge-adapter:** GitLab/Bitbucket via common ForgeAdapter.
 - **PROCESS_interactive-scaffolder:** Wizard for `method pull`.
 - **PROCESS_i18n-string-extraction:** Centralize hardcoded English strings.
+- **PROCESS_doctor-command:** a bounded diagnostic surface for repo truth
+  and health.
 
 ### Cool Ideas
+- **PROCESS_backlog-query-surface:** native structured query surface over
+  backlog cards.
+- **PROCESS_next-work-menu:** repo-native “what’s next?” recommendations
+  with evidence and stats.
+- **PROCESS_review-closeout-helper:** help map review findings to SHAs and
+  close out threads systematically.
 - **PROCESS_legend-audit-and-assignment:** First-class legend management.
 - **PROCESS_retro-conversational-closeout:** CLI-guided retro prompts.
-- **PROCESS_review-config-hardening:** Tune bot review config.
 - **SYNTH_artifact-history-and-semantic-provenance:** Formal provenance split.
 - **SYNTH_cycle-witness-command:** `method witness` command.
 
+### Bad Code
+
+- **PROCESS_generated-reference-sync-coupling:** scoped reference-doc
+  refresh is still coupled to ship-level sync.
+- **PROCESS_typed-frontmatter-access:** frontmatter access still erases
+  useful structure by stringifying every YAML value.
+- **PROCESS_mcp-runtime-input-validation-audit:** several mutation
+  surfaces still need the same runtime-hardening pass recent review
+  work exposed.
+
 ## Open questions
 
-- Should METHOD support visual screenshot capture in witnesses?
-- How much domain logic should move from `src/index.ts` to legend-specific
-  adapters?
-- What does v0.3.0 look like as a first public release?
+- Should review-state and review-closeout become a fuller native release
+  cockpit, or stay as smaller bounded commands?
+- Should `docs/VISION.md` remain manually synthesized, or is it time to
+  land a native sync command for it?
+- When should METHOD stop treating the npm package as private and claim a
+  real registry publication path?
 
 ## Limits
 

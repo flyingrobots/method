@@ -518,9 +518,9 @@ describe('METHOD docs', () => {
     expect(vision, 'generator should name the cycle that produced the summary').toContain('0009-generated-signpost-provenance');
   });
 
-  it('`docs/VISION.md` summary is accurate for the current closed-cycle state (cycles 0001-0025).', () => {
+  it('`docs/VISION.md` summary is accurate for the current closed-cycle state and active-cycle posture.', () => {
     const vision = readRepoFile('docs/VISION.md');
-    expect(vision).toContain('Twenty-five cycles are closed:');
+    expect(vision).toContain('Thirty-three cycles are');
     expect(vision).toContain('0005-drift-detector');
     expect(vision).toContain('0006-ci-gates');
     expect(vision).toContain('0007-cli-module-split');
@@ -537,6 +537,12 @@ describe('METHOD docs', () => {
     expect(vision).toContain('0023-drift-near-miss-hints');
     expect(vision).toContain('0024-async-exec-refactor');
     expect(vision).toContain('0025-configurable-workspace-paths');
+    expect(vision).toContain('0030-backlog-metadata-single-source-of-truth');
+    expect(vision).toContain('0031-generated-doc-scaffold-contract');
+    expect(vision).toContain('0032-mcp-tool-result-contract');
+    expect(vision).toContain('0033-bearing-truthfulness');
+    expect(vision).toContain('0034-review-state-query');
+    expect(vision).toContain('one active cycle remains open on `main`');
   });
 
   it('`docs.test.ts` validates that `docs/VISION.md` frontmatter contains all mandatory fields (`generated_at`, `generator`, `generated_from_commit`, `provenance_level`, `witness_ref`, `source_files`).', () => {

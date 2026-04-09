@@ -104,7 +104,7 @@ Two-way sync between the local backlog and GitHub Issues:
 ## Testing
 
 <!-- generate:test-summary -->
-13 test files in `tests/` using Vitest:
+15 test files in `tests/` using Vitest:
 
 - `api.test.ts`
 - `cli.test.ts`
@@ -116,6 +116,8 @@ Two-way sync between the local backlog and GitHub Issues:
 - `generate.test.ts`
 - `github-adapter.test.ts`
 - `mcp.test.ts`
+- `package.test.ts`
+- `review-state-exec.test.ts`
 - `review-state.test.ts`
 - `ship-sync.test.ts`
 - `witness.test.ts`
