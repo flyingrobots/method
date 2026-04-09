@@ -39,7 +39,7 @@ describe('Automated Witness Capture', () => {
     // Verified by the captureWitness test below.
   });
 
-  it('`tests/witness.test.ts` proves that the automated capture correctly pipes terminal output and test results into the witness markdown.', async () => {
+  it('Does automated witness capture record the actual drift output for the active cycle?', async () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);
@@ -47,6 +47,7 @@ describe('Automated Witness Capture', () => {
     // Create and close a cycle (which calls captureWitness internally)
     workspace.captureIdea('Witness Test', 'FEAT', 'Witness Test');
     const cycle = workspace.pullItem('FEAT_witness-test');
+    const expectedDrift = workspace.detectDrift(cycle.name).output.trim();
     
     // No need to spy manually now, index.ts handles it via METHOD_TEST
     const witnessPath = await workspace.captureWitness(cycle.name);
@@ -56,8 +57,27 @@ describe('Automated Witness Capture', () => {
     const content = readFileSync(witnessPath, 'utf8');
     expect(content).toContain('# Verification Witness for Cycle 1');
     expect(content).toContain('[MOCK] Output for npm test');
-    expect(content).toContain('[MOCK] Output for tsx src/cli.ts drift 0001-witness-test');
+    expect(content).toContain(expectedDrift);
+    expect(content).not.toContain('No drift output captured.');
     expect(content).toContain('- [x] Automated capture completed successfully.');
+  });
+
+  it('Does `captureWitness()` record `detectDrift(cycle.name).output` directly instead of shelling out through `tsx`?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.captureIdea('Witness Drift Path Test', 'PROCESS', 'Witness Drift Path Test');
+    const cycle = workspace.pullItem('PROCESS_witness-drift-path-test');
+    const expectedDrift = workspace.detectDrift(cycle.name).output.trim();
+    const execSpy = vi.spyOn(workspace, 'execCommand');
+
+    const witnessPath = await workspace.captureWitness(cycle.name);
+    const content = readFileSync(witnessPath, 'utf8');
+
+    expect(content).toContain(expectedDrift);
+    expect(execSpy).toHaveBeenCalledWith('npm', ['test']);
+    expect(execSpy).not.toHaveBeenCalledWith('tsx', ['src/cli.ts', 'drift', cycle.name]);
   });
 
   it('Does the witness scaffold label fenced output as text and avoid empty test or drift fences?', () => {

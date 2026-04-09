@@ -291,7 +291,7 @@ export class Workspace {
     mkdirSync(dirname(witnessPath), { recursive: true });
 
     const testResult = sanitizeWitnessOutput(await this.execCommand('npm', ['test']), this.root);
-    const driftResult = sanitizeWitnessOutput(await this.execCommand('tsx', ['src/cli.ts', 'drift', cycle.name]), this.root);
+    const driftResult = sanitizeWitnessOutput(this.detectDrift(cycle.name).output, this.root);
 
     const content = renderWitnessDoc({
       cycle,
