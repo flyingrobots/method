@@ -1,6 +1,6 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative as pathRelative } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { initWorkspace, Workspace } from '../src/index.js';
 
@@ -155,6 +155,33 @@ describe('Method API', () => {
       lane: 'up-next',
       legend: 'PROCESS',
     });
+  });
+
+  it('Rejects moving backlog paths that escape the workspace root.', () => {
+    const root = createTempRoot();
+    const outsideRoot = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    const outsidePath = join(outsideRoot, 'outside.md');
+    writeFileSync(outsidePath, '# Outside\n\nBody\n', 'utf8');
+
+    expect(() => workspace.moveBacklogItem(outsidePath, 'graveyard')).toThrow(/workspace/u);
+    expect(existsSync(outsidePath)).toBe(true);
+  });
+
+  it('Rejects pulling backlog items through traversal paths that escape the workspace root.', () => {
+    const root = createTempRoot();
+    const outsideRoot = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    const outsidePath = join(outsideRoot, 'outside.md');
+    writeFileSync(outsidePath, '# Outside\n\nBody\n', 'utf8');
+    const traversalPath = pathRelative(root, outsidePath);
+
+    expect(() => workspace.pullItem(traversalPath)).toThrow(/workspace/u);
+    expect(existsSync(outsidePath)).toBe(true);
   });
 
   it('If a backlog card has stale filename legend text, does `method pull` still carry the YAML legend into the design packet?', () => {

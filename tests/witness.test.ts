@@ -1,9 +1,9 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { initWorkspace, Workspace } from '../src/index.js';
-import { renderDesignDoc, renderWitnessDoc } from '../src/renderers.js';
+import { renderDesignDoc, renderRetroDoc, renderWitnessDoc } from '../src/renderers.js';
 
 const tempRoots: string[] = [];
 
@@ -60,7 +60,7 @@ describe('Automated Witness Capture', () => {
     expect(content).toContain('- [x] Automated capture completed successfully.');
   });
 
-  it('Does the witness scaffold label fenced output as text and avoid an empty drift-results fence?', () => {
+  it('Does the witness scaffold label fenced output as text and avoid empty test or drift fences?', () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);
@@ -70,12 +70,12 @@ describe('Automated Witness Capture', () => {
 
     const content = renderWitnessDoc({
       cycle,
-      testResult: 'npm test output',
+      testResult: '',
       driftResult: '',
     });
 
     expect(content).toContain('## Test Results');
-    expect(content).toContain('```text\nnpm test output\n```');
+    expect(content).toContain('```text\nNo test output captured.\n```');
     expect(content).toContain('## Drift Results');
     expect(content).toContain('```text\nNo drift output captured.\n```');
   });
@@ -103,5 +103,34 @@ describe('Automated Witness Capture', () => {
 
     expect(content).toContain('legend: "FEAT:alpha #quoted \\"value\\""');
     expect(content).toContain('Legend: FEAT:alpha #quoted "value"');
+  });
+
+  it('Normalizes generated frontmatter paths to POSIX separators.', () => {
+    const root = createTempRoot();
+    const designDocPath = join(root, 'docs\\design\\0001-windows-paths\\windows-paths.md');
+    writeFileSync(designDocPath, '# Windows Paths\n', 'utf8');
+
+    const designContent = renderDesignDoc({
+      cycleName: '0001-windows-paths',
+      title: 'Windows Paths',
+      source: 'docs\\method\\backlog\\asap\\PROTO_windows-paths.md',
+      backlogBody: 'Body',
+    });
+    expect(designContent).toContain('source_backlog: "docs/method/backlog/asap/PROTO_windows-paths.md"');
+
+    const retroContent = renderRetroDoc({
+      cycle: {
+        name: '0001-windows-paths',
+        number: 1,
+        slug: 'windows-paths',
+        designDoc: designDocPath,
+        retroDoc: join(root, 'unused.md'),
+      },
+      root,
+      outcome: 'partial',
+      witnessDir: 'docs\\method\\retro\\0001-windows-paths\\witness',
+    });
+    expect(retroContent).toContain('design_doc: "docs/design/0001-windows-paths/windows-paths.md"');
+    expect(retroContent).toContain('Add artifacts under `docs/method/retro/0001-windows-paths/witness`');
   });
 });

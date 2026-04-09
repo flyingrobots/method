@@ -10,7 +10,7 @@ import {
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import GitPlumbing from '@git-stunts/plumbing';
-import { basename, dirname, relative, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, relative, resolve } from 'node:path';
 import {
   type BacklogItem,
   type Cycle,
@@ -343,6 +343,7 @@ export class Workspace {
 
   moveBacklogItem(path: string, targetLane: Lane | 'graveyard'): string {
     const fullPath = resolve(this.root, path);
+    assertWorkspacePath(this.root, fullPath, 'Backlog path');
     if (!existsSync(fullPath)) {
       throw new MethodError(`Backlog item not found: ${path}`);
     }
@@ -413,6 +414,7 @@ export class Workspace {
   private resolveBacklogItem(item: string): string {
     const direct = resolve(this.root, item);
     if (existsSync(direct)) {
+      assertWorkspacePath(this.root, direct, 'Backlog path');
       return direct;
     }
 
@@ -578,6 +580,14 @@ function collectMarkdownFiles(root: string, maxDepth = 10): string[] {
   }
 
   return files.sort((left, right) => left.localeCompare(right));
+}
+
+function assertWorkspacePath(root: string, fullPath: string, label: string): void {
+  const relativePath = relative(root, fullPath);
+  if (relativePath === '' || (!relativePath.startsWith('..') && !isAbsolute(relativePath))) {
+    return;
+  }
+  throw new MethodError(`${label} must stay inside the workspace: ${fullPath}`);
 }
 
 

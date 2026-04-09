@@ -210,8 +210,10 @@ export function createMcpServer() {
       }
 
       if (request.params.name === 'method_sync_github') {
-        const push = (args.push as boolean | undefined) ?? !(args.pull as boolean | undefined);
-        const pull = (args.pull as boolean | undefined) ?? false;
+        const validatedPush = validateOptionalBoolean(args.push, 'push');
+        const validatedPull = validateOptionalBoolean(args.pull, 'pull');
+        const pull = validatedPull ?? false;
+        const push = validatedPush ?? !pull;
 
         const token = workspace.config.github_token;
         const repoFull = workspace.config.github_repo;
@@ -386,6 +388,20 @@ function validateOptionalString(value: unknown, name: string): string | undefine
   }
   if (typeof value !== 'string') {
     throw new Error(`${name} must be a string when provided.`);
+  }
+  const normalized = value.trim();
+  if (normalized.length === 0) {
+    throw new Error(`${name} must not be empty.`);
+  }
+  return normalized;
+}
+
+function validateOptionalBoolean(value: unknown, name: string): boolean | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (typeof value !== 'boolean') {
+    throw new Error(`${name} must be a boolean.`);
   }
   return value;
 }

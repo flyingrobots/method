@@ -271,6 +271,20 @@ describe('MCP Server', () => {
     expect(badCycle.isError).toBe(true);
     expect(badCycle.structuredContent.error.message).toContain('cycle must be a string');
 
+    const blankCycle = await callToolHandler({
+      params: {
+        name: 'method_close',
+        arguments: {
+          workspace: root,
+          cycle: '   ',
+          driftCheck: true,
+          outcome: 'hill-met',
+        },
+      },
+    });
+    expect(blankCycle.isError).toBe(true);
+    expect(blankCycle.structuredContent.error.message).toContain('cycle must not be empty');
+
     vi.restoreAllMocks();
   });
 
@@ -305,5 +319,34 @@ describe('MCP Server', () => {
     expect(pushBacklog).not.toHaveBeenCalled();
     expect(pullBacklog).not.toHaveBeenCalled();
     expect(result.content[0].text).toContain('No changes.');
+  });
+
+  it('Does `method_sync_github` reject non-boolean push and pull flags before touching GitHub?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    writeFileSync(
+      join(root, '.method.json'),
+      JSON.stringify({ github_token: 'test-token', github_repo: 'owner/repo' }),
+      'utf8',
+    );
+
+    const pushBacklog = vi.spyOn(GitHubAdapter.prototype, 'pushBacklog').mockResolvedValue([]);
+    const pullBacklog = vi.spyOn(GitHubAdapter.prototype, 'pullBacklog').mockResolvedValue([]);
+    const callToolHandler = createCallToolHarness();
+
+    const badPush = await callToolHandler({
+      params: {
+        name: 'method_sync_github',
+        arguments: {
+          workspace: root,
+          push: 'false',
+        },
+      },
+    });
+
+    expect(badPush.isError).toBe(true);
+    expect(badPush.structuredContent.error.message).toContain('push must be a boolean');
+    expect(pushBacklog).not.toHaveBeenCalled();
+    expect(pullBacklog).not.toHaveBeenCalled();
   });
 });

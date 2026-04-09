@@ -1,4 +1,4 @@
-import { relative } from 'node:path';
+import * as path from 'node:path';
 import type { Cycle, Outcome, WorkspaceStatus } from './domain.js';
 import { readHeading } from './frontmatter.js';
 
@@ -78,6 +78,7 @@ export function renderWitnessDoc(options: {
   driftResult: string;
 }): string {
   const title = readHeading(options.cycle.designDoc) || titleCase(options.cycle.slug);
+  const testResult = options.testResult.trim() || 'No test output captured.';
   const driftResult = options.driftResult.trim() || 'No drift output captured.';
   return [
     '---',
@@ -92,7 +93,7 @@ export function renderWitnessDoc(options: {
     '## Test Results',
     '',
     '```text',
-    options.testResult.trim(),
+    testResult,
     '```',
     '',
     '## Drift Results',
@@ -116,17 +117,18 @@ export function renderDesignDoc(options: {
   backlogBody: string;
 }): string {
   const legendValue = options.legend ?? 'none';
+  const sourcePath = normalizeRepoPath(options.source);
   return [
     '---',
     `title: ${yamlString(options.title)}`,
     `legend: ${yamlString(legendValue)}`,
     `cycle: ${yamlString(options.cycleName)}`,
-    `source_backlog: ${yamlString(options.source)}`,
+    `source_backlog: ${yamlString(sourcePath)}`,
     '---',
     '',
     `# ${options.title}`,
     '',
-    `Source backlog item: \`${options.source}\``,
+    `Source backlog item: \`${sourcePath}\``,
     `Legend: ${legendValue}`,
     '',
     '## Sponsors',
@@ -184,7 +186,8 @@ export function renderRetroDoc(options: {
     throw new Error('Outcome is required and must be one of: hill-met, partial, not-met.');
   }
   const title = readHeading(options.cycle.designDoc) || titleCase(options.cycle.slug);
-  const designDoc = relative(options.root, options.cycle.designDoc);
+  const designDoc = normalizeRepoPath(path.relative(options.root, options.cycle.designDoc));
+  const witnessDir = normalizeRepoPath(options.witnessDir);
   return [
     '---',
     `title: ${yamlString(title)}`,
@@ -202,7 +205,7 @@ export function renderRetroDoc(options: {
     '',
     '## Playback Witness',
     '',
-    `Add artifacts under \`${options.witnessDir}\` and link them here.`,
+    `Add artifacts under \`${witnessDir}\` and link them here.`,
     '',
     '## Drift',
     '',
@@ -232,4 +235,8 @@ function yamlString(value: string): string {
     .replace(/\r\n/gu, '\\r\\n')
     .replace(/\r/gu, '\\r')
     .replace(/\n/gu, '\\n')}"`;
+}
+
+function normalizeRepoPath(value: string): string {
+  return value.replace(/\\/gu, '/');
 }
