@@ -25,6 +25,12 @@ of landing as manual review cleanup.
 
 ## Proposed Contract
 
+## Prerequisites
+
+- `PROCESS_validate-command.md` defines the parent `method validate`
+  surface. This item assumes that contract lands first or in the same
+  slice.
+
 - Scope globs:
   markdown rules cover
   `docs/design/[0-9][0-9][0-9][0-9]-*/**/*.md` and

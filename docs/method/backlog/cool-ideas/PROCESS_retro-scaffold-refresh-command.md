@@ -56,9 +56,9 @@ into a repeatable maintenance move.
   whitespace and matches the section body against supported historical
   placeholder signatures for that heading:
   `## Summary` -> `TBD`, `TODO`, or `To be written.`;
-  `## Playback Witness` -> `Add artifacts under \`<witnessDir>\` and
-  link them here.` plus earlier variants that match
-  `Add artifacts under \`.+\` and link .* here.`;
+  `## Playback Witness` -> `Add artifacts under <witnessDir> and link
+  them here.` plus earlier variants that match
+  `Add artifacts under <.+> and link .* here.`;
   `## Drift`, `## New Debt`, and `## Cool Ideas` -> `- None recorded.`,
   `- None.`, or `None recorded.`;
   `## Backlog Maintenance` -> the current scaffold checklist block or an
