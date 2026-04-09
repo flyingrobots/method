@@ -44,6 +44,16 @@ describe('review-state engine', () => {
     });
   });
 
+  it('rejects currentBranch:false when no explicit PR is provided', async () => {
+    const client = createClient({});
+
+    await expect(queryReviewState({
+      cwd: '/tmp/method',
+      currentBranch: false,
+      client,
+    })).rejects.toThrow('review-state requires either --pr or --current-branch');
+  });
+
   it('treats unresolved threads as the live blockers and suppresses stale CHANGES_REQUESTED duplication', async () => {
     const client = createClient({
       gitBranch: 'feature/review-state',
@@ -212,6 +222,32 @@ describe('review-state engine', () => {
     expect(result.bot_review_state).toBe('approved');
     expect(result.approval_count).toBe(1);
     expect(result.blockers).toEqual([]);
+  });
+
+  it('clears an earlier decisive vote when the same reviewer later dismisses it', async () => {
+    const client = createClient({
+      prView: {
+        number: 24,
+        url: 'https://example.test/pr/24',
+        reviewDecision: 'NONE',
+        statusCheckRollup: [],
+        reviews: [
+          { author: { login: 'reviewer-one' }, state: 'APPROVED', submittedAt: '2026-04-09T07:10:00Z' },
+          { author: { login: 'reviewer-one' }, state: 'DISMISSED', submittedAt: '2026-04-09T07:20:00Z' },
+        ],
+        comments: [],
+      },
+      unresolvedThreads: [],
+    });
+
+    const result = await queryReviewState({
+      cwd: '/tmp/method',
+      pr: 24,
+      client,
+    });
+
+    expect(result.approval_count).toBe(0);
+    expect(result.changes_requested_count).toBe(0);
   });
 });
 

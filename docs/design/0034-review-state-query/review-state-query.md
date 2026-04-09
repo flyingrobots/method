@@ -74,10 +74,6 @@ checks, sticky review decisions, and observable bot cooldowns.
   signal actually contains a rate-limit message; the engine must not
   invent hidden policy state.
 
-## Non-goals
-
-- [ ] TBD
-
 ## Backlog Context
 
 METHOD currently says review state is not part of the repo-native

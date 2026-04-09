@@ -21,7 +21,7 @@ export interface McpToolDef {
   description: string;
   inputSchema: {
     type: 'object';
-    properties: Record<string, { type: string; description?: string; enum?: string[] }>;
+    properties: Record<string, { type: string; description?: string; enum?: string[]; minimum?: number }>;
     required: string[];
   };
 }
@@ -29,12 +29,12 @@ export interface McpToolDef {
 export const MCP_TOOLS: McpToolDef[] = [
   {
     name: 'method_review_state',
-    description: 'Get PR review / merge-readiness state for the current branch or an explicit PR',
+    description: 'Get PR review / merge-readiness state for the current branch or an explicit PR. `pr` and `currentBranch` are mutually exclusive; when `pr` is omitted, current-branch resolution is the default behavior.',
     inputSchema: {
       type: 'object',
       properties: {
         ...workspaceProperty,
-        pr: { type: 'number', description: 'Explicit PR number to inspect' },
+        pr: { type: 'integer', minimum: 1, description: 'Explicit PR number to inspect' },
         currentBranch: { type: 'boolean', description: 'Resolve the PR from the current branch (default when pr is omitted)' },
       },
       required: ['workspace'],

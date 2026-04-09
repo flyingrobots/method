@@ -154,14 +154,23 @@ interface BotCheckSignal extends TimedSignal {
 export async function queryReviewState(options: ReviewStateQueryOptions): Promise<ReviewStateResult> {
   const pr = options.pr;
   const currentBranch = options.currentBranch ?? pr === undefined;
+  if (pr === undefined && currentBranch !== true) {
+    throw new Error('review-state requires either --pr or --current-branch; cannot use currentBranch:false with no PR.');
+  }
   if (pr !== undefined && currentBranch) {
     throw new Error('review-state accepts either --pr or --current-branch, not both.');
   }
 
   const client = options.client ?? createExecReviewStateClient();
-  const selection = pr === undefined
-    ? await resolveCurrentBranchPr(options.cwd, client)
-    : { kind: 'selected' as const, prNumber: pr };
+  let selection:
+    | { kind: 'selected'; prNumber: number }
+    | { kind: 'no-pr'; message: string }
+    | { kind: 'ambiguous-pr'; message: string };
+  if (currentBranch) {
+    selection = await resolveCurrentBranchPr(options.cwd, client);
+  } else {
+    selection = { kind: 'selected', prNumber: requirePositiveInteger(pr, 'PR number') };
+  }
 
   if (selection.kind === 'no-pr') {
     return selectionResult('no-pr', selection.message);
@@ -498,20 +507,27 @@ function isFailingCheck(item: GhCheckRun): boolean {
 }
 
 function latestDecisiveStates(reviews: GhReview[]): Map<string, 'APPROVED' | 'CHANGES_REQUESTED'> {
-  const latest = new Map<string, { timestamp: number; state: 'APPROVED' | 'CHANGES_REQUESTED' }>();
+  const latest = new Map<string, { timestamp: number; state?: 'APPROVED' | 'CHANGES_REQUESTED' }>();
   for (const review of reviews) {
     const author = normalizeOptionalString(review.author?.login);
     const state = normalizeOptionalString(review.state)?.toUpperCase();
-    if (author === undefined || (state !== 'APPROVED' && state !== 'CHANGES_REQUESTED')) {
+    if (
+      author === undefined
+      || (state !== 'APPROVED' && state !== 'CHANGES_REQUESTED' && state !== 'DISMISSED')
+    ) {
       continue;
     }
     const timestamp = parseTimestamp(review.submittedAt);
     const previous = latest.get(author);
     if (previous === undefined || timestamp >= previous.timestamp) {
-      latest.set(author, { timestamp, state });
+      latest.set(author, { timestamp, state: state === 'DISMISSED' ? undefined : state });
     }
   }
-  return new Map([...latest.entries()].map(([author, value]) => [author, value.state]));
+  return new Map(
+    [...latest.entries()]
+      .filter(([, value]) => value.state !== undefined)
+      .map(([author, value]) => [author, value.state!]),
+  );
 }
 
 function analyzeBotSignals(reviews: GhReview[], comments: GhComment[], checks: GhCheckRun[]): {

@@ -23,11 +23,11 @@ workspace-agnostic — a single instance can serve multiple projects.
 <!-- generate:mcp-tools -->
 ### `method_review_state`
 
-Get PR review / merge-readiness state for the current branch or an explicit PR
+Get PR review / merge-readiness state for the current branch or an explicit PR. `pr` and `currentBranch` are mutually exclusive; when `pr` is omitted, current-branch resolution is the default behavior.
 
 **Parameters:**
 
-- `pr` (optional) `number` — Explicit PR number to inspect
+- `pr` (optional) `integer` — Explicit PR number to inspect
 - `currentBranch` (optional) `boolean` — Resolve the PR from the current branch (default when pr is omitted)
 
 ### `method_status`
