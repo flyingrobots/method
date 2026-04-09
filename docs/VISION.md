@@ -1,6 +1,6 @@
 ---
 title: "METHOD - Executive Summary"
-generated_at: 2026-04-09T08:48:40-0700
+generated_at: 2026-04-09T08:48:40-07:00
 generator: "manual synthesis following Executive Summary Protocol (Cycle 0013)"
 generated_from_commit: "33e3dd883dd1fdeb48a2ca781fc29e5c0ed791b5"
 provenance_level: artifact_history
