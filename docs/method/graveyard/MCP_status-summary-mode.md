@@ -16,13 +16,18 @@ common "where are we?" check.
 ## Disposition
 
 Retired as a separate backlog item in cycle `0032-mcp-tool-result-contract`.
-The summary-mode behavior was absorbed into the broader MCP structured
-result contract, so `method_status` now defaults to compact structured
-summary output instead of needing a standalone follow-on.
+The summary-mode idea was absorbed into the broader MCP structured
+result contract, but the shipped behavior preserved backward
+compatibility: `method_status` still returns full status when `summary`
+is omitted, and only returns the compact summary when callers pass
+`summary: true`. This graveyard note remains historical context, not the
+current API contract. See `docs/MCP.md` and `tests/mcp.test.ts` for the
+live behavior.
 
 ## Original Proposal
 
-Add an optional `summary` parameter (default `true`) to `method_status`.
+The original proposal was to add an optional `summary` parameter with
+default `true`. That default was not adopted in the final implementation.
 
 **Summary mode** returns:
 - Lane counts: `{ inbox: 4, asap: 22, "up-next": 15, "cool-ideas": 50, "bad-code": 124 }`
