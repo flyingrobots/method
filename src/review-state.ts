@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
+const COMMAND_MAX_BUFFER = 10 * 1024 * 1024;
 
 const REVIEW_STATE_STATUSES = ['ready', 'blocked', 'no-pr', 'ambiguous-pr'] as const;
 const REVIEW_DECISIONS = ['APPROVED', 'CHANGES_REQUESTED', 'REVIEW_REQUIRED', 'NONE'] as const;
@@ -248,6 +249,7 @@ async function runCommand(command: string, args: readonly string[], cwd: string)
       cwd,
       encoding: 'utf8',
       timeout: 30_000,
+      maxBuffer: COMMAND_MAX_BUFFER,
       env: { ...process.env, GH_PAGER: 'cat' },
     });
     return stdout;
@@ -461,9 +463,11 @@ function classifyChecks(items: GhCheckRun[]): ReviewStateResult['checks'] {
       failing.push(check);
       continue;
     }
-    if (check.status.length > 0) {
+    if (isPassingCheck(check.status)) {
       passing.push(check);
+      continue;
     }
+    pending.push(check);
   }
 
   return { passing, pending, failing };
@@ -504,6 +508,10 @@ function isPendingCheck(item: GhCheckRun): boolean {
 function isFailingCheck(item: GhCheckRun): boolean {
   const status = normalizeCheckStatus(item);
   return ['FAILURE', 'FAILED', 'ERROR', 'CANCELLED', 'ACTION_REQUIRED', 'TIMED_OUT', 'STALE', 'STARTUP_FAILURE'].includes(status);
+}
+
+function isPassingCheck(status: string): boolean {
+  return ['SUCCESS', 'NEUTRAL', 'SKIPPED'].includes(status);
 }
 
 function latestDecisiveStates(reviews: GhReview[]): Map<string, 'APPROVED' | 'CHANGES_REQUESTED'> {

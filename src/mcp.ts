@@ -137,7 +137,8 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
 
       if (request.params.name === 'method_review_state') {
         const pr = validateOptionalInteger(args.pr, 'pr');
-        const currentBranch = validateOptionalBoolean(args.currentBranch, 'currentBranch');
+        const currentBranchArg = validateOptionalBoolean(args.currentBranch, 'currentBranch');
+        const currentBranch = currentBranchArg === true ? true : undefined;
         if (pr !== undefined && currentBranch === true) {
           throw new Error('method_review_state accepts either pr or currentBranch, not both.');
         }

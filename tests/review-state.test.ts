@@ -224,6 +224,52 @@ describe('review-state engine', () => {
     expect(result.blockers).toEqual([]);
   });
 
+  it('treats unknown check states as blocking instead of silently counting them as passing', async () => {
+    const client = createClient({
+      prView: {
+        number: 25,
+        url: 'https://example.test/pr/25',
+        reviewDecision: 'APPROVED',
+        statusCheckRollup: [
+          {
+            __typename: 'StatusContext',
+            context: 'mystery-check',
+            state: 'UNKNOWN',
+            targetUrl: 'https://example.test/checks/mystery',
+            startedAt: '2026-04-09T07:33:00Z',
+          },
+        ],
+        reviews: [
+          { author: { login: 'reviewer-one' }, state: 'APPROVED', submittedAt: '2026-04-09T07:20:00Z' },
+        ],
+        comments: [],
+      },
+      unresolvedThreads: [],
+    });
+
+    const result = await queryReviewState({
+      cwd: '/tmp/method',
+      pr: 25,
+      client,
+    });
+
+    expect(result.status).toBe('blocked');
+    expect(result.merge_ready).toBe(false);
+    expect(result.checks.passing).toEqual([]);
+    expect(result.checks.pending).toEqual([
+      {
+        name: 'mystery-check',
+        status: 'UNKNOWN',
+        url: 'https://example.test/checks/mystery',
+      },
+    ]);
+    expect(result.blockers).toContainEqual({
+      type: 'pending_checks',
+      message: '1 pending check.',
+      source: 'github',
+    });
+  });
+
   it('clears an earlier decisive vote when the same reviewer later dismisses it', async () => {
     const client = createClient({
       prView: {

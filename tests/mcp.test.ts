@@ -173,6 +173,44 @@ describe('MCP Server', () => {
     vi.restoreAllMocks();
   });
 
+  it('Does `method_review_state` normalize currentBranch:false to the default current-branch query path?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const reviewStateQuery = vi.fn().mockResolvedValue({
+      status: 'no-pr',
+      pr_number: null,
+      pr_url: null,
+      review_decision: 'NONE',
+      unresolved_thread_count: 0,
+      checks: { passing: [], pending: [], failing: [] },
+      bot_review_state: 'none',
+      approval_count: 0,
+      changes_requested_count: 0,
+      merge_ready: false,
+      blockers: [{ type: 'selection', message: 'No PR found for current branch.', source: 'github' }],
+    });
+    const callToolHandler = createCallToolHarness({ reviewStateQuery });
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_review_state',
+        arguments: {
+          workspace: root,
+          currentBranch: false,
+        },
+      },
+    });
+
+    expect(result.isError).toBe(false);
+    expect(reviewStateQuery).toHaveBeenCalledWith({
+      cwd: root,
+      pr: undefined,
+      currentBranch: undefined,
+    });
+    expect(result.structuredContent.result.status).toBe('no-pr');
+    vi.restoreAllMocks();
+  });
+
   it('Does `method_status` preserve the legacy full-status default when the caller omits the new summary flag?', async () => {
     const root = createTempRoot();
     initWorkspace(root);
