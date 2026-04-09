@@ -125,6 +125,29 @@ describe('Method API', () => {
     });
   });
 
+  it('Repairs a legacy document title on read when YAML frontmatter is missing it.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    const path = 'docs/method/backlog/inbox/PROCESS_legacy-title.md';
+    writeFileSync(
+      join(root, path),
+      '# Legacy Title\n\nBody\n',
+      'utf8',
+    );
+
+    expect(workspace.readFrontmatter(path)).toMatchObject({
+      title: 'Legacy Title',
+    });
+
+    workspace.updateFrontmatter(path, { lane: 'up-next' });
+    expect(workspace.readFrontmatter(path)).toMatchObject({
+      title: 'Legacy Title',
+      lane: 'up-next',
+    });
+  });
+
   it('If I move an item to the lane it is already in, does METHOD still repair stale or missing frontmatter metadata?', () => {
     const root = createTempRoot();
     initWorkspace(root);

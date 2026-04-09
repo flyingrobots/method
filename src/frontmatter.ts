@@ -13,7 +13,12 @@ interface ParsedDoc {
 function parseDoc(path: string): ParsedDoc {
   const raw = readFileSync(path, 'utf8');
   if (!raw.startsWith(FM_DELIMITER)) {
-    return { frontmatter: {}, body: raw, raw };
+    const title = deriveLegacyTitle(raw);
+    return {
+      frontmatter: title === undefined ? {} : { title },
+      body: raw,
+      raw,
+    };
   }
 
   const end = raw.indexOf(FM_END, FM_DELIMITER.length);
@@ -35,6 +40,13 @@ function parseDoc(path: string): ParsedDoc {
   } catch {
     // Malformed YAML — return empty frontmatter, preserve raw
     frontmatter = {};
+  }
+
+  if ((frontmatter.title ?? '').trim().length === 0) {
+    const title = deriveLegacyTitle(raw);
+    if (title !== undefined) {
+      frontmatter.title = title;
+    }
   }
 
   return { frontmatter, body, raw };
@@ -97,4 +109,19 @@ export function readHeading(path: string): string {
     }
   }
   return '';
+}
+
+function deriveLegacyTitle(raw: string): string | undefined {
+  for (const line of raw.split(/\r?\n/u)) {
+    if (!line.startsWith('# ')) {
+      continue;
+    }
+
+    const title = line.slice(2).trim();
+    if (title.length > 0) {
+      return title;
+    }
+  }
+
+  return undefined;
 }

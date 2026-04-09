@@ -62,6 +62,11 @@ directly.
 CLI and MCP operators do not need a migration for this specific change
 because those surfaces already require explicit `outcome` values.
 
+Older repos may also carry legacy METHOD documents with incomplete
+frontmatter. This release tolerates a missing `title` by deriving it
+from the first Markdown heading on read, but it does not claim to
+auto-rewrite all legacy docs into the modern frontmatter contract.
+
 ## SemVer Impact
 
 Major (`1.0.0`).

@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "method": {
-      "command": "node",
-      "args": ["dist/cli.js", "mcp"]
-    }
-  }
-}
