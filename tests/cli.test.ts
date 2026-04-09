@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { runCli } from '../src/cli.js';
 
 class MemoryWriter {
@@ -267,6 +267,82 @@ describe('method CLI', () => {
     expect(exitCode).toBe(0);
     expect(stdout.output).toContain('inbox       0  -');
     expect(stdout.output).toContain('bad-code    0  -');
+  });
+
+  it('queries review-state with a shared engine result and renders human-readable output', async () => {
+    const root = createTempRoot();
+    await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    const stdout = new MemoryWriter();
+    const reviewStateQuery = vi.fn().mockResolvedValue({
+      status: 'blocked',
+      pr_number: 18,
+      pr_url: 'https://example.test/pr/18',
+      review_decision: 'CHANGES_REQUESTED',
+      unresolved_thread_count: 2,
+      checks: { passing: [], pending: [], failing: [] },
+      bot_review_state: 'commented',
+      approval_count: 0,
+      changes_requested_count: 1,
+      merge_ready: false,
+      blockers: [
+        { type: 'unresolved_threads', message: '2 unresolved review threads.', source: 'github' },
+      ],
+    });
+
+    const exitCode = await runCli(['review-state'], {
+      cwd: root,
+      stdout,
+      stderr: new MemoryWriter(),
+      reviewStateQuery,
+    });
+
+    expect(exitCode).toBe(0);
+    expect(reviewStateQuery).toHaveBeenCalledWith({ cwd: root, pr: undefined, currentBranch: undefined });
+    expect(stdout.output).toContain('Review state: blocked');
+    expect(stdout.output).toContain('PR: #18 https://example.test/pr/18');
+    expect(stdout.output).toContain('Blockers:');
+  });
+
+  it('emits review-state JSON when requested', async () => {
+    const root = createTempRoot();
+    await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    const stdout = new MemoryWriter();
+
+    const exitCode = await runCli(['review-state', '--pr', '18', '--json'], {
+      cwd: root,
+      stdout,
+      stderr: new MemoryWriter(),
+      reviewStateQuery: vi.fn().mockResolvedValue({
+        status: 'ready',
+        pr_number: 18,
+        pr_url: 'https://example.test/pr/18',
+        review_decision: 'APPROVED',
+        unresolved_thread_count: 0,
+        checks: { passing: [], pending: [], failing: [] },
+        bot_review_state: 'approved',
+        approval_count: 1,
+        changes_requested_count: 0,
+        merge_ready: true,
+        blockers: [],
+      }),
+    });
+
+    expect(exitCode).toBe(0);
+    expect(stdout.output).toContain('"status": "ready"');
+    expect(stdout.output).toContain('"pr_number": 18');
+  });
+
+  it('rejects mutually exclusive review-state selectors before running GitHub queries', async () => {
+    const stderr = new MemoryWriter();
+
+    const exitCode = await runCli(['review-state', '--pr', '18', '--current-branch'], {
+      cwd: createTempRoot(),
+      stdout: new MemoryWriter(),
+      stderr,
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stderr.output).toContain('either `--pr` or `--current-branch`');
   });
 
   it('refuses close when the drift check is not complete', async () => {

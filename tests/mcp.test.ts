@@ -7,6 +7,7 @@ import { createMcpServer } from '../src/mcp.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { initWorkspace, Workspace } from '../src/index.js';
+import type { ReviewStateResult } from '../src/review-state.js';
 
 const tempRoots: string[] = [];
 
@@ -24,7 +25,11 @@ function createTempRoot(): string {
   return root;
 }
 
-function createCallToolHarness() {
+function createCallToolHarness(
+  options: {
+    reviewStateQuery?: (options: { cwd: string; pr?: number; currentBranch?: boolean }) => Promise<ReviewStateResult>;
+  } = {},
+) {
   let callToolHandler: any;
   const mockServer = {
     setRequestHandler: vi.fn((schema, handler) => {
@@ -35,7 +40,7 @@ function createCallToolHarness() {
   };
 
   vi.spyOn(Server.prototype, 'setRequestHandler').mockImplementation(mockServer.setRequestHandler);
-  createMcpServer();
+  createMcpServer({ reviewStateQuery: options.reviewStateQuery });
   expect(callToolHandler).toBeDefined();
   return callToolHandler;
 }
@@ -66,6 +71,7 @@ describe('MCP Server', () => {
 
     const toolNames = result.tools.map((t: any) => t.name);
     expect(toolNames).toContain('method_status');
+    expect(toolNames).toContain('method_review_state');
     expect(toolNames).toContain('method_inbox');
     expect(toolNames).toContain('method_pull');
     expect(toolNames).toContain('method_close');
@@ -80,7 +86,128 @@ describe('MCP Server', () => {
     }
     const statusTool = result.tools.find((tool: any) => tool.name === 'method_status');
     expect(statusTool.inputSchema.properties.summary).toBeDefined();
+    const reviewStateTool = result.tools.find((tool: any) => tool.name === 'method_review_state');
+    expect(reviewStateTool.inputSchema.properties.pr).toBeDefined();
+    expect(reviewStateTool.inputSchema.properties.currentBranch).toBeDefined();
 
+    vi.restoreAllMocks();
+  });
+
+  it('Does `method_review_state` return the shared review-state result under structuredContent.result?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const reviewStateQuery = vi.fn().mockResolvedValue({
+      status: 'ready',
+      pr_number: 18,
+      pr_url: 'https://example.test/pr/18',
+      review_decision: 'APPROVED',
+      unresolved_thread_count: 0,
+      checks: { passing: [], pending: [], failing: [] },
+      bot_review_state: 'approved',
+      approval_count: 2,
+      changes_requested_count: 0,
+      merge_ready: true,
+      blockers: [],
+    });
+    const callToolHandler = createCallToolHarness({
+      reviewStateQuery,
+    });
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_review_state',
+        arguments: {
+          workspace: root,
+          pr: 18,
+        },
+      },
+    });
+
+    expect(result.isError).toBe(false);
+    expect(result.structuredContent.tool).toBe('method_review_state');
+    expect(result.structuredContent.result.pr_number).toBe(18);
+    expect(result.structuredContent.result.merge_ready).toBe(true);
+    expect(reviewStateQuery).toHaveBeenCalledWith({
+      cwd: root,
+      pr: 18,
+      currentBranch: undefined,
+    });
+    expect(result.content[0].text).toContain('Review state: ready');
+    vi.restoreAllMocks();
+  });
+
+  it('Does `method_review_state` reject invalid selector types before querying GitHub?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const reviewStateQuery = vi.fn();
+    const callToolHandler = createCallToolHarness({ reviewStateQuery });
+
+    const badPr = await callToolHandler({
+      params: {
+        name: 'method_review_state',
+        arguments: {
+          workspace: root,
+          pr: '18',
+        },
+      },
+    });
+
+    expect(badPr.isError).toBe(true);
+    expect(badPr.structuredContent.error.message).toContain('pr must be a positive integer');
+    expect(reviewStateQuery).not.toHaveBeenCalled();
+
+    const badSelector = await callToolHandler({
+      params: {
+        name: 'method_review_state',
+        arguments: {
+          workspace: root,
+          pr: 18,
+          currentBranch: true,
+        },
+      },
+    });
+
+    expect(badSelector.isError).toBe(true);
+    expect(badSelector.structuredContent.error.message).toContain('either pr or currentBranch');
+    expect(reviewStateQuery).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+  });
+
+  it('Does `method_review_state` normalize currentBranch:false to the default current-branch query path?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const reviewStateQuery = vi.fn().mockResolvedValue({
+      status: 'no-pr',
+      pr_number: null,
+      pr_url: null,
+      review_decision: 'NONE',
+      unresolved_thread_count: 0,
+      checks: { passing: [], pending: [], failing: [] },
+      bot_review_state: 'none',
+      approval_count: 0,
+      changes_requested_count: 0,
+      merge_ready: false,
+      blockers: [{ type: 'selection', message: 'No PR found for current branch.', source: 'github' }],
+    });
+    const callToolHandler = createCallToolHarness({ reviewStateQuery });
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_review_state',
+        arguments: {
+          workspace: root,
+          currentBranch: false,
+        },
+      },
+    });
+
+    expect(result.isError).toBe(false);
+    expect(reviewStateQuery).toHaveBeenCalledWith({
+      cwd: root,
+      pr: undefined,
+      currentBranch: undefined,
+    });
+    expect(result.structuredContent.result.status).toBe('no-pr');
     vi.restoreAllMocks();
   });
 

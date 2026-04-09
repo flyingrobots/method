@@ -8,6 +8,7 @@ export type ParsedCommand =
   | { command: 'pull'; item: string }
   | { command: 'close'; cycle?: string; driftCheck?: 'yes' | 'no'; outcome: Outcome }
   | { command: 'drift'; cycle?: string }
+  | { command: 'review-state'; pr?: number; currentBranch?: boolean; json?: boolean }
   | { command: 'status' }
   | { command: 'mcp' }
   | { command: 'sync'; adapter: 'github'; push?: boolean; pull?: boolean }
@@ -41,6 +42,8 @@ export function parseCliArgs(argv: readonly string[]): ParsedCommand {
       return parseCloseArgs(rest);
     case 'drift':
       return parseDriftArgs(rest);
+    case 'review-state':
+      return parseReviewStateArgs(rest);
     case 'status':
       if (rest.length > 0) {
         throw new MethodError('`status` does not take any arguments.');
@@ -77,7 +80,7 @@ export function parseCliArgs(argv: readonly string[]): ParsedCommand {
   }
 }
 
-export const CLI_TOPICS = ['init', 'inbox', 'pull', 'close', 'status', 'drift', 'mcp', 'sync'] as const;
+export const CLI_TOPICS = ['init', 'inbox', 'pull', 'close', 'status', 'drift', 'review-state', 'mcp', 'sync'] as const;
 
 export function usage(topic?: string): string {
   if (topic === 'init') {
@@ -101,6 +104,15 @@ export function usage(topic?: string): string {
       '',
       'Check active cycle playback questions against test descriptions in tests/.',
       'First cut scans tests/**/*.test.* and tests/**/*.spec.* only.',
+    ].join('\n');
+  }
+
+  if (topic === 'review-state') {
+    return [
+      'Usage: method review-state [--pr NUMBER | --current-branch] [--json]',
+      '',
+      'Query PR review / merge-readiness state for the current branch or an explicit PR.',
+      'Defaults to --current-branch when no selector flag is provided.',
     ].join('\n');
   }
 
@@ -129,6 +141,7 @@ export function usage(topic?: string): string {
     '  pull <item>                 Promote a backlog item into a cycle.',
     '  close [cycle]               Write a retro for an active cycle.',
     '  drift [cycle]               Check active cycle playback questions against tests.',
+    '  review-state                Query PR review / merge-readiness state.',
     '  status                      Show backlog, active cycles, and legend health.',
     '  mcp                         Start the MCP server over stdio.',
     '  sync github [--push|--pull] Sync backlog with GitHub Issues.',
@@ -238,6 +251,41 @@ function parseDriftArgs(args: readonly string[]): ParsedCommand {
   return { command: 'drift', cycle: args[0] };
 }
 
+function parseReviewStateArgs(args: readonly string[]): ParsedCommand {
+  let pr: number | undefined;
+  let currentBranch: boolean | undefined;
+  let json = false;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const value = args[index];
+    if (value === '--json') {
+      json = true;
+      continue;
+    }
+    if (value === '--current-branch') {
+      currentBranch = true;
+      continue;
+    }
+    if (value === '--pr') {
+      const rawValue = requireOptionValue(args, index, '--pr');
+      pr = parsePositiveInteger(rawValue, '--pr');
+      index += 1;
+      continue;
+    }
+    if (value.startsWith('--pr=')) {
+      pr = parsePositiveInteger(value.slice('--pr='.length), '--pr');
+      continue;
+    }
+    throw new MethodError(`Unknown option: ${value}`);
+  }
+
+  if (pr !== undefined && currentBranch) {
+    throw new MethodError('`review-state` accepts either `--pr` or `--current-branch`, not both.');
+  }
+
+  return { command: 'review-state', pr, currentBranch, json };
+}
+
 function requireOptionValue(args: readonly string[], index: number, optionName: string): string {
   const value = args[index + 1];
   if (value === undefined || value.startsWith('-')) {
@@ -258,4 +306,12 @@ function parseOutcomeValue(value: string): Outcome {
     return value;
   }
   throw new MethodError('`--outcome` must be `hill-met`, `partial`, or `not-met`.');
+}
+
+function parsePositiveInteger(value: string, optionName: string): number {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new MethodError(`${optionName} must be a positive integer.`);
+  }
+  return parsed;
 }

@@ -1,18 +1,80 @@
 ---
 title: "Review State Query"
-legend: PROCESS
-lane: cool-ideas
-owner: "METHOD maintainers"
-priority: medium
-acceptance_criteria:
-  - "The review-state surface reports CI/check status, unresolved review-thread count, review decision, and bot-review pending state for the active PR."
-  - "The output contract is explicit for both CLI and MCP: `method review-state` supports `--json`, `method_review_state` returns the standard structured-content envelope, and both share the same result schema."
-  - "The output includes a deterministic merge_ready boolean plus a canonical blocker schema naming exactly which states still prevent merge."
-  - "Selector precedence is explicit: `method review-state` defaults to `--current-branch`, rejects `--pr` with `--current-branch`, and defines deterministic no-PR and ambiguous-PR outputs."
-  - "Humans and agents can answer 'is this PR actually mergeable yet?' without manually reconstructing GitHub thread/check state."
+legend: "PROCESS"
+cycle: "0034-review-state-query"
+source_backlog: "docs/method/backlog/cool-ideas/PROCESS_review-state-query.md"
 ---
 
 # Review State Query
+
+Source backlog item: `docs/method/backlog/cool-ideas/PROCESS_review-state-query.md`
+Legend: PROCESS
+
+## Sponsors
+
+- Human: Backlog operator
+- Agent: Implementation agent
+
+## Hill
+
+Land a METHOD-native review-state surface that answers "what is under
+review and is it merge-ready?" without forcing humans or agents to
+reconstruct `gh` state ad hoc. The first cut must ship one shared
+engine behind both CLI and MCP, with deterministic selector behavior,
+structured blockers, and explicit handling for unresolved threads,
+checks, sticky review decisions, and observable bot cooldowns.
+
+## Playback Questions
+
+### Human
+
+- [ ] Can I run `method review-state` on the current branch or an
+      explicit PR and get a bounded summary of blockers and
+      merge-readiness?
+- [ ] When no PR exists or multiple PRs match the branch, do I get a
+      deterministic result instead of a vague shell failure?
+
+### Agent
+
+- [ ] Does the CLI `--json` output exactly match the MCP
+      `structuredContent.result` contract?
+- [ ] Do unresolved review threads remain the primary blockers when
+      `reviewDecision` is still `CHANGES_REQUESTED`?
+- [ ] Does the result surface explicit bot cooldown / review-in-progress
+      states only when they are observable in GitHub data?
+
+## Accessibility and Assistive Reading
+
+- Linear truth / reduced-complexity posture:
+  default CLI output must stay short, ordered, and label-driven so a
+  human can scan it top-to-bottom without parsing raw JSON or nested
+  GitHub state.
+- Non-visual or alternate-reading expectations:
+  JSON mode and MCP output must carry the full machine contract so
+  screen-reader or agent callers do not lose fidelity compared with the
+  prose summary.
+
+## Localization and Directionality
+
+- Locale / wording / formatting assumptions:
+  the first cut is English-only and preserves GitHub enum vocabulary
+  (`APPROVED`, `CHANGES_REQUESTED`, `REVIEW_REQUIRED`) rather than
+  inventing localized labels.
+- Logical direction / layout assumptions:
+  output is plain left-to-right text / JSON with no layout-specific
+  affordances.
+
+## Agent Inspectability and Explainability
+
+- What must be explicit and deterministic for agents:
+  selector rules, result field presence, blocker types, and null/zero
+  behavior for `no-pr` / `ambiguous-pr` cases must be fixed and tested.
+- What must be attributable, evidenced, or governed:
+  cooldown blockers must only appear when the latest observable bot
+  signal actually contains a rate-limit message; the engine must not
+  invent hidden policy state.
+
+## Backlog Context
 
 METHOD currently says review state is not part of the repo-native
 coordination surface. A dedicated query or signpost that summarizes what

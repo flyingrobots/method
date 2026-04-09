@@ -26,9 +26,12 @@ src/
   domain.ts
   drift.ts
   errors.ts
+  frontmatter.ts
   generate.ts
   index.ts
   mcp.ts
+  renderers.ts
+  review-state.ts
 ```
 <!-- /generate -->
 
@@ -101,7 +104,7 @@ Two-way sync between the local backlog and GitHub Issues:
 ## Testing
 
 <!-- generate:test-summary -->
-12 test files in `tests/` using Vitest:
+13 test files in `tests/` using Vitest:
 
 - `api.test.ts`
 - `cli.test.ts`
@@ -113,6 +116,7 @@ Two-way sync between the local backlog and GitHub Issues:
 - `generate.test.ts`
 - `github-adapter.test.ts`
 - `mcp.test.ts`
+- `review-state.test.ts`
 - `ship-sync.test.ts`
 - `witness.test.ts`
 
@@ -128,5 +132,6 @@ shell command execution during witness capture.
 - `@flyingrobots/bijou-node`
 - `@git-stunts/plumbing`
 - `@modelcontextprotocol/sdk`
+- `yaml`
 - `zod`
 <!-- /generate -->
