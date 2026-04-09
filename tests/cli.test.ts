@@ -269,38 +269,67 @@ describe('method CLI', () => {
     expect(stdout.output).toContain('bad-code    0  -');
   });
 
-  it('queries review-state with a shared engine result and renders human-readable output', async () => {
+  it('Can I run `method review-state` on the current branch or an explicit PR and get a bounded summary of blockers and merge-readiness?', async () => {
     const root = createTempRoot();
     await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
-    const stdout = new MemoryWriter();
-    const reviewStateQuery = vi.fn().mockResolvedValue({
-      status: 'blocked',
-      pr_number: 18,
-      pr_url: 'https://example.test/pr/18',
-      review_decision: 'CHANGES_REQUESTED',
-      unresolved_thread_count: 2,
-      checks: { passing: [], pending: [], failing: [] },
-      bot_review_state: 'commented',
-      approval_count: 0,
-      changes_requested_count: 1,
-      merge_ready: false,
-      blockers: [
-        { type: 'unresolved_threads', message: '2 unresolved review threads.', source: 'github' },
-      ],
+    const currentBranchStdout = new MemoryWriter();
+    const explicitPrStdout = new MemoryWriter();
+    const reviewStateQuery = vi.fn().mockImplementation(async ({ pr }: { pr?: number }) => {
+      if (pr === 18) {
+        return {
+          status: 'ready',
+          pr_number: 18,
+          pr_url: 'https://example.test/pr/18',
+          review_decision: 'APPROVED',
+          unresolved_thread_count: 0,
+          checks: { passing: [], pending: [], failing: [] },
+          bot_review_state: 'approved',
+          approval_count: 1,
+          changes_requested_count: 0,
+          merge_ready: true,
+          blockers: [],
+        };
+      }
+
+      return {
+        status: 'blocked',
+        pr_number: 18,
+        pr_url: 'https://example.test/pr/18',
+        review_decision: 'CHANGES_REQUESTED',
+        unresolved_thread_count: 2,
+        checks: { passing: [], pending: [], failing: [] },
+        bot_review_state: 'commented',
+        approval_count: 0,
+        changes_requested_count: 1,
+        merge_ready: false,
+        blockers: [
+          { type: 'unresolved_threads', message: '2 unresolved review threads.', source: 'github' },
+        ],
+      };
     });
 
-    const exitCode = await runCli(['review-state'], {
+    const currentBranchExitCode = await runCli(['review-state'], {
       cwd: root,
-      stdout,
+      stdout: currentBranchStdout,
+      stderr: new MemoryWriter(),
+      reviewStateQuery,
+    });
+    const explicitPrExitCode = await runCli(['review-state', '--pr', '18'], {
+      cwd: root,
+      stdout: explicitPrStdout,
       stderr: new MemoryWriter(),
       reviewStateQuery,
     });
 
-    expect(exitCode).toBe(0);
-    expect(reviewStateQuery).toHaveBeenCalledWith({ cwd: root, pr: undefined, currentBranch: undefined });
-    expect(stdout.output).toContain('Review state: blocked');
-    expect(stdout.output).toContain('PR: #18 https://example.test/pr/18');
-    expect(stdout.output).toContain('Blockers:');
+    expect(currentBranchExitCode).toBe(0);
+    expect(explicitPrExitCode).toBe(0);
+    expect(reviewStateQuery).toHaveBeenNthCalledWith(1, { cwd: root, pr: undefined, currentBranch: undefined });
+    expect(reviewStateQuery).toHaveBeenNthCalledWith(2, { cwd: root, pr: 18, currentBranch: undefined });
+    expect(currentBranchStdout.output).toContain('Review state: blocked');
+    expect(currentBranchStdout.output).toContain('PR: #18 https://example.test/pr/18');
+    expect(currentBranchStdout.output).toContain('Blockers:');
+    expect(explicitPrStdout.output).toContain('Review state: ready');
+    expect(explicitPrStdout.output).toContain('Merge ready: yes');
   });
 
   it('emits review-state JSON when requested', async () => {

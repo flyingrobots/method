@@ -2,6 +2,41 @@ import { describe, expect, it } from 'vitest';
 import { queryReviewState, type ReviewStateClient } from '../src/review-state.js';
 
 describe('review-state engine', () => {
+  it('When no PR exists or multiple PRs match the branch, do I get a deterministic result instead of a vague shell failure?', async () => {
+    const noPrClient = createClient({
+      gitBranch: 'cycles/0034-review-state-query',
+      prList: [],
+    });
+    const ambiguousClient = createClient({
+      gitBranch: 'feature/review-state',
+      prList: [{ number: 17, url: 'https://example.test/pr/17' }, { number: 18, url: 'https://example.test/pr/18' }],
+    });
+
+    const noPrResult = await queryReviewState({
+      cwd: '/tmp/method',
+      client: noPrClient,
+    });
+    const ambiguousResult = await queryReviewState({
+      cwd: '/tmp/method',
+      client: ambiguousClient,
+    });
+
+    expect(noPrResult.status).toBe('no-pr');
+    expect(noPrResult.blockers).toEqual([
+      {
+        type: 'selection',
+        message: 'No PR found for current branch: cycles/0034-review-state-query.',
+        source: 'github',
+      },
+    ]);
+    expect(ambiguousResult.status).toBe('ambiguous-pr');
+    expect(ambiguousResult.blockers[0]).toEqual({
+      type: 'selection',
+      message: 'Multiple PRs match current branch (feature/review-state); rerun with --pr <number>.',
+      source: 'github',
+    });
+  });
+
   it('returns a deterministic no-pr result when the current branch has no open PR', async () => {
     const client = createClient({
       gitBranch: 'cycles/0034-review-state-query',
@@ -54,7 +89,7 @@ describe('review-state engine', () => {
     })).rejects.toThrow('review-state requires either --pr or --current-branch');
   });
 
-  it('treats unresolved threads as the live blockers and suppresses stale CHANGES_REQUESTED duplication', async () => {
+  it('Do unresolved review threads remain the primary blockers when `reviewDecision` is still `CHANGES_REQUESTED`?', async () => {
     const client = createClient({
       gitBranch: 'feature/review-state',
       prList: [{ number: 18, url: 'https://example.test/pr/18' }],
@@ -141,8 +176,38 @@ describe('review-state engine', () => {
     });
   });
 
-  it('detects explicit bot cooldown messages from the latest bot signal', async () => {
-    const client = createClient({
+  it('Does the result surface explicit bot cooldown / review-in-progress states only when they are observable in GitHub data?', async () => {
+    const pendingClient = createClient({
+      prView: {
+        number: 21,
+        url: 'https://example.test/pr/21',
+        reviewDecision: 'APPROVED',
+        statusCheckRollup: [
+          {
+            __typename: 'CheckRun',
+            workflowName: 'CI',
+            name: 'test',
+            status: 'COMPLETED',
+            conclusion: 'SUCCESS',
+            detailsUrl: 'https://example.test/checks/test',
+          },
+          {
+            __typename: 'StatusContext',
+            context: 'CodeRabbit',
+            state: 'PENDING',
+            targetUrl: 'https://example.test/checks/coderabbit',
+            startedAt: '2026-04-09T07:30:00Z',
+          },
+        ],
+        reviews: [
+          { author: { login: 'reviewer-one' }, state: 'APPROVED', submittedAt: '2026-04-09T07:15:00Z' },
+          { author: { login: 'coderabbitai' }, state: 'CHANGES_REQUESTED', submittedAt: '2026-04-09T07:00:00Z' },
+        ],
+        comments: [],
+      },
+      unresolvedThreads: [],
+    });
+    const cooldownClient = createClient({
       prView: {
         number: 22,
         url: 'https://example.test/pr/22',
@@ -166,14 +231,30 @@ describe('review-state engine', () => {
       unresolvedThreads: [],
     });
 
-    const result = await queryReviewState({
+    const pendingResult = await queryReviewState({
+      cwd: '/tmp/method',
+      pr: 21,
+      client: pendingClient,
+    });
+    const cooldownResult = await queryReviewState({
       cwd: '/tmp/method',
       pr: 22,
-      client,
+      client: cooldownClient,
     });
 
-    expect(result.bot_review_state).toBe('commented');
-    expect(result.blockers).toContainEqual({
+    expect(pendingResult.bot_review_state).toBe('pending');
+    expect(pendingResult.blockers).toContainEqual({
+      type: 'bot_review',
+      message: 'CodeRabbit review in progress.',
+      source: 'CodeRabbit',
+    });
+    expect(pendingResult.blockers).toContainEqual({
+      type: 'pending_checks',
+      message: '1 pending check.',
+      source: 'github',
+    });
+    expect(cooldownResult.bot_review_state).toBe('commented');
+    expect(cooldownResult.blockers).toContainEqual({
       type: 'policy_cooldown',
       message: 'Review cooldown active: wait 14 minutes and 30 seconds before requesting another review.',
       source: 'coderabbitai',

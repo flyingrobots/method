@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GitHubAdapter } from '../src/adapters/github.js';
+import { runCli } from '../src/cli.js';
 import { createMcpServer } from '../src/mcp.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
@@ -23,6 +24,15 @@ function createTempRoot(): string {
   const root = mkdtempSync(join(tmpdir(), 'method-mcp-'));
   tempRoots.push(root);
   return root;
+}
+
+class MemoryWriter {
+  output = '';
+
+  write(chunk: string): boolean {
+    this.output += chunk;
+    return true;
+  }
 }
 
 function createCallToolHarness(
@@ -134,6 +144,48 @@ describe('MCP Server', () => {
     });
     expect(result.content[0].text).toContain('Review state: ready');
     vi.restoreAllMocks();
+  });
+
+  it('Does the CLI `--json` output exactly match the MCP `structuredContent.result` contract?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const sharedResult = {
+      status: 'ready',
+      pr_number: 18,
+      pr_url: 'https://example.test/pr/18',
+      review_decision: 'APPROVED',
+      unresolved_thread_count: 0,
+      checks: { passing: [], pending: [], failing: [] },
+      bot_review_state: 'approved',
+      approval_count: 2,
+      changes_requested_count: 0,
+      merge_ready: true,
+      blockers: [],
+    } satisfies ReviewStateResult;
+    const reviewStateQuery = vi.fn().mockResolvedValue(sharedResult);
+    const callToolHandler = createCallToolHarness({ reviewStateQuery });
+    const stdout = new MemoryWriter();
+
+    const cliExitCode = await runCli(['review-state', '--pr', '18', '--json'], {
+      cwd: root,
+      stdout,
+      stderr: new MemoryWriter(),
+      reviewStateQuery,
+    });
+    const mcpResult = await callToolHandler({
+      params: {
+        name: 'method_review_state',
+        arguments: {
+          workspace: root,
+          pr: 18,
+        },
+      },
+    });
+
+    expect(cliExitCode).toBe(0);
+    expect(JSON.parse(stdout.output)).toEqual(sharedResult);
+    expect(mcpResult.isError).toBe(false);
+    expect(mcpResult.structuredContent.result).toEqual(sharedResult);
   });
 
   it('Does `method_review_state` reject invalid selector types before querying GitHub?', async () => {
