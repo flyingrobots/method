@@ -22,6 +22,8 @@ evidence must be completed from `main` after this prep branch lands.
 - Base `main` head at prep start: `39cb47c572c1ddf6e89ea4aeca3b6ecba20863bd`
 - Release-prep commit carrying the version bump and package hardening:
   `95610cb6817943db932b42934da120e08f6b1e23`
+- Current release-prep head after closing cycles `0034` and `0035`:
+  `507dac54fdd37d80796f3ada3e35ab8692399f1c`
 
 ## Guards
 
@@ -33,9 +35,9 @@ evidence must be completed from `main` after this prep branch lands.
 ## Validation
 
 - Build (`npm run build`): PASS
-- Tests (`npm test`): PASS, 175/175 tests across 15 files
+- Tests (`npm test`): PASS, 182/182 tests across 16 files
 - Pack dry-run (`npm pack --dry-run --json`): PASS,
-  `method-1.0.0.tgz`, 35 files, 46,971 bytes packed / 180,928 bytes
+  `method-1.0.0.tgz`, 35 files, 47,357 bytes packed / 182,236 bytes
   unpacked
 - Audit (`npm audit`): PASS, 0 vulnerabilities
 - Diff whitespace check (`git diff --check`): PASS
@@ -67,6 +69,14 @@ Observed exclusions during dry-run:
 - no `docs/` files
 - no dotfiles
 - no `.map` files
+
+Observed release-prep cleanup state:
+
+- no active cycle packets remain open on this branch
+- local tool files such as `.mcp.json` and `.claude/settings.local.json`
+  are ignored rather than tracked
+- the ad hoc `backfill_frontmatter.cjs` script is no longer a repo
+  artifact
 
 ## Final Release Steps Pending
 

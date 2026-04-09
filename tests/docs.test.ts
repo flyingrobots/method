@@ -520,7 +520,7 @@ describe('METHOD docs', () => {
 
   it('`docs/VISION.md` summary is accurate for the current closed-cycle state and active-cycle posture.', () => {
     const vision = readRepoFile('docs/VISION.md');
-    expect(vision).toContain('Thirty-three cycles are');
+    expect(vision).toContain('Thirty-five cycles are');
     expect(vision).toContain('0005-drift-detector');
     expect(vision).toContain('0006-ci-gates');
     expect(vision).toContain('0007-cli-module-split');
@@ -542,7 +542,8 @@ describe('METHOD docs', () => {
     expect(vision).toContain('0032-mcp-tool-result-contract');
     expect(vision).toContain('0033-bearing-truthfulness');
     expect(vision).toContain('0034-review-state-query');
-    expect(vision).toContain('one active cycle remains open on `main`');
+    expect(vision).toContain('0035-method-repo-self-discipline');
+    expect(vision).toContain('no cycle packets are currently open on this branch');
   });
 
   it('`docs.test.ts` validates that `docs/VISION.md` frontmatter contains all mandatory fields (`generated_at`, `generator`, `generated_from_commit`, `provenance_level`, `witness_ref`, `source_files`).', () => {
