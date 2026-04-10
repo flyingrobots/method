@@ -3,6 +3,7 @@ import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprot
 import { basename, relative } from 'node:path';
 import { Workspace } from './index.js';
 import { GitHubAdapter, type GitHubSyncResult } from './adapters/github.js';
+import { renderDoctorText, runDoctor } from './doctor.js';
 import type { Cycle, Outcome, WorkspaceStatus } from './domain.js';
 import { queryReviewState, renderReviewStateText, type ReviewStateQueryOptions } from './review-state.js';
 
@@ -27,6 +28,15 @@ export interface McpToolDef {
 }
 
 export const MCP_TOOLS: McpToolDef[] = [
+  {
+    name: 'method_doctor',
+    description: 'Inspect METHOD workspace health and report concrete problems with suggested fixes, even when the workspace is partially broken.',
+    inputSchema: {
+      type: 'object',
+      properties: { ...workspaceProperty },
+      required: ['workspace'],
+    },
+  },
   {
     name: 'method_review_state',
     description: 'Get PR review / merge-readiness state for the current branch or an explicit PR. `pr` and `currentBranch` are mutually exclusive; when `pr` is omitted, current-branch resolution is the default behavior.',
@@ -130,6 +140,15 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
       const workspacePath = args.workspace as string | undefined;
       if (!workspacePath) {
         throw new Error('workspace is required. Pass the absolute path to the METHOD workspace root directory.');
+      }
+
+      if (request.params.name === 'method_doctor') {
+        const report = runDoctor(workspacePath);
+        return successResult(
+          'method_doctor',
+          renderDoctorText(report),
+          report,
+        );
       }
 
       const workspace = new Workspace(workspacePath);

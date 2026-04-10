@@ -2,6 +2,7 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { initWorkspace } from '../src/index.js';
 import { runCli } from '../src/cli.js';
 
 class MemoryWriter {
@@ -61,6 +62,50 @@ describe('method CLI', () => {
     expect(stdout.output).toContain('Usage: method close');
     expect(stdout.output).toContain('Close an active cycle into docs/method/retro/.');
     expect(stdout.output).toContain('--outcome hill-met|partial|not-met');
+  });
+
+  it('Does `method doctor --json` return a bounded workspace health report without throwing on malformed `.method.json`?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    writeFileSync(join(root, '.method.json'), '{ broken json }\n', 'utf8');
+    const stdout = new MemoryWriter();
+
+    const exitCode = await runCli(['doctor', '--json'], {
+      cwd: root,
+      stdout,
+      stderr: new MemoryWriter(),
+    });
+
+    const report = JSON.parse(stdout.output);
+    expect(exitCode).toBe(1);
+    expect(report.status).toBe('error');
+    expect(report.issues).toContainEqual(expect.objectContaining({
+      code: 'config-parse-failed',
+      check: 'config',
+    }));
+  });
+
+  it('Does `method doctor` surface missing required paths and malformed frontmatter with fix suggestions?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    rmSync(join(root, 'docs/design'), { recursive: true, force: true });
+    writeFileSync(
+      join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'),
+      '# Missing Frontmatter\n\nBody\n',
+      'utf8',
+    );
+    const stdout = new MemoryWriter();
+
+    const exitCode = await runCli(['doctor'], {
+      cwd: root,
+      stdout,
+      stderr: new MemoryWriter(),
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stdout.output).toContain('missing-directory');
+    expect(stdout.output).toContain('missing-frontmatter');
+    expect(stdout.output).toContain('Fix:');
   });
 
   it('captures backlog ideas in inbox', async () => {

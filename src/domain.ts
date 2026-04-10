@@ -40,3 +40,47 @@ export const WorkspaceStatusSchema = z.object({
   legendHealth: z.array(LegendHealthSchema),
 });
 export type WorkspaceStatus = z.infer<typeof WorkspaceStatusSchema>;
+
+export const DoctorStatusSchema = z.enum(['ok', 'warn', 'error']);
+export type DoctorStatus = z.infer<typeof DoctorStatusSchema>;
+
+export const DoctorSeveritySchema = z.enum(['warning', 'error']);
+export type DoctorSeverity = z.infer<typeof DoctorSeveritySchema>;
+
+export const DoctorCheckIdSchema = z.enum([
+  'config',
+  'structure',
+  'frontmatter',
+  'git-hooks',
+  'backlog',
+]);
+export type DoctorCheckId = z.infer<typeof DoctorCheckIdSchema>;
+
+export const DoctorCheckSchema = z.object({
+  id: DoctorCheckIdSchema,
+  status: DoctorStatusSchema,
+  message: z.string(),
+});
+export type DoctorCheck = z.infer<typeof DoctorCheckSchema>;
+
+export const DoctorIssueSchema = z.object({
+  code: z.string(),
+  check: DoctorCheckIdSchema,
+  severity: DoctorSeveritySchema,
+  message: z.string(),
+  path: z.string().optional(),
+  fix: z.string(),
+});
+export type DoctorIssue = z.infer<typeof DoctorIssueSchema>;
+
+export const DoctorReportSchema = z.object({
+  root: z.string(),
+  status: DoctorStatusSchema,
+  checks: z.array(DoctorCheckSchema),
+  issues: z.array(DoctorIssueSchema),
+  counts: z.object({
+    errors: z.number().int().nonnegative(),
+    warnings: z.number().int().nonnegative(),
+  }),
+});
+export type DoctorReport = z.infer<typeof DoctorReportSchema>;

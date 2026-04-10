@@ -19,6 +19,10 @@ operations. Run `method help` for a quick summary or
 
 Scaffold a METHOD workspace in the given directory.
 
+### `method doctor [--json]`
+
+Inspect METHOD workspace health without mutating it.
+
 ### `method inbox <idea> [--legend CODE] [--title TITLE]`
 
 Capture a raw idea in docs/method/backlog/inbox/.

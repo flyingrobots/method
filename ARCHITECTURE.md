@@ -23,6 +23,7 @@ src/
   cli-renderer.ts
   cli.ts
   config.ts
+  doctor.ts
   domain.ts
   drift.ts
   errors.ts
@@ -104,12 +105,13 @@ Two-way sync between the local backlog and GitHub Issues:
 ## Testing
 
 <!-- generate:test-summary -->
-16 test files in `tests/` using Vitest:
+17 test files in `tests/` using Vitest:
 
 - `api.test.ts`
 - `cli.test.ts`
 - `config.test.ts`
 - `docs.test.ts`
+- `doctor.test.ts`
 - `domain.test.ts`
 - `drift.test.ts`
 - `exec.test.ts`

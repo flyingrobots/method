@@ -370,6 +370,7 @@ If you can answer these questions by reading the repo, you do not need
 a standup:
 
 - What is actively open in this workspace? -> `method status`
+- Is this workspace structurally healthy? -> `method doctor`
 - What is under review? -> `method review-state`
 - What is committed? -> each design doc names its sponsors and hill
 - What is next? -> `ls docs/method/backlog/asap/`
@@ -480,14 +481,14 @@ Run during development:
 npm run method -- status
 ```
 
-Core commands: `method init`, `method inbox`, `method pull`,
-`method close`, `method drift`, `method status`, `method mcp`,
-`method sync github`, `method sync ship`.
+Core commands: `method init`, `method doctor`, `method inbox`,
+`method pull`, `method close`, `method drift`, `method status`,
+`method mcp`, `method sync github`, `method sync ship`.
 
 See `docs/CLI.md` for the full command reference with flags and
 examples. See `docs/MCP.md` for the MCP tool reference
-(`method_status`, `method_inbox`, `method_pull`, `method_drift`,
-`method_close`, `method_sync_ship`, `method_sync_github`,
+(`method_doctor`, `method_status`, `method_inbox`, `method_pull`,
+`method_drift`, `method_close`, `method_sync_ship`, `method_sync_github`,
 `method_capture_witness`).
 
 Repo-local CI currently uses GitHub Actions as a host adapter through

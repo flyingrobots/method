@@ -4,6 +4,7 @@ import { MethodError } from './errors.js';
 export type ParsedCommand =
   | { command: 'help'; topic?: string }
   | { command: 'init'; path: string }
+  | { command: 'doctor'; json?: boolean }
   | { command: 'inbox'; idea: string; legend?: string; title?: string }
   | { command: 'pull'; item: string }
   | { command: 'close'; cycle?: string; driftCheck?: 'yes' | 'no'; outcome: Outcome }
@@ -34,6 +35,8 @@ export function parseCliArgs(argv: readonly string[]): ParsedCommand {
   switch (command) {
     case 'init':
       return parseInitArgs(rest);
+    case 'doctor':
+      return parseDoctorArgs(rest);
     case 'inbox':
       return parseInboxArgs(rest);
     case 'pull':
@@ -80,11 +83,18 @@ export function parseCliArgs(argv: readonly string[]): ParsedCommand {
   }
 }
 
-export const CLI_TOPICS = ['init', 'inbox', 'pull', 'close', 'status', 'drift', 'review-state', 'mcp', 'sync'] as const;
+export const CLI_TOPICS = ['init', 'doctor', 'inbox', 'pull', 'close', 'status', 'drift', 'review-state', 'mcp', 'sync'] as const;
 
 export function usage(topic?: string): string {
   if (topic === 'init') {
     return 'Usage: method init [path]\n\nScaffold a METHOD workspace in the given directory.';
+  }
+  if (topic === 'doctor') {
+    return [
+      'Usage: method doctor [--json]',
+      '',
+      'Inspect METHOD workspace health without mutating it.',
+    ].join('\n');
   }
   if (topic === 'inbox') {
     return 'Usage: method inbox <idea> [--legend CODE] [--title TITLE]\n\nCapture a raw idea in docs/method/backlog/inbox/.';
@@ -137,6 +147,7 @@ export function usage(topic?: string): string {
     '',
     'Commands:',
     '  init [path]                 Scaffold a METHOD workspace.',
+    '  doctor [--json]             Inspect workspace health and suggest fixes.',
     '  inbox <idea>                Capture a raw idea in inbox/.',
     '  pull <item>                 Promote a backlog item into a cycle.',
     '  close [cycle]               Write a retro for an active cycle.',
@@ -156,6 +167,20 @@ function parseInitArgs(args: readonly string[]): ParsedCommand {
     throw new MethodError('Usage: method init [path]');
   }
   return { command: 'init', path: args[0] ?? '.' };
+}
+
+function parseDoctorArgs(args: readonly string[]): ParsedCommand {
+  let json = false;
+
+  for (const value of args) {
+    if (value === '--json') {
+      json = true;
+      continue;
+    }
+    throw new MethodError(`Unknown option: ${value}`);
+  }
+
+  return { command: 'doctor', json };
 }
 
 function parseInboxArgs(args: readonly string[]): ParsedCommand {
