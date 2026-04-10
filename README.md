@@ -11,6 +11,13 @@ things. Both are named in every design as abstract roles (e.g.,
 "Repository Operator", "System Architect"). Both must agree before work
 ships.
 
+**The METHOD repo gets no special pleading.** The repository that
+defines METHOD should use METHOD on itself. If repo truth conflicts with
+`README.md`, `docs/GUIDE.md`, `docs/method/process.md`, or release
+doctrine, repair the repo or evolve the method through an explicit
+cycle. Do not treat the tool's own repo as exempt from the bookkeeping
+it asks of others.
+
 **Default to building the agent surface first** - it is the foundation
 the human experience stands on. If the work is human-first exploratory
 design, say so in the design doc.

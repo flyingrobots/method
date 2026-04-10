@@ -14,6 +14,12 @@ If a practice proves durable and load-bearing, it can graduate into the
 core method later. Until then, this is guidance: useful, explicit, and
 non-binding.
 
+For the METHOD repo itself, "non-binding" is not permission to drift.
+If this guide repeatedly governs real work in this repository, the repo
+should either follow it honestly, promote it into doctrine, or retire
+it. The METHOD repo does not get a carve-out from its own operating
+notes.
+
 ## Capture ideas immediately
 
 If a backlog-worthy idea surfaces during the work, capture it now.
@@ -62,6 +68,11 @@ Some things are worth saying before they are worth standardizing.
 `README.md` and `docs/method/process.md` describe the load-bearing
 contract of METHOD. This guide is for patterns that help in practice
 but are not yet strong enough to claim as universal rules.
+
+That distinction still requires honesty. For the METHOD repo, guidance
+must not become a shadow process that we invoke when useful and ignore
+when inconvenient. If a guide note is doing real governance work, say so
+more strongly or stop pretending it matters.
 
 ## Signposts
 
