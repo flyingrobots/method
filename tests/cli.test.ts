@@ -257,6 +257,10 @@ describe('method CLI', () => {
     expect(stdout.output).toContain('0001-method-cli');
     expect(stdout.output).toContain('SYNTH');
     expect(stdout.output).toContain('PROCESS');
+    expect(stdout.output).not.toContain('PROTO');
+    expect(stdout.output).not.toContain('FEAT');
+    expect(stdout.output).not.toContain('VIZ');
+    expect(stdout.output).not.toContain('TUI');
   });
 
   it('shows status for a clone-like workspace even when empty lane directories are absent', async () => {
