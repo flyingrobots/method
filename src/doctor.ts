@@ -9,7 +9,7 @@ import { LANES } from './domain.js';
 import { parse as parseYaml } from 'yaml';
 
 interface ConfigInspection {
-  paths: PathsConfig;
+  paths: PathsConfig | null;
   issues: DoctorIssue[];
 }
 
@@ -23,10 +23,10 @@ const DOCTOR_CHECKS: readonly DoctorCheckId[] = [
 
 export function runDoctor(root: string): DoctorReport {
   const configInspection = inspectConfig(root);
-  const structureIssues = inspectStructure(root, configInspection.paths);
-  const frontmatterIssues = inspectFrontmatter(root, configInspection.paths);
+  const structureIssues = configInspection.paths === null ? [] : inspectStructure(root, configInspection.paths);
+  const frontmatterIssues = configInspection.paths === null ? [] : inspectFrontmatter(root, configInspection.paths);
   const gitHookIssues = inspectGitHooks(root);
-  const backlogIssues = inspectBacklog(root, configInspection.paths);
+  const backlogIssues = configInspection.paths === null ? [] : inspectBacklog(root, configInspection.paths);
 
   const issues = [
     ...configInspection.issues,
@@ -91,7 +91,7 @@ function inspectConfig(root: string): ConfigInspection {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     return {
-      paths: DEFAULT_PATHS,
+      paths: null,
       issues: [
         createIssue(
           'config-parse-failed',
@@ -111,13 +111,13 @@ function inspectConfig(root: string): ConfigInspection {
   }
 
   const parsedPaths = PathsSchema.safeParse(
-    rawConfig !== null && typeof rawConfig === 'object' && 'paths' in rawConfig
-      ? (rawConfig as { paths?: unknown }).paths
-      : undefined,
+    rawConfig !== null && typeof rawConfig === 'object'
+      ? ('paths' in rawConfig ? (rawConfig as { paths?: unknown }).paths : {})
+      : {},
   );
 
   return {
-    paths: parsedPaths.success ? parsedPaths.data : DEFAULT_PATHS,
+    paths: parsedPaths.success ? parsedPaths.data : null,
     issues: [
       createIssue(
         'config-invalid',
@@ -153,7 +153,18 @@ function inspectStructure(root: string, paths: PathsConfig): DoctorIssue[] {
   const issues: DoctorIssue[] = [];
 
   for (const directory of requiredDirectories) {
+    if (isDirectoryPath(directory)) {
+      continue;
+    }
     if (existsSync(directory)) {
+      issues.push(createIssue(
+        'path-not-directory',
+        'structure',
+        'error',
+        'A required METHOD directory path exists, but it is not a directory.',
+        relative(root, directory),
+        `Replace \`${relative(root, directory)}\` with a directory before running METHOD workspace commands.`,
+      ));
       continue;
     }
     issues.push(createIssue(
@@ -167,7 +178,18 @@ function inspectStructure(root: string, paths: PathsConfig): DoctorIssue[] {
   }
 
   for (const file of requiredFiles) {
+    if (isFilePath(file)) {
+      continue;
+    }
     if (existsSync(file)) {
+      issues.push(createIssue(
+        'path-not-file',
+        'structure',
+        'error',
+        'A required METHOD file path exists, but it is not a file.',
+        relative(root, file),
+        `Replace \`${relative(root, file)}\` with a regular file before running METHOD workspace commands.`,
+      ));
       continue;
     }
     issues.push(createIssue(
@@ -193,14 +215,15 @@ function inspectFrontmatter(root: string, paths: PathsConfig): DoctorIssue[] {
   ];
 
   for (const packetRoot of packetRoots) {
-    if (!existsSync(packetRoot)) {
+    if (!isDirectoryPath(packetRoot)) {
       continue;
     }
 
     for (const file of collectMarkdownFiles(packetRoot)) {
       const relativePath = relative(root, file);
       const raw = readFileSync(file, 'utf8');
-      if (!raw.startsWith('---\n')) {
+      const opening = /^\uFEFF?---\r?\n/u.exec(raw);
+      if (opening === null) {
         issues.push(createIssue(
           'missing-frontmatter',
           'frontmatter',
@@ -212,8 +235,9 @@ function inspectFrontmatter(root: string, paths: PathsConfig): DoctorIssue[] {
         continue;
       }
 
-      const end = raw.indexOf('\n---\n', 4);
-      if (end === -1) {
+      const rest = raw.slice(opening[0].length);
+      const closing = /\r?\n---(?:\r?\n|$)/u.exec(rest);
+      if (closing === null) {
         issues.push(createIssue(
           'unterminated-frontmatter',
           'frontmatter',
@@ -225,7 +249,8 @@ function inspectFrontmatter(root: string, paths: PathsConfig): DoctorIssue[] {
         continue;
       }
 
-      const yamlBlock = raw.slice(4, end);
+      const end = opening[0].length + closing.index;
+      const yamlBlock = raw.slice(opening[0].length, end);
       try {
         const parsed = parseYaml(yamlBlock);
         if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
@@ -321,7 +346,7 @@ function inspectGitHooks(root: string): DoctorIssue[] {
 
 function inspectBacklog(root: string, paths: PathsConfig): DoctorIssue[] {
   const backlogRoot = resolve(root, paths.backlog);
-  if (!existsSync(backlogRoot)) {
+  if (!isDirectoryPath(backlogRoot)) {
     return [];
   }
 
@@ -404,7 +429,7 @@ function createIssue(
 }
 
 function collectMarkdownFiles(root: string, maxDepth = 10): string[] {
-  if (maxDepth <= 0 || !existsSync(root)) {
+  if (maxDepth <= 0 || !isDirectoryPath(root)) {
     return [];
   }
 
@@ -438,6 +463,22 @@ function hasInstalledHook(directory: string): boolean {
 
     return (stats.mode & 0o111) !== 0 || /\.(cmd|ps1|bat)$/iu.test(basename(entry));
   });
+}
+
+function isDirectoryPath(path: string): boolean {
+  try {
+    return statSync(path).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function isFilePath(path: string): boolean {
+  try {
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
 }
 
 function runGit(args: readonly string[], root: string): string {

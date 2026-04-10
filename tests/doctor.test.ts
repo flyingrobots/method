@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -25,7 +25,7 @@ describe('doctor engine', () => {
   it('Does `runDoctor()` report orphaned backlog items and git-hook diagnostics without requiring a healthy `Workspace` instance?', () => {
     const root = createTempRoot();
     initWorkspace(root);
-    writeFileSync(join(root, '.method.json'), '{ not json }\n', 'utf8');
+    writeFileSync(join(root, '.method.json'), JSON.stringify({ forge: 'invalid' }), 'utf8');
     writeFileSync(
       join(root, 'docs/method/backlog/PROCESS_orphan.md'),
       [
@@ -46,7 +46,7 @@ describe('doctor engine', () => {
     const issueCodes = report.issues.map((issue) => issue.code);
 
     expect(report.status).toBe('error');
-    expect(issueCodes).toContain('config-parse-failed');
+    expect(issueCodes).toContain('config-invalid');
     expect(issueCodes).toContain('orphaned-backlog-item');
     expect(issueCodes.some((code) => code.startsWith('git-hooks-'))).toBe(true);
   });
@@ -70,6 +70,62 @@ describe('doctor engine', () => {
     expect(missingDirectory?.fix).toContain('method init');
     expect(badFrontmatter?.path).toBe('docs/method/backlog/inbox/PROCESS_bad-frontmatter.md');
     expect(badFrontmatter?.fix).toContain('Fix the YAML syntax');
+  });
+
+  it('skips path-based checks when malformed JSON makes the configured workspace paths unknowable.', () => {
+    const root = createTempRoot();
+    writeFileSync(join(root, '.method.json'), '{ broken json }\n', 'utf8');
+
+    const report = runDoctor(root);
+
+    expect(report.issues).toContainEqual(expect.objectContaining({
+      code: 'config-parse-failed',
+      check: 'config',
+    }));
+    expect(report.issues.some((issue) => issue.check === 'structure')).toBe(false);
+    expect(report.issues.some((issue) => issue.check === 'frontmatter')).toBe(false);
+    expect(report.issues.some((issue) => issue.check === 'backlog')).toBe(false);
+  });
+
+  it('accepts CRLF frontmatter blocks whose closing delimiter sits at EOF.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    writeFileSync(
+      join(root, 'docs/method/backlog/inbox/PROCESS_windows-frontmatter.md'),
+      '---\r\ntitle: "Windows Frontmatter"\r\nlegend: PROCESS\r\nlane: inbox\r\n---',
+      'utf8',
+    );
+
+    const report = runDoctor(root);
+
+    expect(report.issues).not.toContainEqual(expect.objectContaining({
+      code: 'missing-frontmatter',
+      path: 'docs/method/backlog/inbox/PROCESS_windows-frontmatter.md',
+    }));
+    expect(report.issues).not.toContainEqual(expect.objectContaining({
+      code: 'unterminated-frontmatter',
+      path: 'docs/method/backlog/inbox/PROCESS_windows-frontmatter.md',
+    }));
+  });
+
+  it('reports required path type mismatches instead of accepting any existing path as healthy.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    rmSync(join(root, 'docs/design'), { recursive: true, force: true });
+    writeFileSync(join(root, 'docs/design'), 'not a directory\n', 'utf8');
+    rmSync(join(root, 'CHANGELOG.md'), { recursive: true, force: true });
+    mkdirSync(join(root, 'CHANGELOG.md'), { recursive: true });
+
+    const report = runDoctor(root);
+
+    expect(report.issues).toContainEqual(expect.objectContaining({
+      code: 'path-not-directory',
+      path: 'docs/design',
+    }));
+    expect(report.issues).toContainEqual(expect.objectContaining({
+      code: 'path-not-file',
+      path: 'CHANGELOG.md',
+    }));
   });
 
   it('treats absent empty backlog lane directories as acceptable and falls back to default git hook inspection.', () => {
