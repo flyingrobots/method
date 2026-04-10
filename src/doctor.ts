@@ -298,6 +298,19 @@ function inspectGitHooks(root: string): DoctorIssue[] {
         ];
       }
 
+      if (!isDirectoryPath(hookDir)) {
+        return [
+          createIssue(
+            'git-hooks-not-directory',
+            'git-hooks',
+            'warning',
+            'Git hooks are configured, but the configured hooks path is not a directory.',
+            relative(root, hookDir),
+            `Replace \`${relative(root, hookDir)}\` with a directory or update \`core.hooksPath\` to a valid hooks directory.`,
+          ),
+        ];
+      }
+
       if (hasInstalledHook(hookDir)) {
         return [];
       }
@@ -316,6 +329,19 @@ function inspectGitHooks(root: string): DoctorIssue[] {
 
     const defaultHooksPath = runGit(['rev-parse', '--git-path', 'hooks'], root);
     const hookDir = resolve(root, defaultHooksPath);
+    if (existsSync(hookDir) && !isDirectoryPath(hookDir)) {
+      return [
+        createIssue(
+          'git-hooks-not-directory',
+          'git-hooks',
+          'warning',
+          'The default git hooks path exists, but it is not a directory.',
+          relative(root, hookDir),
+          `Replace \`${relative(root, hookDir)}\` with a directory before relying on default git hooks.`,
+        ),
+      ];
+    }
+
     if (hasInstalledHook(hookDir)) {
       return [];
     }
@@ -446,7 +472,7 @@ function collectMarkdownFiles(root: string, maxDepth = 10): string[] {
 }
 
 function hasInstalledHook(directory: string): boolean {
-  if (!existsSync(directory)) {
+  if (!isDirectoryPath(directory)) {
     return false;
   }
 

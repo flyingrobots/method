@@ -154,4 +154,22 @@ describe('doctor engine', () => {
       code: 'git-hooks-unavailable',
     }));
   });
+
+  it('reports a configured hooks path that exists as a file without collapsing to git-hooks-unavailable.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    execFileSync('git', ['init'], { cwd: root, stdio: 'ignore' });
+    writeFileSync(join(root, 'hooks-file'), 'not a directory\n', 'utf8');
+    execFileSync('git', ['config', 'core.hooksPath', 'hooks-file'], { cwd: root, stdio: 'ignore' });
+
+    const report = runDoctor(root);
+
+    expect(report.issues).toContainEqual(expect.objectContaining({
+      code: 'git-hooks-not-directory',
+      path: 'hooks-file',
+    }));
+    expect(report.issues).not.toContainEqual(expect.objectContaining({
+      code: 'git-hooks-unavailable',
+    }));
+  });
 });
