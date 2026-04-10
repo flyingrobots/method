@@ -45,8 +45,8 @@ describe('Automated Witness Capture', () => {
     const workspace = new Workspace(root);
 
     // Create and close a cycle (which calls captureWitness internally)
-    workspace.captureIdea('Witness Test', 'FEAT', 'Witness Test');
-    const cycle = workspace.pullItem('FEAT_witness-test');
+    workspace.captureIdea('Witness Test', 'PROCESS', 'Witness Test');
+    const cycle = workspace.pullItem('PROCESS_witness-test');
     const expectedDrift = workspace.detectDrift(cycle.name).output.trim();
     
     // No need to spy manually now, index.ts handles it via METHOD_TEST
@@ -130,17 +130,17 @@ describe('Automated Witness Capture', () => {
     expect(content).toContain('source_backlog: "docs/method/backlog/asap/PROCESS_line-1\\nline-2.md"');
   });
 
-  it('Does design-doc frontmatter YAML-escape legends instead of writing raw scalar text?', () => {
+  it('Does design-doc frontmatter YAML-escape raw legend scalar compatibility text instead of letting it masquerade as live taxonomy?', () => {
     const content = renderDesignDoc({
       cycleName: '0001-legend-escape',
       title: 'Legend Escape',
-      legend: 'FEAT:alpha #quoted "value"',
+      legend: 'PROCESS:alpha #quoted "value"',
       source: 'docs/method/backlog/asap/PROCESS_legend-escape.md',
       backlogBody: 'Body',
     });
 
-    expect(content).toContain('legend: "FEAT:alpha #quoted \\"value\\""');
-    expect(content).toContain('Legend: FEAT:alpha #quoted "value"');
+    expect(content).toContain('legend: "PROCESS:alpha #quoted \\"value\\""');
+    expect(content).toContain('Legend: PROCESS:alpha #quoted "value"');
   });
 
   it('Normalizes generated frontmatter paths to POSIX separators.', () => {
@@ -152,10 +152,10 @@ describe('Automated Witness Capture', () => {
     const designContent = renderDesignDoc({
       cycleName: '0001-windows-paths',
       title: 'Windows Paths',
-      source: 'docs\\method\\backlog\\asap\\PROTO_windows-paths.md',
+      source: 'docs\\method\\backlog\\asap\\PROCESS_windows-paths.md',
       backlogBody: 'Body',
     });
-    expect(designContent).toContain('source_backlog: "docs/method/backlog/asap/PROTO_windows-paths.md"');
+    expect(designContent).toContain('source_backlog: "docs/method/backlog/asap/PROCESS_windows-paths.md"');
 
     const retroContent = renderRetroDoc({
       cycle: {

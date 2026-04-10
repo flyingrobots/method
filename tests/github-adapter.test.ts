@@ -28,8 +28,8 @@ describe('GitHub Adapter Two-way Sync', () => {
     const workspace = new Workspace(root);
 
     // Create item with existing ID
-    workspace.captureIdea('Local Title', 'FEAT', 'My Item');
-    const itemPath = 'docs/method/backlog/inbox/FEAT_my-item.md';
+    workspace.captureIdea('Local Title', 'PROCESS', 'My Item');
+    const itemPath = 'docs/method/backlog/inbox/PROCESS_my-item.md';
     workspace.updateFrontmatter(itemPath, { github_issue_id: '42' });
 
     // Mock GitHub PATCH
@@ -73,8 +73,8 @@ describe('GitHub Adapter Two-way Sync', () => {
     const workspace = new Workspace(root);
 
     // Create item with existing ID
-    workspace.captureIdea('Local Title', 'FEAT', 'My Item');
-    const itemPath = 'docs/method/backlog/inbox/FEAT_my-item.md';
+    workspace.captureIdea('Local Title', 'PROCESS', 'My Item');
+    const itemPath = 'docs/method/backlog/inbox/PROCESS_my-item.md';
     workspace.updateFrontmatter(itemPath, { github_issue_id: '42' });
 
     // Mock GitHub GETs (Issue and Comments)
@@ -130,8 +130,8 @@ describe('GitHub Adapter Two-way Sync', () => {
     const workspace = new Workspace(root);
 
     // Create item with existing ID
-    workspace.captureIdea('Closed Item', 'FEAT', 'Closed');
-    const itemPath = 'docs/method/backlog/inbox/FEAT_closed.md';
+    workspace.captureIdea('Closed Item', 'PROCESS', 'Closed');
+    const itemPath = 'docs/method/backlog/inbox/PROCESS_closed.md';
     workspace.updateFrontmatter(itemPath, { github_issue_id: '99' });
 
     // Mock GitHub GETs (Closed state)
@@ -165,12 +165,12 @@ describe('GitHub Adapter Two-way Sync', () => {
     await adapter.pullBacklog();
 
     // Verify file was moved to graveyard
-    const graveyardPath = join(root, 'docs/method/graveyard/FEAT_closed.md');
-    const inboxPath = join(root, 'docs/method/backlog/inbox/FEAT_closed.md');
+    const graveyardPath = join(root, 'docs/method/graveyard/PROCESS_closed.md');
+    const inboxPath = join(root, 'docs/method/backlog/inbox/PROCESS_closed.md');
     
     expect(existsSync(graveyardPath), 'file should exist in graveyard').toBe(true);
     expect(existsSync(inboxPath), 'file should no longer exist in inbox').toBe(false);
     expect(readFileSync(graveyardPath, 'utf8')).toContain('Closed Item');
-    expect(workspace.readFrontmatter('docs/method/graveyard/FEAT_closed.md').lane).toBe('graveyard');
+    expect(workspace.readFrontmatter('docs/method/graveyard/PROCESS_closed.md').lane).toBe('graveyard');
   });
 });

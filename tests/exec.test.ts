@@ -36,8 +36,8 @@ describe('Async Exec', () => {
     initWorkspace(root);
     const workspace = new Workspace(root);
 
-    workspace.captureIdea('Test Idea', 'FEAT', 'Async Test');
-    workspace.pullItem('FEAT_async-test');
+    workspace.captureIdea('Test Idea', 'PROCESS', 'Async Test');
+    workspace.pullItem('PROCESS_async-test');
 
     const result = workspace.captureWitness('0001-async-test');
     expect(result).toBeInstanceOf(Promise);
@@ -50,8 +50,8 @@ describe('Async Exec', () => {
     initWorkspace(root);
     const workspace = new Workspace(root);
 
-    workspace.captureIdea('Test Idea', 'FEAT', 'Close Test');
-    workspace.pullItem('FEAT_close-test');
+    workspace.captureIdea('Test Idea', 'PROCESS', 'Close Test');
+    workspace.pullItem('PROCESS_close-test');
 
     const result = workspace.closeCycle('0001-close-test', true, 'hill-met');
     expect(result).toBeInstanceOf(Promise);

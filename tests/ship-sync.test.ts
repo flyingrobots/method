@@ -27,8 +27,8 @@ describe('Ship Sync', () => {
     const workspace = new Workspace(root);
 
     // Create and close a cycle
-    const itemPath = workspace.captureIdea('Feature X', 'FEAT', 'New Feature');
-    const cycle = workspace.pullItem('FEAT_new-feature');
+    const itemPath = workspace.captureIdea('Feature X', 'PROCESS', 'New Feature');
+    const cycle = workspace.pullItem('PROCESS_new-feature');
     await workspace.closeCycle(cycle.name, true, 'hill-met');
 
     // Run ship sync
@@ -49,11 +49,11 @@ describe('Ship Sync', () => {
     const workspace = new Workspace(root);
 
     // Create a backlog item and move it to up-next
-    workspace.captureIdea('Next priority', 'FEAT', 'Up Next');
-    workspace.moveBacklogItem('docs/method/backlog/inbox/FEAT_up-next.md', 'up-next');
+    workspace.captureIdea('Next priority', 'PROCESS', 'Up Next');
+    workspace.moveBacklogItem('docs/method/backlog/inbox/PROCESS_up-next.md', 'up-next');
 
-    const itemPath = workspace.captureIdea('Feature Z', 'FEAT', 'Just Shipped');
-    const cycle = workspace.pullItem('FEAT_just-shipped');
+    const itemPath = workspace.captureIdea('Feature Z', 'PROCESS', 'Just Shipped');
+    const cycle = workspace.pullItem('PROCESS_just-shipped');
     await workspace.closeCycle(cycle.name, true, 'hill-met');
 
     // Run ship sync
@@ -62,7 +62,7 @@ describe('Ship Sync', () => {
     // Verify BEARING
     const bearing = readFileSync(join(root, 'docs/BEARING.md'), 'utf8');
     expect(bearing).toContain(`- \`${cycle.name}\`: Just Shipped`);
-    expect(bearing).toContain('FEAT_up-next');
+    expect(bearing).toContain('PROCESS_up-next');
   });
 
   it('`src/index.ts` provides a `shipSync()` method that performs the orchestration.', () => {
@@ -70,14 +70,14 @@ describe('Ship Sync', () => {
     expect(workspace.shipSync).toBeDefined();
   });
 
-  it('`tests/ship-sync.test.ts` proves that the sync is idempotent (running it twice doesn\'t duplicate entries).', async () => {
+  it('Does `shipSync()` stay idempotent when the closed-cycle fixtures use live repo legends instead of stale feature labels?', async () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);
 
     // Create and close a cycle
-    workspace.captureIdea('Feature Y', 'FEAT', 'Another Feature');
-    const cycle = workspace.pullItem('FEAT_another-feature');
+    workspace.captureIdea('Feature Y', 'PROCESS', 'Another Feature');
+    const cycle = workspace.pullItem('PROCESS_another-feature');
     await workspace.closeCycle(cycle.name, true, 'hill-met');
 
     // Run ship sync first time
@@ -101,12 +101,12 @@ describe('Ship Sync', () => {
     initWorkspace(root);
     const workspace = new Workspace(root);
 
-    workspace.captureIdea('Feature A', 'FEAT', 'Feature A');
-    const cycleOne = workspace.pullItem('FEAT_feature-a');
+    workspace.captureIdea('Feature A', 'PROCESS', 'Feature A');
+    const cycleOne = workspace.pullItem('PROCESS_feature-a');
     await workspace.closeCycle(cycleOne.name, true, 'hill-met');
 
-    workspace.captureIdea('Feature B', 'FEAT', 'Feature B');
-    const cycleTwo = workspace.pullItem('FEAT_feature-b');
+    workspace.captureIdea('Feature B', 'PROCESS', 'Feature B');
+    const cycleTwo = workspace.pullItem('PROCESS_feature-b');
     await workspace.closeCycle(cycleTwo.name, true, 'hill-met');
 
     writeFileSync(
