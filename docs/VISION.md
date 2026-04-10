@@ -1,10 +1,10 @@
 ---
 title: "METHOD - Executive Summary"
-generated_at: 2026-04-09T14:30:58-07:00
+generated_at: 2026-04-09T18:27:16-07:00
 generator: "manual synthesis following Executive Summary Protocol (Cycle 0013)"
-generated_from_commit: "8a80012d1e9e5ee8cd00cb473072e1c822af9b22"
+generated_from_commit: "f1631d02fda4551245fe3f3bb66fe3d1e5b45891"
 provenance_level: artifact_history
-witness_ref: docs/method/retro/0036-witness-drift-output-capture/witness/verification.md
+witness_ref: docs/method/retro/0037-test-taxonomy-and-fixture-drift/witness/verification.md
 source_files:
   - README.md
   - CHANGELOG.md
@@ -46,6 +46,7 @@ source_files:
   - docs/design/0034-review-state-query/review-state-query.md
   - docs/design/0035-method-repo-self-discipline/method-repo-self-discipline.md
   - docs/design/0036-witness-drift-output-capture/witness-drift-output-capture.md
+  - docs/design/0037-test-taxonomy-and-fixture-drift/test-taxonomy-and-fixture-drift.md
 ---
 
 # METHOD - Executive Summary
@@ -64,7 +65,7 @@ state of the system without replacing the underlying files.
 ## Current state
 
 METHOD has evolved from doctrine plus a working CLI into a more complete
-toolchain for human/agent repo operation. Thirty-six cycles are
+toolchain for human/agent repo operation. Thirty-seven cycles are
 closed, and no cycle packets are currently open on this branch:
 
 - **Foundations (0001-0007):** Established the CLI, witness
@@ -76,14 +77,15 @@ closed, and no cycle packets are currently open on this branch:
   sync, branch doctrine, behavior spikes, ship sync, configuration
   management, automated witness capture, consistency fixes, near-miss
   drift hints, async exec, and configurable workspace paths.
-- **Post-release maturity work (0026-0036):** Added OSS scaffolding,
+- **Post-release maturity work (0026-0037):** Added OSS scaffolding,
   generated reference signposts, hybrid signpost generation, bad-code
   cleanup, frontmatter-first backlog metadata, scaffold contract
   alignment, MCP result contracts, truthful `BEARING` generation,
   native review-state, a repo self-discipline cleanup that makes open
   cycle packets on `main` a documented defect instead of a tolerated
-  exception, and truthful witness drift capture that records the actual
-  close-time drift report.
+  exception, truthful witness drift capture that records the actual
+  close-time drift report, and a test-taxonomy cleanup that realigns the
+  suite's doctrine fixtures with the live repo legends.
 
 The repo is organized under two legends:
 - `PROCESS`: Workflow mechanics, adapters, and system architecture.
@@ -101,7 +103,7 @@ The repo is organized under two legends:
 Covers cycle discipline, backlog movement, adapters (GitHub, MCP), and
 named patterns (spikes, workflow).
 - **Active:** None.
-- **Backlog:** 37 items across inbox, cool-ideas, and bad-code.
+- **Backlog:** 36 items across inbox, cool-ideas, and bad-code.
 
 ### SYNTH
 Covers repo self-description, signposts, and provenance level.

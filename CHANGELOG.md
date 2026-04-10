@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Test Taxonomy And Fixture Drift (0037-test-taxonomy-and-fixture-drift)
 - No externally meaningful changes recorded yet.
 
 ## v1.0.0

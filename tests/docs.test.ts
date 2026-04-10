@@ -520,7 +520,7 @@ describe('METHOD docs', () => {
 
   it('`docs/VISION.md` summary is accurate for the current closed-cycle state and active-cycle posture.', () => {
     const vision = readRepoFile('docs/VISION.md');
-    expect(vision).toContain('Thirty-six cycles are');
+    expect(vision).toContain('Thirty-seven cycles are');
     expect(vision).toContain('0005-drift-detector');
     expect(vision).toContain('0006-ci-gates');
     expect(vision).toContain('0007-cli-module-split');
@@ -544,6 +544,7 @@ describe('METHOD docs', () => {
     expect(vision).toContain('0034-review-state-query');
     expect(vision).toContain('0035-method-repo-self-discipline');
     expect(vision).toContain('0036-witness-drift-output-capture');
+    expect(vision).toContain('0037-test-taxonomy-and-fixture-drift');
     expect(vision).toContain('no cycle packets are currently open on this branch');
   });
 

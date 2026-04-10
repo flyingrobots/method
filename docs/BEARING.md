@@ -1,8 +1,8 @@
 ---
 title: "BEARING"
-generated_at: 2026-04-09T21:30:58.731Z
+generated_at: 2026-04-10T01:26:41.301Z
 generator: "method sync ship (renderBearing)"
-generated_from_commit: "8a80012d1e9e5ee8cd00cb473072e1c822af9b22"
+generated_from_commit: "f1631d02fda4551245fe3f3bb66fe3d1e5b45891"
 provenance_level: artifact_history
 ---
 
@@ -17,11 +17,11 @@ Current priority: no explicit `asap` or `up-next` item is currently recorded.
 
 ## What just shipped?
 
+- `0037-test-taxonomy-and-fixture-drift`: Test Taxonomy And Fixture Drift
 - `0036-witness-drift-output-capture`: Witness Drift Output Capture
 - `0035-method-repo-self-discipline`: METHOD Repo Self Discipline
-- `0034-review-state-query`: Review State Query
 
 ## What feels wrong?
 
 - Inbox still holds 5 untriaged item(s).
-- 7 bad-code item(s) remain tracked.
+- 6 bad-code item(s) remain tracked.
