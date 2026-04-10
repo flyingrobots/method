@@ -177,7 +177,7 @@ function parseDoctorArgs(args: readonly string[]): ParsedCommand {
       json = true;
       continue;
     }
-    throw new MethodError(`Unknown option: ${value}`);
+    throw new MethodError(`Unknown option: ${value}\n\n${usage('doctor')}`);
   }
 
   return { command: 'doctor', json };

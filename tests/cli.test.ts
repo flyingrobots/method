@@ -108,6 +108,21 @@ describe('method CLI', () => {
     expect(stdout.output).toContain('Fix:');
   });
 
+  it('includes doctor usage guidance when an unknown doctor flag is provided.', async () => {
+    const root = createTempRoot();
+    const stderr = new MemoryWriter();
+
+    const exitCode = await runCli(['doctor', '--bogus'], {
+      cwd: root,
+      stdout: new MemoryWriter(),
+      stderr,
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stderr.output).toContain('Unknown option: --bogus');
+    expect(stderr.output).toContain('Usage: method doctor [--json]');
+  });
+
   it('captures backlog ideas in inbox', async () => {
     const root = createTempRoot();
     await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
