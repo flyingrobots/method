@@ -40,6 +40,7 @@ generic intent with no matching tests.
 
 ## Backlog Maintenance
 
+- Backlog maintenance deferred to regular triage; closure remains valid because the cycle hill was met without requiring repo-wide inbox or graveyard work.
 - [ ] Inbox processed
 - [x] Priorities reviewed
 - [ ] Dead work buried or merged
