@@ -21,6 +21,10 @@ workspace-agnostic — a single instance can serve multiple projects.
 ## Tools
 
 <!-- generate:mcp-tools -->
+### `method_doctor`
+
+Inspect METHOD workspace health and report concrete problems with suggested fixes, even when the workspace is partially broken.
+
 ### `method_review_state`
 
 Get PR review / merge-readiness state for the current branch or an explicit PR. `pr` and `currentBranch` are mutually exclusive; when `pr` is omitted, current-branch resolution is the default behavior.

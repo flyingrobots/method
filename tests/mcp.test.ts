@@ -80,6 +80,7 @@ describe('MCP Server', () => {
     expect(result.tools.length).toBeGreaterThan(0);
 
     const toolNames = result.tools.map((t: any) => t.name);
+    expect(toolNames).toContain('method_doctor');
     expect(toolNames).toContain('method_status');
     expect(toolNames).toContain('method_review_state');
     expect(toolNames).toContain('method_inbox');
@@ -144,6 +145,34 @@ describe('MCP Server', () => {
     });
     expect(result.content[0].text).toContain('Review state: ready');
     vi.restoreAllMocks();
+  });
+
+  it('Does `method_doctor` return the same doctor report contract under `structuredContent.result`?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    writeFileSync(join(root, '.method.json'), '{ broken json }\n', 'utf8');
+    const callToolHandler = createCallToolHarness();
+    const stdout = new MemoryWriter();
+
+    const cliExitCode = await runCli(['doctor', '--json'], {
+      cwd: root,
+      stdout,
+      stderr: new MemoryWriter(),
+    });
+    const mcpResult = await callToolHandler({
+      params: {
+        name: 'method_doctor',
+        arguments: {
+          workspace: root,
+        },
+      },
+    });
+
+    expect(cliExitCode).toBe(1);
+    expect(mcpResult.isError).toBe(false);
+    expect(mcpResult.structuredContent.tool).toBe('method_doctor');
+    expect(mcpResult.structuredContent.result).toEqual(JSON.parse(stdout.output));
+    expect(mcpResult.content[0].text).toContain('Status: error');
   });
 
   it('Does the CLI `--json` output exactly match the MCP `structuredContent.result` contract?', async () => {

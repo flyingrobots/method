@@ -11,6 +11,7 @@ import { initWorkspace, Workspace } from './index.js';
 import { loadConfig } from './config.js';
 import { createMcpServer } from './mcp.js';
 import { GitHubAdapter } from './adapters/github.js';
+import { renderDoctorText, runDoctor } from './doctor.js';
 import { queryReviewState, renderReviewStateText, type ReviewStateQueryOptions, type ReviewStateResult } from './review-state.js';
 type Writer = Pick<NodeJS.WritableStream, 'write'>;
 type ConfirmPrompt = (options: { title: string; defaultValue: boolean }) => Promise<boolean>;
@@ -37,7 +38,6 @@ export async function runCli(
       stdout.write(`${usage(parsed.topic)}\n`);
       return 0;
     }
-
     if (parsed.command === 'init') {
       const target = resolve(root, parsed.path);
       const config = loadConfig(target);
@@ -48,23 +48,28 @@ export async function runCli(
       }
       return 0;
     }
-
+    if (parsed.command === 'doctor') {
+      const report = runDoctor(root);
+      if (parsed.json) {
+        stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+      } else {
+        stdout.write(renderDoctorText(report));
+      }
+      return report.status === 'error' ? 1 : 0;
+    }
     const workspace = new Workspace(root);
     workspace.ensureInitialized();
-
     if (parsed.command === 'inbox') {
       const created = workspace.captureIdea(parsed.idea, parsed.legend, parsed.title);
       stdout.write(`${alert(`Captured ${relative(root, created)}`, { variant: 'success', ctx })}\n`);
       return 0;
     }
-
     if (parsed.command === 'pull') {
       const cycle = workspace.pullItem(parsed.item);
       stdout.write(`${alert(`Pulled into ${cycle.name}`, { variant: 'success', ctx })}\n`);
       stdout.write(`${relative(root, cycle.designDoc)}\n`);
       return 0;
     }
-
     if (parsed.command === 'close') {
       const completedDriftCheck = parsed.driftCheck === undefined
         ? await promptConfirm({ title: 'Drift check complete?', defaultValue: false })
@@ -77,13 +82,11 @@ export async function runCli(
       stdout.write(`${relative(root, cycle.retroDoc)}\n`);
       return 0;
     }
-
     if (parsed.command === 'drift') {
       const report = workspace.detectDrift(parsed.cycle);
       stdout.write(report.output);
       return report.exitCode;
     }
-
     if (parsed.command === 'review-state') {
       const reviewStateQuery = options.reviewStateQuery ?? queryReviewState;
       const result = await reviewStateQuery({
@@ -98,7 +101,6 @@ export async function runCli(
       }
       return 0;
     }
-
     if (parsed.command === 'mcp') {
       const server = createMcpServer({ reviewStateQuery: options.reviewStateQuery ?? queryReviewState });
       const transport = new StdioServerTransport();
@@ -106,12 +108,10 @@ export async function runCli(
       // Let it run indefinitely
       return new Promise<number>(() => {});
     }
-
     if (parsed.command === 'sync') {
       if (parsed.adapter === 'github') {
         const token = workspace.config.github_token;
         const repoFull = workspace.config.github_repo;
-
         if (!token) {
           throw new Error('GitHub token is required for sync. Provide it via GITHUB_TOKEN or .method.json.');
         }
@@ -126,12 +126,10 @@ export async function runCli(
           owner: owner!,
           repo: repo!,
         });
-
         if (!parsed.push && !parsed.pull) {
           stderr.write(`${alert('No sync direction specified. Use --push and/or --pull.', { variant: 'error', ctx })}\n`);
           return 1;
         }
-
         if (parsed.push) {
           const results = await adapter.pushBacklog();
           for (const result of results) {
@@ -145,7 +143,6 @@ export async function runCli(
             }
           }
         }
-
         if (parsed.pull) {
           const results = await adapter.pullBacklog();
           for (const result of results) {
@@ -160,7 +157,6 @@ export async function runCli(
         }
         return 0;
       }
-
       if (parsed.adapter === 'ship') {
         const result = await workspace.shipSync();
         for (const path of result.updated) {
@@ -184,11 +180,5 @@ export async function runCli(
     return 1;
   }
 }
-export async function main(argv: readonly string[] = process.argv.slice(2)): Promise<number> {
-  return runCli(argv);
-}
-if (process.argv[1] !== undefined && fileURLToPath(import.meta.url) === realpathSync(resolve(process.argv[1]))) {
-  main().then((code) => {
-    process.exitCode = code;
-  });
-}
+export async function main(argv: readonly string[] = process.argv.slice(2)): Promise<number> { return runCli(argv); }
+if (process.argv[1] !== undefined && fileURLToPath(import.meta.url) === realpathSync(resolve(process.argv[1]))) { main().then((code) => { process.exitCode = code; }); }
