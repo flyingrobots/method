@@ -105,6 +105,7 @@ describe('MCP Server', () => {
     expect(toolNames).toContain('method_sync_ship');
     expect(toolNames).toContain('method_sync_refs');
     expect(toolNames).toContain('method_capture_witness');
+    expect(toolNames).toContain('method_spike');
 
     // Every tool must require cwd
     for (const tool of result.tools) {
@@ -1400,6 +1401,23 @@ describe('MCP Server', () => {
     });
     expect(noWorkspace.isError).toBe(true);
     expect(noWorkspace.structuredContent.error.message).toContain('workspace is required');
+  });
+
+  it('Does `method_spike` return structured content with the created spike path?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const callToolHandler = createCallToolHarness();
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_spike',
+        arguments: { workspace: root, goal: 'Test MCP spike', title: 'MCP Spike Test' },
+      },
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(result.structuredContent.tool).toBe('method_spike');
+    expect(result.structuredContent.result.path).toContain('SPIKE_mcp-spike-test.md');
   });
 
   it('Does `method_pull` reject invalid runtime argument types and return the canonical MCP error envelope?', async () => {

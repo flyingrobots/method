@@ -305,6 +305,34 @@ export class Workspace {
     });
   }
 
+  captureSpike(goal: string, title?: string, constraints?: string): string {
+    const cleanGoal = goal.trim();
+    if (cleanGoal.length === 0) {
+      throw new MethodError('Spike goal cannot be empty.');
+    }
+
+    const heading = (title ?? cleanGoal).trim();
+    const body = [
+      cleanGoal,
+      '',
+      '## Stack Constraints',
+      '',
+      constraints?.trim() ?? 'TBD',
+      '',
+      '## Expected Outcome',
+      '',
+      'Prove the behavior or surface the constraint, then close with a',
+      'retro explaining what was learned.',
+    ].join('\n');
+
+    return this.createBacklogItem({
+      lane: 'inbox',
+      title: heading,
+      legend: 'SPIKE',
+      body,
+    });
+  }
+
   pullItem(item: string): Cycle {
     const backlogItem = this.resolveBacklogItem(item);
     const title = readHeading(backlogItem);

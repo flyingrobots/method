@@ -25,7 +25,8 @@ export type ParsedCommand =
   | { command: 'mcp' }
   | { command: 'sync'; adapter: 'github'; push?: boolean; pull?: boolean }
   | { command: 'sync'; adapter: 'ship' }
-  | { command: 'sync'; adapter: 'refs' };
+  | { command: 'sync'; adapter: 'refs' }
+  | { command: 'spike'; goal: string; title?: string; constraints?: string; json?: boolean };
 
 export function parseCliArgs(argv: readonly string[]): ParsedCommand {
   const [command, ...rest] = argv;
@@ -59,6 +60,8 @@ export function parseCliArgs(argv: readonly string[]): ParsedCommand {
       return parseRetireArgs(rest);
     case 'signpost':
       return parseSignpostArgs(rest);
+    case 'spike':
+      return parseSpikeArgs(rest);
     case 'feedback':
       throw new MethodError('`feedback` was removed. Capture outside-in critique in `method inbox` with `--source`, `--captured-at`, and optional `--body-file`.');
     case 'repair':
@@ -229,6 +232,9 @@ export function usage(topic?: string): string {
       '',
       'Return a bounded advisory menu of sensible next backlog items using lane order, declared frontmatter, dependency readiness, and literal BEARING mentions.',
     ].join('\n');
+  }
+  if (topic === 'spike') {
+    return 'Usage: method spike <goal> [--title <title>] [--constraints <text>] [--json]\n\nCapture a behavior spike into the inbox with SPIKE legend and structured scaffolding.';
   }
   if (topic === 'pull') {
     return 'Usage: method pull <item>\n\nPromote a backlog item into a new cycle packet. Release-tagged work scaffolds under docs/releases/<version>/.';
@@ -1147,4 +1153,47 @@ function parseNextLimit(value: string): number {
     throw new MethodError('`--limit` must be between 1 and 10.');
   }
   return parsed;
+}
+
+function parseSpikeArgs(args: readonly string[]): ParsedCommand {
+  let title: string | undefined;
+  let constraints: string | undefined;
+  let json = false;
+  const positionals: string[] = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const value = args[index];
+    if (value === '--title') {
+      title = requireOptionValue(args, index, '--title');
+      index += 1;
+      continue;
+    }
+    if (value?.startsWith('--title=')) {
+      title = value.slice('--title='.length);
+      continue;
+    }
+    if (value === '--constraints') {
+      constraints = requireOptionValue(args, index, '--constraints');
+      index += 1;
+      continue;
+    }
+    if (value?.startsWith('--constraints=')) {
+      constraints = value.slice('--constraints='.length);
+      continue;
+    }
+    if (value === '--json') {
+      json = true;
+      continue;
+    }
+    if (value !== undefined) {
+      positionals.push(value);
+    }
+  }
+
+  const goal = positionals.join(' ').trim();
+  if (goal.length === 0) {
+    throw new MethodError('Usage: method spike <goal> [--title <title>] [--constraints <text>] [--json]');
+  }
+
+  return { command: 'spike', goal, title, constraints, json };
 }

@@ -83,6 +83,12 @@ export async function runCli(
     if (parsed.command === 'signpost-status') { const result = workspace.signpostStatus(); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderSignpostStatus(result)); return 0; }
     if (parsed.command === 'signpost-init') { const result = await workspace.initSignpost(parsed.name); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderSignpostInit(result)); return 0; }
     if (parsed.command === 'next') { const result = workspace.nextWork({ lane: parsed.lane, legend: parsed.legend, priority: parsed.priority, keyword: parsed.keyword, owner: parsed.owner, includeBlocked: parsed.includeBlocked, limit: parsed.limit }); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderNextWork(result)); return 0; }
+    if (parsed.command === 'spike') {
+      const path = workspace.captureSpike(parsed.goal, parsed.title, parsed.constraints);
+      const described = workspace.describeBacklogPath(workspace.resolveRepoPath(path));
+      stdout.write(parsed.json ? `${JSON.stringify(described, null, 2)}\n` : `${alert(`Captured spike ${described.path}`, { variant: 'success', ctx })}\n`);
+      return 0;
+    }
     if (parsed.command === 'pull') {
       const cycle = workspace.pullItem(parsed.item);
       stdout.write(`${alert(`Pulled into ${cycle.name}`, { variant: 'success', ctx })}\n`);

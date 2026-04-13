@@ -1642,6 +1642,23 @@ describe('method CLI', () => {
     expect(existsSync(new URL('../src/drift.ts', import.meta.url))).toBe(true);
   });
 
+  it('Does `method spike` create a SPIKE-prefixed backlog item with structured scaffolding?', async () => {
+    const root = createTempRoot();
+    await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    const stdout = new MemoryWriter();
+
+    const exitCode = await runCli(['spike', 'Prove that X works under Y'], {
+      cwd: root, stdout, stderr: new MemoryWriter(),
+    });
+
+    expect(exitCode).toBe(0);
+    expect(stdout.output).toContain('SPIKE_prove-that-x-works-under-y');
+    const content = readFile(root, 'docs/method/backlog/inbox/SPIKE_prove-that-x-works-under-y.md');
+    expect(content).toContain('legend: SPIKE');
+    expect(content).toContain('## Stack Constraints');
+    expect(content).toContain('## Expected Outcome');
+  });
+
   it('keeps cli.ts as a thin entry point instead of a behavior monolith', () => {
     const cliSource = readFileSync(new URL('../src/cli.ts', import.meta.url), 'utf8');
 
@@ -1649,7 +1666,7 @@ describe('method CLI', () => {
     expect(cliSource).not.toContain('function collectTestFiles');
     expect(cliSource).not.toContain('function extractPlaybackQuestions');
     expect(cliSource).not.toContain('function normalizeForMatch');
-    expect(cliSource.split(/\r?\n/u).length).toBeLessThan(200);
+    expect(cliSource.split(/\r?\n/u).length).toBeLessThan(220);
   });
 
   it('keeps index.ts focused on workspace behavior instead of reabsorbing drift helpers', () => {

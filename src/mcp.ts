@@ -241,6 +241,20 @@ export const MCP_TOOLS: McpToolDef[] = [
     },
   },
   {
+    name: 'method_spike',
+    description: 'Capture a behavior spike into the inbox with SPIKE legend and structured scaffolding.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        ...workspaceProperty,
+        goal: { type: 'string', description: 'What the spike is trying to prove or learn' },
+        title: { type: 'string', description: 'Optional override for the item title' },
+        constraints: { type: 'string', description: 'Stack constraints or scope notes' },
+      },
+      required: ['workspace', 'goal'],
+    },
+  },
+  {
     name: 'method_pull',
     description: 'Promote a backlog item into a new cycle packet, using release-scoped paths when the backlog item carries release metadata.',
     inputSchema: { type: 'object', properties: { ...workspaceProperty, item: { type: 'string' } }, required: ['workspace', 'item'] },
@@ -420,6 +434,20 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
         return successResult(
           'method_inbox',
           `Captured to ${relativePath}`,
+          persistedItem,
+        );
+      }
+
+      if (request.params.name === 'method_spike') {
+        const goal = validateString(args.goal, 'goal');
+        const title = validateOptionalString(args.title, 'title');
+        const constraints = validateOptionalString(args.constraints, 'constraints');
+        const path = workspace.captureSpike(goal, title, constraints);
+        const relativePath = relative(workspace.root, path);
+        const persistedItem = workspace.describeBacklogPath(relativePath);
+        return successResult(
+          'method_spike',
+          `Captured spike to ${relativePath}`,
           persistedItem,
         );
       }
