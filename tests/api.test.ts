@@ -1121,4 +1121,55 @@ describe('Method API', () => {
   it('The `method` CLI continues to work exactly as before for all commands (`status`, `inbox`, `pull`, etc.).', () => {
     // Verified by running the full cli.test.ts suite.
   });
+
+  it('Does `method pull` create a flat design doc at `docs/design/<LEGEND>_<slug>.md` instead of a nested directory?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.captureIdea('Flat Layout', 'PROCESS', 'Flat Layout Test');
+    const cycle = workspace.pullItem('PROCESS_flat-layout-test');
+
+    expect(cycle.name).toBe('PROCESS_flat-layout-test');
+    expect(cycle.designDoc).toBe(join(root, 'docs/design/PROCESS_flat-layout-test.md'));
+    expect(existsSync(join(root, 'docs/design/PROCESS_flat-layout-test.md'))).toBe(true);
+    // No subdirectory should exist
+    expect(existsSync(join(root, 'docs/design/PROCESS_flat-layout-test'))).toBe(false);
+  });
+
+  it('Does `readCycleFromDoc()` discover both flat and legacy nested design docs?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    // Create a flat design doc
+    writeFileSync(
+      join(root, 'docs/design/PROCESS_flat-cycle.md'),
+      '# Flat Cycle\n\nLegend: PROCESS\n',
+      'utf8',
+    );
+
+    // Create a legacy nested design doc
+    mkdirSync(join(root, 'docs/design/0001-legacy-cycle'), { recursive: true });
+    writeFileSync(
+      join(root, 'docs/design/0001-legacy-cycle/legacy-cycle.md'),
+      '# Legacy Cycle\n\nLegend: PROCESS\n',
+      'utf8',
+    );
+
+    const status = workspace.status();
+    const cycleNames = status.activeCycles.map((cycle) => cycle.name);
+    expect(cycleNames).toContain('PROCESS_flat-cycle');
+    expect(cycleNames).toContain('0001-legacy-cycle');
+  });
+
+  it('Does `generateReferenceDocs()` return the same target list that the CLI prints?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    const result = workspace.syncRefs();
+    expect(result.targets).toEqual(['ARCHITECTURE.md', 'docs/CLI.md', 'docs/MCP.md', 'docs/GUIDE.md']);
+    expect(Array.isArray(result.updated)).toBe(true);
+  });
 });

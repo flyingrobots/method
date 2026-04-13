@@ -595,7 +595,7 @@ describe('MCP Server', () => {
     expect(readFileSync(join(root, 'docs/method/release-runbook.md'), 'utf8')).toContain('# Release Runbook');
   });
 
-  it('Does `method_sync_refs` return only the generated reference targets and avoid ship-only artifacts?', async () => {
+  it('Does `method_sync_refs` return structured content with the refreshed targets?', async () => {
     const root = createTempRoot();
     initWorkspace(root);
     const callToolHandler = createCallToolHarness();

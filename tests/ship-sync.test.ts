@@ -142,7 +142,7 @@ describe('Ship Sync', () => {
     expect(result.updated).not.toContain('CHANGELOG.md');
   });
 
-  it('refreshes generated reference docs without mutating ship-only artifacts.', () => {
+  it('Does `method sync refs` refresh only `ARCHITECTURE.md`, `docs/CLI.md`, `docs/MCP.md`, and `docs/GUIDE.md` without mutating `CHANGELOG.md` or `docs/BEARING.md`?', () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);

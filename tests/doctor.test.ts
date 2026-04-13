@@ -261,6 +261,45 @@ describe('doctor engine', () => {
     expect(applied.unresolvedIssues).not.toContainEqual(expect.objectContaining({ code: 'missing-frontmatter', path: 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md' }));
   });
 
+  it('Does `method doctor` detect legacy nested design doc directories and offer to flatten them?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    mkdirSync(join(root, 'docs/design/0001-legacy-test'), { recursive: true });
+    writeFileSync(
+      join(root, 'docs/design/0001-legacy-test/legacy-test.md'),
+      '---\ntitle: "Legacy Test"\nlegend: "PROCESS"\ncycle: "0001-legacy-test"\n---\n\n# Legacy Test\n',
+      'utf8',
+    );
+
+    const report = runDoctor(root);
+    const legacyIssue = report.issues.find((issue) => issue.code === 'legacy-design-layout');
+
+    expect(legacyIssue).toBeDefined();
+    expect(legacyIssue?.severity).toBe('warning');
+    expect(legacyIssue?.fix).toContain('method doctor --repair');
+    expect(legacyIssue?.repair?.kind).toBe('flatten-design-doc');
+  });
+
+  it('Does `method_doctor` report `legacy-design-layout` warnings with `flatten-design-doc` repair hints?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    mkdirSync(join(root, 'docs/design/0002-another-legacy'), { recursive: true });
+    writeFileSync(
+      join(root, 'docs/design/0002-another-legacy/another-legacy.md'),
+      '---\ntitle: "Another Legacy"\nlegend: "PROCESS"\ncycle: "0002-another-legacy"\n---\n\n# Another Legacy\n',
+      'utf8',
+    );
+
+    const report = runDoctor(root);
+    const legacyIssues = report.issues.filter((issue) => issue.code === 'legacy-design-layout');
+
+    expect(legacyIssues.length).toBe(1);
+    expect(legacyIssues[0].repair).toEqual({
+      kind: 'flatten-design-doc',
+      targetPath: 'docs/design/0002-another-legacy',
+    });
+  });
+
   it('detects legacy nested design doc directories and offers flatten-design-doc repair.', () => {
     const root = createTempRoot();
     initWorkspace(root);
