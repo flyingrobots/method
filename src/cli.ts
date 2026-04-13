@@ -6,15 +6,15 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { alert, confirm } from '@flyingrobots/bijou';
 import { createNodeContext } from '@flyingrobots/bijou-node';
 import { parseCliArgs, usage } from './cli-args.js';
-import { renderStatus } from './cli-renderer.js';
+import { renderBacklogDependencies, renderBacklogQuery, renderNextWork, renderSignpostInit, renderSignpostStatus, renderStatus } from './cli-renderer.js';
 import { initWorkspace, Workspace } from './index.js';
 import { loadConfig } from './config.js';
 import { createMcpServer } from './mcp.js';
 import { GitHubAdapter } from './adapters/github.js';
-import { renderDoctorText, runDoctor } from './doctor.js';
+import { renderDoctorMigrateText, renderDoctorRepairText, renderDoctorText, runDoctor, runDoctorMigrate, runDoctorRepair } from './doctor.js';
+import { createBacklogFromCli, createInboxFromCli, describeBacklogDependenciesFromCli, editBacklogMetadataFromCli, moveBacklogFromCli, queryBacklogFromCli, retireBacklogFromCli } from './feedback-surface.js';
 import { queryReviewState, renderReviewStateText, type ReviewStateQueryOptions, type ReviewStateResult } from './review-state.js';
-type Writer = Pick<NodeJS.WritableStream, 'write'>;
-type ConfirmPrompt = (options: { title: string; defaultValue: boolean }) => Promise<boolean>;
+type Writer = Pick<NodeJS.WritableStream, 'write'>; type ConfirmPrompt = (options: { title: string; defaultValue: boolean }) => Promise<boolean>;
 export interface RunCliOptions {
   cwd?: string;
   stdout?: Writer;
@@ -34,10 +34,7 @@ export async function runCli(
     ?? ((promptOptions) => confirm({ title: promptOptions.title, defaultValue: promptOptions.defaultValue, ctx }));
   try {
     const parsed = parseCliArgs(argv);
-    if (parsed.command === 'help') {
-      stdout.write(`${usage(parsed.topic)}\n`);
-      return 0;
-    }
+    if (parsed.command === 'help') { stdout.write(`${usage(parsed.topic)}\n`); return 0; }
     if (parsed.command === 'init') {
       const target = resolve(root, parsed.path);
       const config = loadConfig(target);
@@ -50,20 +47,42 @@ export async function runCli(
     }
     if (parsed.command === 'doctor') {
       const report = runDoctor(root);
-      if (parsed.json) {
-        stdout.write(`${JSON.stringify(report, null, 2)}\n`);
-      } else {
-        stdout.write(renderDoctorText(report));
-      }
+      stdout.write(parsed.json ? `${JSON.stringify(report, null, 2)}\n` : renderDoctorText(report));
       return report.status === 'error' ? 1 : 0;
+    }
+    if (parsed.command === 'migrate') {
+      const result = runDoctorMigrate(root);
+      stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderDoctorMigrateText(result));
+      return result.ok ? 0 : 1;
+    }
+    if (parsed.command === 'repair') {
+      const result = runDoctorRepair(root, parsed.mode);
+      stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderDoctorRepairText(result));
+      return result.ok ? 0 : 1;
+    }
+    if (parsed.command === 'mcp') {
+      const server = createMcpServer({ reviewStateQuery: options.reviewStateQuery ?? queryReviewState });
+      const transport = new StdioServerTransport();
+      await server.connect(transport);
+      // Let it run indefinitely
+      return new Promise<number>(() => {});
     }
     const workspace = new Workspace(root);
     workspace.ensureInitialized();
     if (parsed.command === 'inbox') {
-      const created = workspace.captureIdea(parsed.idea, parsed.legend, parsed.title);
-      stdout.write(`${alert(`Captured ${relative(root, created)}`, { variant: 'success', ctx })}\n`);
+      const created = createInboxFromCli(root, workspace, parsed);
+      stdout.write(parsed.json ? `${JSON.stringify(created, null, 2)}\n` : `${alert(`Captured ${created.path}`, { variant: 'success', ctx })}\n`);
       return 0;
     }
+    if (parsed.command === 'backlog-add') { const result = createBacklogFromCli(root, workspace, parsed); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : `${alert(`Created ${result.path}`, { variant: 'success', ctx })}\n`); return 0; }
+    if (parsed.command === 'backlog-move') { const result = moveBacklogFromCli(workspace, parsed); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : `${alert(`Moved ${result.sourcePath} to ${result.path}`, { variant: 'success', ctx })}\n`); return 0; }
+    if (parsed.command === 'backlog-edit') { const result = editBacklogMetadataFromCli(workspace, parsed); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : `${alert(`Updated metadata on ${result.path} (${result.updatedFields.join(', ')})`, { variant: 'success', ctx })}\n`); return 0; }
+    if (parsed.command === 'backlog-list') { const result = queryBacklogFromCli(workspace, parsed); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderBacklogQuery(result)); return 0; }
+    if (parsed.command === 'backlog-deps') { const result = describeBacklogDependenciesFromCli(workspace, parsed); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderBacklogDependencies(result)); return 0; }
+    if (parsed.command === 'retire') { const result = retireBacklogFromCli(workspace, parsed); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : `${alert(result.dryRun ? `Planned retirement of ${result.sourcePath} to ${result.graveyardPath}` : `Retired ${result.sourcePath} to ${result.graveyardPath}`, { variant: 'success', ctx })}\n`); return 0; }
+    if (parsed.command === 'signpost-status') { const result = workspace.signpostStatus(); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderSignpostStatus(result)); return 0; }
+    if (parsed.command === 'signpost-init') { const result = await workspace.initSignpost(parsed.name); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderSignpostInit(result)); return 0; }
+    if (parsed.command === 'next') { const result = workspace.nextWork({ lane: parsed.lane, legend: parsed.legend, priority: parsed.priority, keyword: parsed.keyword, owner: parsed.owner, includeBlocked: parsed.includeBlocked, limit: parsed.limit }); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderNextWork(result)); return 0; }
     if (parsed.command === 'pull') {
       const cycle = workspace.pullItem(parsed.item);
       stdout.write(`${alert(`Pulled into ${cycle.name}`, { variant: 'success', ctx })}\n`);
@@ -89,24 +108,9 @@ export async function runCli(
     }
     if (parsed.command === 'review-state') {
       const reviewStateQuery = options.reviewStateQuery ?? queryReviewState;
-      const result = await reviewStateQuery({
-        cwd: root,
-        pr: parsed.pr,
-        currentBranch: parsed.currentBranch,
-      });
-      if (parsed.json) {
-        stdout.write(`${JSON.stringify(result, null, 2)}\n`);
-      } else {
-        stdout.write(`${renderReviewStateText(result)}\n`);
-      }
+      const result = await reviewStateQuery({ cwd: root, pr: parsed.pr, currentBranch: parsed.currentBranch });
+      stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : `${renderReviewStateText(result)}\n`);
       return 0;
-    }
-    if (parsed.command === 'mcp') {
-      const server = createMcpServer({ reviewStateQuery: options.reviewStateQuery ?? queryReviewState });
-      const transport = new StdioServerTransport();
-      await server.connect(transport);
-      // Let it run indefinitely
-      return new Promise<number>(() => {});
     }
     if (parsed.command === 'sync') {
       if (parsed.adapter === 'github') {
@@ -170,6 +174,16 @@ export async function runCli(
         }
         return 0;
       }
+      if (parsed.adapter === 'refs') {
+        const result = workspace.syncRefs();
+        for (const path of result.targets) {
+          stdout.write(`${alert(`Refreshed ${path}`, { variant: 'success', ctx })}\n`);
+        }
+        if (result.targets.length === 0) {
+          stdout.write('No generated reference targets found.\n');
+        }
+        return 0;
+      }
     }
     const status = workspace.status();
     stdout.write(renderStatus(status));
@@ -179,6 +193,5 @@ export async function runCli(
     stderr.write(`${alert(message, { variant: 'error', ctx })}\n`);
     return 1;
   }
-}
-export async function main(argv: readonly string[] = process.argv.slice(2)): Promise<number> { return runCli(argv); }
+} export async function main(argv: readonly string[] = process.argv.slice(2)): Promise<number> { return runCli(argv); }
 if (process.argv[1] !== undefined && fileURLToPath(import.meta.url) === realpathSync(resolve(process.argv[1]))) { main().then((code) => { process.exitCode = code; }); }

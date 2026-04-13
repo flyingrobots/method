@@ -77,14 +77,7 @@ export class GitHubAdapter {
   }
 
   private getAllBacklogItems(status: WorkspaceStatus) {
-    return [
-      ...status.backlog.inbox,
-      ...status.backlog.asap,
-      ...status.backlog['up-next'],
-      ...status.backlog['cool-ideas'],
-      ...status.backlog['bad-code'],
-      ...status.backlog.root,
-    ];
+    return Object.values(status.backlog).flat();
   }
 
   async pushItem(relativePath: string): Promise<GitHubSyncResult> {

@@ -1,7 +1,7 @@
 ---
 title: CLI Reference
 generated_at: 2026-04-08T21:17:50.746Z
-generator: method sync ship
+generator: method sync refs
 generated_from_commit: ecde6ac00e798d68bf69b2c2bfb9044ad44d47e9
 provenance_level: artifact_history
 ---
@@ -23,17 +23,62 @@ Scaffold a METHOD workspace in the given directory.
 
 Inspect METHOD workspace health without mutating it.
 
-### `method inbox <idea> [--legend CODE] [--title TITLE]`
+### `method migrate [--json]`
 
-Capture a raw idea in docs/method/backlog/inbox/.
+Run doctor, apply the bounded repair set, then re-check the workspace.
+
+### `method inbox <idea> [--legend CODE] [--title TITLE] [--body-file PATH] [--source TEXT] [--captured-at YYYY-MM-DD] [--json]`
+
+Capture raw input in docs/method/backlog/inbox/.
+
+### `method backlog add --lane LANE --title TITLE [--legend CODE] [--body-file PATH] [--json]`
+
+Create a shaped backlog note directly in the requested backlog lane.
+
+### `method backlog move <item> --to LANE [--json]`
+
+Move a live backlog note into another backlog lane.
+
+### `method backlog edit <item> [--owner TEXT|--clear-owner] [--priority VALUE|--clear-priority] [--keyword VALUE ...|--clear-keywords] [--blocked-by REF ...|--clear-blocked-by] [--blocks REF ...|--clear-blocks] [--json]`
+
+Update explicit schema-backed backlog metadata on a live backlog note. Repeat `--keyword`, `--blocked-by`, or `--blocks` to replace list fields.
+
+### `method backlog list [--lane LANE] [--legend CODE] [--priority VALUE] [--keyword VALUE] [--owner VALUE] [--ready|--blocked] [--has-acceptance-criteria|--missing-acceptance-criteria] [--blocked-by REF] [--blocks REF] [--sort lane|priority|path] [--limit N] [--json]`
+
+Return structured backlog items and explicit frontmatter metadata such as owner, priority, keywords, blocks, blocked_by, readiness, and acceptance criteria presence.
+
+### `method backlog deps [item] [--ready] [--critical-path] [--json]`
+
+Inspect live backlog dependencies from `blocked_by` / `blocks` frontmatter.
+Use `--ready` to show unblocked work, or pass `<item> --critical-path` to show the longest blocker chain to one item.
+
+### `method retire <item> --reason TEXT [--replacement PATH] [--dry-run] [--yes] [--json]`
+
+Retire a live backlog note into the graveyard with an explicit disposition record.
+
+### `method signpost status [--json]`
+
+Report which expected repo signposts exist, which are missing, and which can be initialized by helper commands.
+
+### `method signpost init <name> [--json]`
+
+Initialize a narrowly supported missing canonical signpost such as BEARING or MCP.
+
+### `method repair (--plan | --apply) [--json]`
+
+Plan or apply bounded doctor-guided repairs for missing directories, scaffold files, and frontmatter stubs.
+
+### `method next [--lane LANE] [--legend CODE] [--priority VALUE] [--keyword VALUE] [--owner VALUE] [--include-blocked] [--limit N] [--json]`
+
+Return a bounded advisory menu of sensible next backlog items using lane order, declared frontmatter, dependency readiness, and literal BEARING mentions.
 
 ### `method pull <item>`
 
-Promote a backlog item into the next numbered design cycle.
+Promote a backlog item into the next numbered cycle packet. Release-tagged work scaffolds under docs/releases/<version>/.
 
 ### `method close [cycle] [--drift-check yes|no] --outcome hill-met|partial|not-met`
 
-Close an active cycle into docs/method/retro/. `--outcome` is required.
+Close an active cycle into its retro packet. `--outcome` is required.
 
 ### `method status`
 
@@ -53,12 +98,12 @@ Defaults to --current-branch when no selector flag is provided.
 
 Start an MCP (Model Context Protocol) server on stdio.
 
-### `method sync github|ship [options]`
+### `method sync github|ship|refs [options]`
 
 GitHub Options:
   --push                      Update GitHub issues with local changes (default).
   --pull                      Update local backlog with GitHub changes (labels, comments, status).
-Perform Ship Sync or synchronize the backlog with GitHub Issues.
+Perform Ship Sync, refresh generated reference docs, or synchronize the backlog with GitHub Issues.
 
 ### Exit Codes
 

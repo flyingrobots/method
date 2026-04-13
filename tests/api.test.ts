@@ -19,6 +19,10 @@ function createTempRoot(): string {
   return root;
 }
 
+function ensureBacklogLane(root: string, lane: string): void {
+  mkdirSync(join(root, 'docs/method/backlog', lane), { recursive: true });
+}
+
 describe('Method API', () => {
   it('A new `src/index.ts` (or similar) exports a `Method` class or functions that return structured data (not strings).', () => {
     // Workspace is the "Method" class here.
@@ -56,12 +60,749 @@ describe('Method API', () => {
     expect(statusBefore.backlog.inbox[0].stem).toBe('PROCESS_my-title');
 
     const cycle = workspace.pullItem('PROCESS_my-title');
-    expect(cycle.name).toMatch(/^0001-my-title$/);
+    expect(cycle.name).toBe('PROCESS_my-title');
 
     const statusAfter = workspace.status();
     expect(statusAfter.backlog.inbox.length).toBe(0);
     expect(statusAfter.activeCycles.length).toBe(1);
     expect(statusAfter.activeCycles[0].name).toBe(cycle.name);
+  });
+
+  it('programmatically creates a shaped backlog item in an explicit custom lane.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    const path = workspace.createBacklogItem({
+      lane: 'v1.1.0',
+      title: 'Backlog Add',
+      legend: 'PROCESS',
+      body: 'Backlog body.\n',
+    });
+
+    expect(path).toContain('docs/method/backlog/v1.1.0/PROCESS_backlog-add.md');
+    expect(readFileSync(path, 'utf8')).toContain('# Backlog Add');
+    expect(readFileSync(path, 'utf8')).toContain('Backlog body.');
+
+    const status = workspace.status();
+    expect(status.backlog['v1.1.0']).toContainEqual({
+      stem: 'PROCESS_backlog-add',
+      lane: 'v1.1.0',
+      path: 'docs/method/backlog/v1.1.0/PROCESS_backlog-add.md',
+      legend: 'PROCESS',
+      slug: 'backlog-add',
+    });
+  });
+
+  it('builds a live backlog dependency graph, reports ready work, and preserves dependency arrays during lane moves.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    ensureBacklogLane(root, 'up-next');
+    const workspace = new Workspace(root);
+
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_foundation.md'),
+      [
+        '---',
+        'title: "Foundation"',
+        'legend: PROCESS',
+        'lane: up-next',
+        '---',
+        '',
+        '# Foundation',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_build.md'),
+      [
+        '---',
+        'title: "Build"',
+        'legend: PROCESS',
+        'lane: up-next',
+        'blocked_by:',
+        '  - foundation',
+        'blocks:',
+        '  - finish',
+        '---',
+        '',
+        '# Build',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_finish.md'),
+      [
+        '---',
+        'title: "Finish"',
+        'legend: PROCESS',
+        'lane: up-next',
+        'blocked_by:',
+        '  - build',
+        '---',
+        '',
+        '# Finish',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const report = workspace.backlogDependencies({ item: 'finish', criticalPath: true });
+
+    expect(report.ready.map((item) => item.stem)).toEqual(['PROCESS_foundation']);
+    expect(report.edges).toHaveLength(2);
+    expect(report.edges).toContainEqual({
+      blocker: 'docs/method/backlog/up-next/PROCESS_foundation.md',
+      blocked: 'docs/method/backlog/up-next/PROCESS_build.md',
+    });
+    expect(report.edges).toContainEqual({
+      blocker: 'docs/method/backlog/up-next/PROCESS_build.md',
+      blocked: 'docs/method/backlog/up-next/PROCESS_finish.md',
+    });
+    expect(report.focus?.item.stem).toBe('PROCESS_finish');
+    expect(report.focus?.blockers.map((item) => item.stem)).toEqual(['PROCESS_build']);
+    expect(report.focus?.criticalPath.map((item) => item.stem)).toEqual([
+      'PROCESS_foundation',
+      'PROCESS_build',
+      'PROCESS_finish',
+    ]);
+    expect(report.cycles).toEqual([]);
+
+    const moved = workspace.moveBacklogItem('docs/method/backlog/up-next/PROCESS_build.md', 'bad-code');
+    const movedContent = readFileSync(join(root, moved), 'utf8');
+    expect(movedContent).toContain('lane: bad-code');
+    expect(movedContent).toMatch(/blocked_by:\n\s*-\s*foundation/mu);
+    expect(movedContent).toMatch(/blocks:\n\s*-\s*finish/mu);
+  });
+
+  it('returns bounded structured backlog query results including explicit keywords and frontmatter metadata.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    ensureBacklogLane(root, 'up-next');
+    const workspace = new Workspace(root);
+
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_query-foundation.md'),
+      [
+        '---',
+        'title: "Query Foundation"',
+        'legend: PROCESS',
+        'lane: up-next',
+        'owner: "METHOD maintainers"',
+        'priority: medium',
+        'keywords:',
+        '  - agent',
+        '  - query',
+        'blocked_by:',
+        '  - setup',
+        'acceptance_criteria:',
+        '  - "Has a query API"',
+        '---',
+        '',
+        '# Query Foundation',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_query-polish.md'),
+      [
+        '---',
+        'title: "Query Polish"',
+        'legend: PROCESS',
+        'lane: up-next',
+        'priority: medium',
+        'keywords:',
+        '  - agent',
+        '  - polish',
+        '---',
+        '',
+        '# Query Polish',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const result = workspace.backlogQuery({ lane: 'up-next', keyword: 'agent', limit: 1 });
+
+    expect(result.filters).toEqual({
+      lane: 'up-next',
+      legend: undefined,
+      priority: undefined,
+      keyword: 'agent',
+      owner: undefined,
+      ready: undefined,
+      hasAcceptanceCriteria: undefined,
+      blockedBy: undefined,
+      blocks: undefined,
+      sort: 'lane',
+      limit: 1,
+    });
+    expect(result.totalCount).toBe(2);
+    expect(result.returnedCount).toBe(1);
+    expect(result.truncated).toBe(true);
+    expect(result.items[0]).toEqual({
+      stem: 'PROCESS_query-foundation',
+      lane: 'up-next',
+      path: 'docs/method/backlog/up-next/PROCESS_query-foundation.md',
+      legend: 'PROCESS',
+      slug: 'query-foundation',
+      title: 'Query Foundation',
+      owner: 'METHOD maintainers',
+      priority: 'medium',
+      keywords: ['agent', 'query'],
+      blockedBy: ['setup'],
+      blocks: [],
+      hasAcceptanceCriteria: true,
+    });
+  });
+
+  it('filters backlog queries by explicit owner and can include blocked matches in next-work results.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    ensureBacklogLane(root, 'up-next');
+    const workspace = new Workspace(root);
+
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_blocked-owner-match.md'),
+      [
+        '---',
+        'title: "Blocked Owner Match"',
+        'legend: PROCESS',
+        'lane: up-next',
+        'owner: "Core Team"',
+        'priority: medium',
+        'keywords:',
+        '  - roadmap',
+        'blocked_by:',
+        '  - setup',
+        '---',
+        '',
+        '# Blocked Owner Match',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(root, 'docs/method/backlog/cool-ideas/PROCESS_ready-owner-match.md'),
+      [
+        '---',
+        'title: "Ready Owner Match"',
+        'legend: PROCESS',
+        'lane: cool-ideas',
+        'owner: "Core Team"',
+        'priority: medium',
+        'keywords:',
+        '  - roadmap',
+        '---',
+        '',
+        '# Ready Owner Match',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_other-owner.md'),
+      [
+        '---',
+        'title: "Other Owner"',
+        'legend: PROCESS',
+        'lane: up-next',
+        'owner: "Platform Team"',
+        'priority: medium',
+        'keywords:',
+        '  - roadmap',
+        '---',
+        '',
+        '# Other Owner',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const query = workspace.backlogQuery({ owner: 'core team', limit: 10 });
+    expect(query.filters.owner).toBe('core team');
+    expect(query.items.map((item) => item.stem)).toEqual([
+      'PROCESS_blocked-owner-match',
+      'PROCESS_ready-owner-match',
+    ]);
+
+    const readyOnly = workspace.nextWork({ owner: 'core team', keyword: 'roadmap', limit: 5 });
+    expect(readyOnly.recommendations.map((item) => item.path)).toEqual([
+      'docs/method/backlog/cool-ideas/PROCESS_ready-owner-match.md',
+    ]);
+    expect(readyOnly.selection_notes).toContain('Skipped 1 blocked backlog item(s) because unblocked work is available.');
+    expect(readyOnly.selection_notes).toContain('Applied filters: keyword=roadmap, owner=core team.');
+
+    const includeBlocked = workspace.nextWork({ owner: 'core team', keyword: 'roadmap', includeBlocked: true, limit: 5 });
+    expect(includeBlocked.recommendations.map((item) => item.path)).toEqual([
+      'docs/method/backlog/up-next/PROCESS_blocked-owner-match.md',
+      'docs/method/backlog/cool-ideas/PROCESS_ready-owner-match.md',
+    ]);
+    expect(includeBlocked.selection_notes).toContain('Blocked items were included because `include-blocked` was requested.');
+    expect(includeBlocked.selection_notes).toContain('Applied filters: keyword=roadmap, owner=core team.');
+  });
+
+  it('filters backlog queries by readiness, acceptance criteria presence, and declared dependency refs.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    ensureBacklogLane(root, 'up-next');
+    const workspace = new Workspace(root);
+
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_query-foundation.md'),
+      [
+        '---',
+        'title: "Query Foundation"',
+        'legend: PROCESS',
+        'lane: up-next',
+        'keywords:',
+        '  - query',
+        'blocked_by:',
+        '  - setup',
+        'blocks:',
+        '  - finish',
+        'acceptance_criteria:',
+        '  - "Has a query API"',
+        '---',
+        '',
+        '# Query Foundation',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_query-polish.md'),
+      [
+        '---',
+        'title: "Query Polish"',
+        'legend: PROCESS',
+        'lane: up-next',
+        'blocks:',
+        '  - finish',
+        '---',
+        '',
+        '# Query Polish',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const result = workspace.backlogQuery({
+      ready: false,
+      hasAcceptanceCriteria: true,
+      blockedBy: 'SETUP',
+      blocks: 'finish',
+      limit: 10,
+    });
+
+    expect(result.filters.ready).toBe(false);
+    expect(result.filters.hasAcceptanceCriteria).toBe(true);
+    expect(result.filters.blockedBy).toBe('setup');
+    expect(result.filters.blocks).toBe('finish');
+    expect(result.items.map((item) => item.stem)).toEqual(['PROCESS_query-foundation']);
+    expect(result.items[0].hasAcceptanceCriteria).toBe(true);
+    expect(result.items[0].blockedBy).toEqual(['setup']);
+    expect(result.items[0].blocks).toEqual(['finish']);
+  });
+
+  it('sorts backlog query results by explicit priority or path when requested.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    ensureBacklogLane(root, 'up-next');
+    const workspace = new Workspace(root);
+
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_alpha-low.md'),
+      [
+        '---',
+        'title: "Alpha Low"',
+        'legend: PROCESS',
+        'lane: up-next',
+        'priority: low',
+        '---',
+        '',
+        '# Alpha Low',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(root, 'docs/method/backlog/bad-code/PROCESS_beta-critical.md'),
+      [
+        '---',
+        'title: "Beta Critical"',
+        'legend: PROCESS',
+        'lane: bad-code',
+        'priority: critical',
+        '---',
+        '',
+        '# Beta Critical',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(root, 'docs/method/backlog/cool-ideas/PROCESS_gamma-unset.md'),
+      [
+        '---',
+        'title: "Gamma Unset"',
+        'legend: PROCESS',
+        'lane: cool-ideas',
+        '---',
+        '',
+        '# Gamma Unset',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const prioritySorted = workspace.backlogQuery({ sort: 'priority', limit: 10 });
+    expect(prioritySorted.filters.sort).toBe('priority');
+    expect(prioritySorted.items.map((item) => item.stem)).toEqual([
+      'PROCESS_beta-critical',
+      'PROCESS_alpha-low',
+      'PROCESS_gamma-unset',
+    ]);
+
+    const pathSorted = workspace.backlogQuery({ sort: 'path', limit: 10 });
+    expect(pathSorted.filters.sort).toBe('path');
+    expect(pathSorted.items.map((item) => item.stem)).toEqual([
+      'PROCESS_beta-critical',
+      'PROCESS_gamma-unset',
+      'PROCESS_alpha-low',
+    ]);
+  });
+
+  it('edits schema-backed backlog metadata with normalized set and clear behavior.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.createBacklogItem({
+      lane: 'up-next',
+      title: 'Metadata Edit',
+      legend: 'PROCESS',
+      body: 'Body.\n',
+    });
+
+    const updated = workspace.editBacklogMetadata('metadata-edit', {
+      owner: 'Core Team',
+      priority: 'HIGH',
+      keywords: ['roadmap', 'Roadmap', 'query'],
+      blockedBy: ['setup', 'setup'],
+      blocks: ['finish', 'Finish'],
+    });
+
+    expect(updated.updatedFields).toEqual(['owner', 'priority', 'keywords', 'blocked_by', 'blocks']);
+    expect(updated.owner).toBe('Core Team');
+    expect(updated.priority).toBe('high');
+    expect(updated.keywords).toEqual(['roadmap', 'query']);
+    expect(updated.blockedBy).toEqual(['setup']);
+    expect(updated.blocks).toEqual(['finish']);
+
+    const afterSet = readFileSync(join(root, updated.path), 'utf8');
+    expect(afterSet).toContain('owner: Core Team');
+    expect(afterSet).toContain('priority: high');
+    expect(afterSet).toContain('keywords:');
+    expect(afterSet).toContain('blocked_by:');
+    expect(afterSet).toContain('blocks:');
+
+    const cleared = workspace.editBacklogMetadata('metadata-edit', {
+      clearOwner: true,
+      clearPriority: true,
+      clearKeywords: true,
+      clearBlockedBy: true,
+      clearBlocks: true,
+    });
+
+    expect(cleared.updatedFields).toEqual(['owner', 'priority', 'keywords', 'blocked_by', 'blocks']);
+    expect(cleared.owner).toBeUndefined();
+    expect(cleared.priority).toBeUndefined();
+    expect(cleared.keywords).toEqual([]);
+    expect(cleared.blockedBy).toEqual([]);
+    expect(cleared.blocks).toEqual([]);
+
+    const afterClear = readFileSync(join(root, cleared.path), 'utf8');
+    expect(afterClear).not.toContain('owner:');
+    expect(afterClear).not.toContain('priority:');
+    expect(afterClear).not.toContain('keywords:');
+    expect(afterClear).not.toContain('blocked_by:');
+    expect(afterClear).not.toContain('blocks:');
+  });
+
+  it('returns an advisory next-work menu that can cite BEARING when it elevates an item above default lane order.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    ensureBacklogLane(root, 'up-next');
+    const workspace = new Workspace(root);
+
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_up-next-foundation.md'),
+      [
+        '---',
+        'title: "Up Next Foundation"',
+        'legend: PROCESS',
+        'lane: up-next',
+        'priority: medium',
+        '---',
+        '',
+        '# Up Next Foundation',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(root, 'docs/method/backlog/bad-code/PROCESS_bad-fix.md'),
+      [
+        '---',
+        'title: "Bad Fix"',
+        'legend: PROCESS',
+        'lane: bad-code',
+        'priority: medium',
+        '---',
+        '',
+        '# Bad Fix',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(root, 'docs/method/backlog/cool-ideas/PROCESS_bearing-star.md'),
+      [
+        '---',
+        'title: "Bearing Star"',
+        'legend: PROCESS',
+        'lane: cool-ideas',
+        'priority: medium',
+        'keywords:',
+        '  - roadmap',
+        '---',
+        '',
+        '# Bearing Star',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(root, 'docs/BEARING.md'),
+      [
+        '---',
+        'title: "BEARING"',
+        'generated_at: 2026-04-11T00:00:00.000Z',
+        'generator: "test"',
+        'generated_from_commit: "test-sha"',
+        'provenance_level: artifact_history',
+        '---',
+        '',
+        '# BEARING',
+        '',
+        '## Where are we going?',
+        '',
+        'Current priority: explore `PROCESS_bearing-star` next.',
+        '',
+        '## What just shipped?',
+        '',
+        '- None yet.',
+        '',
+        '## What feels wrong?',
+        '',
+        '- No acute coordination pain is currently recorded.',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const result = workspace.nextWork({ limit: 3 });
+
+    expect(result.summary.bearing_priority).toContain('PROCESS_bearing-star');
+    expect(result.recommendations.map((item) => item.path)).toEqual([
+      'docs/method/backlog/up-next/PROCESS_up-next-foundation.md',
+      'docs/method/backlog/cool-ideas/PROCESS_bearing-star.md',
+      'docs/method/backlog/bad-code/PROCESS_bad-fix.md',
+    ]);
+    expect(result.recommendations[1]?.signals).toContainEqual({
+      type: 'bearing_mention',
+      value: 'Current priority: explore `PROCESS_bearing-star` next.',
+      source: 'docs/BEARING.md#Where are we going?',
+    });
+    expect(result.selection_notes).toContainEqual(expect.stringContaining('BEARING elevated `PROCESS_bearing-star`'));
+  });
+
+  it('programmatically captures outside-in notes directly into inbox with stable intake metadata.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    const path = workspace.captureIdeaWithMetadata('Missing API Surfaces', undefined, 'Missing API Surfaces', {
+      source: 'cross-repo usage',
+      body: 'Observed while operating METHOD from another repo.\n',
+      capturedAt: '2026-04-11',
+    });
+
+    expect(path).toContain('docs/method/backlog/inbox/missing-api-surfaces.md');
+    expect(readFileSync(path, 'utf8')).toContain('# Missing API Surfaces');
+    expect(readFileSync(path, 'utf8')).toContain('source: "cross-repo usage"');
+    expect(readFileSync(path, 'utf8')).toContain('captured_at: "2026-04-11"');
+    expect(workspace.describeBacklogPath(workspace.resolveRepoPath(path))).toEqual({
+      stem: 'missing-api-surfaces',
+      lane: 'inbox',
+      path: 'docs/method/backlog/inbox/missing-api-surfaces.md',
+      legend: undefined,
+      slug: 'missing-api-surfaces',
+      title: 'Missing API Surfaces',
+      release: undefined,
+      source: 'cross-repo usage',
+      captured_at: '2026-04-11',
+    });
+  });
+
+  it('pulls release-lane backlog work into release-scoped design and retro packets.', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.createBacklogItem({
+      lane: 'v2.4.5',
+      title: 'Release Scope',
+      legend: 'PROCESS',
+      body: 'Original release body.\n',
+    });
+
+    const cycle = workspace.pullItem('release-scope');
+    expect(cycle.designDoc).toBe(join(root, 'docs/releases/v2.4.5/design/PROCESS_release-scope.md'));
+    expect(cycle.retroDoc).toBe(join(root, 'docs/releases/v2.4.5/retros/PROCESS_release-scope/PROCESS_release-scope.md'));
+    expect(readFileSync(cycle.designDoc, 'utf8')).toContain('release: "v2.4.5"');
+
+    await workspace.closeCycle(cycle.name, true, 'hill-met');
+    expect(readFileSync(cycle.retroDoc, 'utf8')).toContain('release: "v2.4.5"');
+    expect(existsSync(join(root, 'docs/releases/v2.4.5/retros/PROCESS_release-scope/witness/verification.md'))).toBe(true);
+  });
+
+  it('preserves release metadata when work is promoted from a release lane into asap before pull.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    const created = workspace.createBacklogItem({
+      lane: 'v2.4.5',
+      title: 'Release ASAP',
+      legend: 'PROCESS',
+      body: 'Queue me next.\n',
+    });
+    const moved = workspace.moveBacklogItem(workspace.resolveRepoPath(created), 'asap');
+    expect(readFileSync(join(root, moved), 'utf8')).toContain('release: v2.4.5');
+
+    const cycle = workspace.pullItem('release-asap');
+    expect(cycle.designDoc).toBe(join(root, 'docs/releases/v2.4.5/design/PROCESS_release-asap.md'));
+  });
+
+  it('programmatically retires a live backlog item into the graveyard with a disposition tombstone.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.createBacklogItem({
+      lane: 'up-next',
+      title: 'Retire Me',
+      legend: 'PROCESS',
+      body: 'Original proposal body.\n',
+    });
+
+    const retired = workspace.retireBacklogItem(
+      'retire-me',
+      'Superseded by the broader release-scope cycle.',
+      'docs/design/0040-release-scope/release-scope.md',
+    );
+
+    expect(retired.ok).toBe(true);
+    expect(retired.sourcePath).toBe('docs/method/backlog/up-next/PROCESS_retire-me.md');
+    expect(retired.graveyardPath).toBe('docs/method/graveyard/PROCESS_retire-me.md');
+    expect(retired.updatedFiles).toEqual([
+      'docs/method/backlog/up-next/PROCESS_retire-me.md',
+      'docs/method/graveyard/PROCESS_retire-me.md',
+    ]);
+    expect(existsSync(join(root, retired.sourcePath))).toBe(false);
+    expect(readFileSync(join(root, retired.graveyardPath), 'utf8')).toContain('lane: graveyard');
+    expect(readFileSync(join(root, retired.graveyardPath), 'utf8')).toContain('## Disposition');
+    expect(readFileSync(join(root, retired.graveyardPath), 'utf8')).toContain('Superseded by the broader release-scope cycle.');
+    expect(readFileSync(join(root, retired.graveyardPath), 'utf8')).toContain('Replacement: `docs/design/0040-release-scope/release-scope.md`');
+    expect(readFileSync(join(root, retired.graveyardPath), 'utf8')).toContain('## Original Proposal');
+    expect(readFileSync(join(root, retired.graveyardPath), 'utf8')).toContain('Original proposal body.');
+  });
+
+  it('can preview backlog retirement without mutating the repo.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.createBacklogItem({
+      lane: 'up-next',
+      title: 'Retire Me',
+      legend: 'PROCESS',
+      body: 'Original proposal body.\n',
+    });
+
+    const preview = workspace.retireBacklogItem('retire-me', 'No longer relevant.', undefined, { dryRun: true });
+
+    expect(preview.ok).toBe(true);
+    expect(preview.dryRun).toBe(true);
+    expect(preview.sourcePath).toBe('docs/method/backlog/up-next/PROCESS_retire-me.md');
+    expect(preview.graveyardPath).toBe('docs/method/graveyard/PROCESS_retire-me.md');
+    expect(existsSync(join(root, preview.sourcePath))).toBe(true);
+    expect(existsSync(join(root, preview.graveyardPath))).toBe(false);
+  });
+
+  it('reports expected signposts and can initialize narrowly supported missing signposts.', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    const statusBefore = workspace.signpostStatus();
+    expect(statusBefore.missing).toContain('README.md');
+    expect(statusBefore.missing).toContain('docs/BEARING.md');
+    expect(statusBefore.signposts).toContainEqual(expect.objectContaining({
+      name: 'BEARING',
+      path: 'docs/BEARING.md',
+      kind: 'Generated',
+      exists: false,
+      initable: true,
+    }));
+    expect(statusBefore.signposts).toContainEqual(expect.objectContaining({
+      name: 'VISION',
+      path: 'docs/VISION.md',
+      kind: 'Generated',
+      exists: false,
+      initable: false,
+    }));
+
+    const initialized = await workspace.initSignpost('BEARING');
+    expect(initialized.ok).toBe(true);
+    expect(initialized.requested).toBe('BEARING');
+    expect(initialized.initializedTargets).toEqual(['docs/BEARING.md']);
+    expect(initialized.skippedPaths).toEqual([]);
+    expect(readFileSync(join(root, 'docs/BEARING.md'), 'utf8')).toContain('# BEARING');
+
+    const skipped = await workspace.initSignpost('BEARING');
+    expect(skipped.initializedTargets).toEqual([]);
+    expect(skipped.skippedPaths).toEqual(['docs/BEARING.md']);
   });
 
   it("If a backlog card's filename or directory disagrees with its YAML, does `method status` report the YAML lane and legend rather than the path-derived guess?", () => {
@@ -151,6 +892,7 @@ describe('Method API', () => {
   it('If I move an item to the lane it is already in, does METHOD still repair stale or missing frontmatter metadata?', () => {
     const root = createTempRoot();
     initWorkspace(root);
+    ensureBacklogLane(root, 'up-next');
     const workspace = new Workspace(root);
 
     writeFileSync(
@@ -177,6 +919,38 @@ describe('Method API', () => {
     expect(workspace.readFrontmatter(moved)).toMatchObject({
       lane: 'up-next',
       legend: 'PROCESS',
+    });
+  });
+
+  it('Allows repo-defined backlog lanes such as `v1.1.0` and preserves them in status output.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    writeFileSync(
+      join(root, 'docs/method/backlog/inbox/PROCESS_release-scope.md'),
+      '# Release Scope\n\nBody\n',
+      'utf8',
+    );
+
+    const moved = workspace.moveBacklogItem(
+      'docs/method/backlog/inbox/PROCESS_release-scope.md',
+      'v1.1.0',
+    );
+
+    expect(moved).toBe('docs/method/backlog/v1.1.0/PROCESS_release-scope.md');
+    expect(workspace.readFrontmatter(moved)).toMatchObject({
+      lane: 'v1.1.0',
+      legend: 'PROCESS',
+    });
+
+    const status = workspace.status();
+    expect(status.backlog['v1.1.0']).toContainEqual({
+      stem: 'PROCESS_release-scope',
+      lane: 'v1.1.0',
+      path: 'docs/method/backlog/v1.1.0/PROCESS_release-scope.md',
+      legend: 'PROCESS',
+      slug: 'release-scope',
     });
   });
 
@@ -229,7 +1003,7 @@ describe('Method API', () => {
     );
 
     const cycle = workspace.pullItem('PROCESS_frontmatter-pull');
-    expect(cycle.name).toBe('0001-frontmatter-pull');
+    expect(cycle.name).toBe('SYNTH_frontmatter-pull');
     expect(readFileSync(cycle.designDoc, 'utf8')).toContain('Legend: SYNTH');
   });
 
@@ -310,9 +1084,7 @@ describe('Method API', () => {
     initWorkspace(root);
     const workspace = new Workspace(root);
 
-    const cycleDir = join(root, 'docs/design/0001-frontmatter-design');
-    const designDoc = join(cycleDir, 'frontmatter-design.md');
-    mkdirSync(cycleDir, { recursive: true });
+    const designDoc = join(root, 'docs/design/PROCESS_frontmatter-design.md');
     writeFileSync(
       designDoc,
       [
@@ -348,5 +1120,56 @@ describe('Method API', () => {
 
   it('The `method` CLI continues to work exactly as before for all commands (`status`, `inbox`, `pull`, etc.).', () => {
     // Verified by running the full cli.test.ts suite.
+  });
+
+  it('Does `method pull` create a flat design doc at `docs/design/<LEGEND>_<slug>.md` instead of a nested directory?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.captureIdea('Flat Layout', 'PROCESS', 'Flat Layout Test');
+    const cycle = workspace.pullItem('PROCESS_flat-layout-test');
+
+    expect(cycle.name).toBe('PROCESS_flat-layout-test');
+    expect(cycle.designDoc).toBe(join(root, 'docs/design/PROCESS_flat-layout-test.md'));
+    expect(existsSync(join(root, 'docs/design/PROCESS_flat-layout-test.md'))).toBe(true);
+    // No subdirectory should exist
+    expect(existsSync(join(root, 'docs/design/PROCESS_flat-layout-test'))).toBe(false);
+  });
+
+  it('Does `readCycleFromDoc()` discover both flat and legacy nested design docs?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    // Create a flat design doc
+    writeFileSync(
+      join(root, 'docs/design/PROCESS_flat-cycle.md'),
+      '# Flat Cycle\n\nLegend: PROCESS\n',
+      'utf8',
+    );
+
+    // Create a legacy nested design doc
+    mkdirSync(join(root, 'docs/design/0001-legacy-cycle'), { recursive: true });
+    writeFileSync(
+      join(root, 'docs/design/0001-legacy-cycle/legacy-cycle.md'),
+      '# Legacy Cycle\n\nLegend: PROCESS\n',
+      'utf8',
+    );
+
+    const status = workspace.status();
+    const cycleNames = status.activeCycles.map((cycle) => cycle.name);
+    expect(cycleNames).toContain('PROCESS_flat-cycle');
+    expect(cycleNames).toContain('0001-legacy-cycle');
+  });
+
+  it('Does `generateReferenceDocs()` return the same target list that the CLI prints?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    const result = workspace.syncRefs();
+    expect(result.targets).toEqual(['ARCHITECTURE.md', 'docs/CLI.md', 'docs/MCP.md', 'docs/GUIDE.md']);
+    expect(Array.isArray(result.updated)).toBe(true);
   });
 });

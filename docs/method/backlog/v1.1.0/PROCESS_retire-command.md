@@ -1,7 +1,7 @@
 ---
 title: "Retire Command"
 legend: PROCESS
-lane: cool-ideas
+lane: v1.1.0
 owner: "METHOD maintainers"
 priority: medium
 acceptance_criteria:

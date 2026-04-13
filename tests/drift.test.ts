@@ -21,18 +21,18 @@ function createTempRoot(): string {
 }
 
 function setupCycleWithQuestions(root: string, questions: string[]): Cycle {
-  const designDir = resolve(root, 'docs/design/0001-test-cycle');
+  const designDir = resolve(root, 'docs/design');
   mkdirSync(designDir, { recursive: true });
 
-  const designDoc = resolve(designDir, 'test-cycle.md');
+  const designDoc = resolve(designDir, 'PROCESS_test-cycle.md');
   const questionLines = questions.map((q) => `- [ ] ${q}`).join('\n');
   writeFileSync(designDoc, `# Test Cycle\n\n## Playback Questions\n\n### Human\n\n${questionLines}\n\n## Non-goals\n`);
 
   return {
-    name: '0001-test-cycle',
+    name: 'PROCESS_test-cycle',
     slug: 'test-cycle',
     designDoc,
-    retroDoc: resolve(root, 'docs/method/retro/0001-test-cycle/test-cycle.md'),
+    retroDoc: resolve(root, 'docs/method/retro/PROCESS_test-cycle/PROCESS_test-cycle.md'),
   };
 }
 

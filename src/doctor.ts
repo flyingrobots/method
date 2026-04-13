@@ -1,11 +1,12 @@
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { basename, relative, resolve } from 'node:path';
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { basename, dirname, relative, resolve } from 'node:path';
 import { headerBox, separator } from '@flyingrobots/bijou';
 import { createNodeContext } from '@flyingrobots/bijou-node';
 import { ConfigSchema, DEFAULT_PATHS, PathsSchema, type PathsConfig } from './config.js';
-import type { DoctorCheck, DoctorCheckId, DoctorIssue, DoctorReport, DoctorSeverity, DoctorStatus } from './domain.js';
-import { LANES } from './domain.js';
+import type { DoctorCheck, DoctorCheckId, DoctorIssue, DoctorRepairKind, DoctorReport, DoctorSeverity, DoctorStatus } from './domain.js';
+import { isLaneName } from './domain.js';
+import { workspaceScaffold } from './index.js';
 import { parse as parseYaml } from 'yaml';
 
 interface ConfigInspection {
@@ -20,6 +21,35 @@ const DOCTOR_CHECKS: readonly DoctorCheckId[] = [
   'git-hooks',
   'backlog',
 ] as const;
+
+export type DoctorRepairMode = 'plan' | 'apply';
+
+export interface DoctorRepairAction {
+  issueCode: string;
+  kind: DoctorRepairKind;
+  targetPath: string;
+  status: 'planned' | 'applied' | 'skipped';
+  reason?: string;
+}
+
+export interface DoctorRepairResult {
+  root: string;
+  mode: DoctorRepairMode;
+  ok: boolean;
+  selectedIssues: DoctorIssue[];
+  repairs: DoctorRepairAction[];
+  touchedPaths: string[];
+  unresolvedIssues: DoctorIssue[];
+}
+
+export interface DoctorMigrateResult {
+  root: string;
+  ok: boolean;
+  changed: boolean;
+  initialReport: DoctorReport;
+  repair: DoctorRepairResult;
+  finalReport: DoctorReport;
+}
 
 export function runDoctor(root: string): DoctorReport {
   const configInspection = inspectConfig(root);
@@ -75,6 +105,148 @@ export function renderDoctorText(report: DoctorReport): string {
     '',
     `${separator({ label: 'Issues', ctx })}`,
     ...issueLines,
+    '',
+  ].join('\n');
+}
+
+export function runDoctorRepair(root: string, mode: DoctorRepairMode): DoctorRepairResult {
+  const initialReport = runDoctor(root);
+  const selectedIssues = initialReport.issues.filter((issue) => issue.repair !== undefined);
+
+  if (mode === 'plan') {
+    return {
+      root,
+      mode,
+      ok: true,
+      selectedIssues,
+      repairs: selectedIssues.map((issue) => ({
+        issueCode: issue.code,
+        kind: issue.repair!.kind,
+        targetPath: issue.repair!.targetPath,
+        status: 'planned',
+      })),
+      touchedPaths: [],
+      unresolvedIssues: initialReport.issues,
+    };
+  }
+
+  const touchedPaths = new Set<string>();
+  const repairs = selectedIssues.map((issue) => {
+    const repair = issue.repair!;
+    const outcome = applyRepair(root, issue);
+    if (outcome.touchedPath !== undefined) {
+      touchedPaths.add(outcome.touchedPath);
+    }
+    return {
+      issueCode: issue.code,
+      kind: repair.kind,
+      targetPath: repair.targetPath,
+      status: outcome.status,
+      reason: outcome.reason,
+    } satisfies DoctorRepairAction;
+  });
+  const unresolvedIssues = runDoctor(root).issues;
+
+  return {
+    root,
+    mode,
+    ok: repairs.every((repair) => repair.status !== 'skipped'),
+    selectedIssues,
+    repairs,
+    touchedPaths: [...touchedPaths].sort((left, right) => left.localeCompare(right)),
+    unresolvedIssues,
+  };
+}
+
+export function runDoctorMigrate(root: string): DoctorMigrateResult {
+  const initialReport = runDoctor(root);
+  const hasRepairableIssues = initialReport.issues.some((issue) => issue.repair !== undefined);
+  const repair = hasRepairableIssues
+    ? runDoctorRepair(root, 'apply')
+    : {
+      root,
+      mode: 'apply' as const,
+      ok: true,
+      selectedIssues: [],
+      repairs: [],
+      touchedPaths: [],
+      unresolvedIssues: initialReport.issues,
+    };
+  const finalReport = runDoctor(root);
+
+  return {
+    root,
+    ok: repair.ok && finalReport.status !== 'error',
+    changed: repair.touchedPaths.length > 0,
+    initialReport,
+    repair,
+    finalReport,
+  };
+}
+
+export function renderDoctorRepairText(result: DoctorRepairResult): string {
+  const title = result.mode === 'plan' ? 'METHOD Repair Plan' : 'METHOD Repair Apply';
+  const ctx = createNodeContext();
+  const repairLines = result.repairs.length === 0
+    ? ['No repairable issues selected.']
+    : result.repairs.map((repair) => {
+      const suffix = repair.reason === undefined ? '' : ` (${repair.reason})`;
+      return `- [${repair.status}] ${repair.kind}: ${repair.targetPath}${suffix}`;
+    });
+  const unresolvedLines = result.unresolvedIssues.length === 0
+    ? ['No unresolved issues remain.']
+    : result.unresolvedIssues.map((issue) => {
+      const target = issue.path === undefined ? '' : ` (${issue.path})`;
+      return `- [${issue.severity}] ${issue.code}${target}`;
+    });
+  const touched = result.touchedPaths.length === 0 ? '-' : result.touchedPaths.join(', ');
+
+  return [
+    `${headerBox(title, { detail: result.root, ctx })}`,
+    '',
+    `Selected issues: ${result.selectedIssues.length}`,
+    `Touched paths: ${touched}`,
+    `Command ok: ${result.ok ? 'yes' : 'no'}`,
+    '',
+    `${separator({ label: 'Repairs', ctx })}`,
+    ...repairLines,
+    '',
+    `${separator({ label: 'Unresolved', ctx })}`,
+    ...unresolvedLines,
+    '',
+  ].join('\n');
+}
+
+export function renderDoctorMigrateText(result: DoctorMigrateResult): string {
+  const ctx = createNodeContext();
+  const touched = result.repair.touchedPaths.length === 0 ? '-' : result.repair.touchedPaths.join(', ');
+  const repairLines = result.repair.repairs.length === 0
+    ? ['No bounded repairs were applied.']
+    : result.repair.repairs.map((repair) => {
+      const suffix = repair.reason === undefined ? '' : ` (${repair.reason})`;
+      return `- [${repair.status}] ${repair.kind}: ${repair.targetPath}${suffix}`;
+    });
+  const finalIssueLines = result.finalReport.issues.length === 0
+    ? ['No issues remain.']
+    : result.finalReport.issues.map((issue) => {
+      const target = issue.path === undefined ? '' : ` (${issue.path})`;
+      return `- [${issue.severity}] ${issue.code}${target}`;
+    });
+
+  return [
+    `${headerBox('METHOD Migrate', { detail: result.root, ctx })}`,
+    '',
+    `Before: ${result.initialReport.status} (${result.initialReport.counts.errors} errors, ${result.initialReport.counts.warnings} warnings)`,
+    `After: ${result.finalReport.status} (${result.finalReport.counts.errors} errors, ${result.finalReport.counts.warnings} warnings)`,
+    `Changed: ${result.changed ? 'yes' : 'no'}`,
+    `Command ok: ${result.ok ? 'yes' : 'no'}`,
+    `Touched paths: ${touched}`,
+    '',
+    `${separator({ label: 'Repairs', ctx })}`,
+    ...repairLines,
+    '',
+    `${separator({ label: 'Remaining Issues', ctx })}`,
+    ...finalIssueLines,
     '',
   ].join('\n');
 }
@@ -174,6 +346,7 @@ function inspectStructure(root: string, paths: PathsConfig): DoctorIssue[] {
       'A required METHOD directory is missing.',
       relative(root, directory),
       `Run \`method init\` in \`${root}\` or recreate \`${relative(root, directory)}\`.`,
+      { kind: 'create-directory', targetPath: relative(root, directory) },
     ));
   }
 
@@ -199,7 +372,32 @@ function inspectStructure(root: string, paths: PathsConfig): DoctorIssue[] {
       'A required METHOD file is missing.',
       relative(root, file),
       `Run \`method init\` in \`${root}\` or restore \`${relative(root, file)}\`.`,
+      { kind: 'restore-file', targetPath: relative(root, file) },
     ));
+  }
+
+  // Detect legacy nested design doc directories
+  const designDir = resolve(root, paths.design);
+  if (isDirectoryPath(designDir)) {
+    for (const entry of readdirSync(designDir, { withFileTypes: true })) {
+      if (!entry.isDirectory() || entry.isSymbolicLink()) {
+        continue;
+      }
+      const subdir = resolve(designDir, entry.name);
+      const mdFiles = readdirSync(subdir).filter((name) => name.endsWith('.md'));
+      if (mdFiles.length > 0) {
+        const relDir = relative(root, subdir);
+        issues.push(createIssue(
+          'legacy-design-layout',
+          'structure',
+          'warning',
+          'Design doc lives in a subdirectory instead of as a flat file under the design root.',
+          relDir,
+          `Run \`method doctor --repair\` to flatten \`${relDir}/\` into \`${paths.design}/<name>.md\`.`,
+          { kind: 'flatten-design-doc', targetPath: relDir },
+        ));
+      }
+    }
   }
 
   return issues;
@@ -231,6 +429,7 @@ function inspectFrontmatter(root: string, paths: PathsConfig): DoctorIssue[] {
           'METHOD packet markdown is missing a YAML frontmatter block.',
           relativePath,
           `Add a top-of-file \`---\` frontmatter block to \`${relativePath}\`.`,
+          { kind: 'frontmatter-stub', targetPath: relativePath },
         ));
         continue;
       }
@@ -379,8 +578,9 @@ function inspectBacklog(root: string, paths: PathsConfig): DoctorIssue[] {
   const issues: DoctorIssue[] = [];
   for (const file of collectMarkdownFiles(backlogRoot)) {
     const relativeToBacklog = relative(backlogRoot, file);
-    const [firstSegment] = relativeToBacklog.split(/[\\/]/u);
-    if (firstSegment !== undefined && (LANES as readonly string[]).includes(firstSegment)) {
+    const segments = relativeToBacklog.split(/[\\/]/u).filter((segment) => segment.length > 0);
+    const [firstSegment] = segments;
+    if (segments.length > 1 && firstSegment !== undefined && isLaneName(firstSegment)) {
       continue;
     }
 
@@ -443,6 +643,7 @@ function createIssue(
   message: string,
   path: string | undefined,
   fix: string,
+  repair?: DoctorIssue['repair'],
 ): DoctorIssue {
   return {
     code,
@@ -451,7 +652,147 @@ function createIssue(
     message,
     path,
     fix,
+    repair,
   };
+}
+
+function applyRepair(
+  root: string,
+  issue: DoctorIssue,
+): { status: 'applied' | 'skipped'; touchedPath?: string; reason?: string } {
+  const repair = issue.repair;
+  if (repair === undefined) {
+    return { status: 'skipped', reason: 'no-repair-hint' };
+  }
+
+  const target = resolve(root, repair.targetPath);
+  if (repair.kind === 'create-directory') {
+    if (isDirectoryPath(target)) {
+      return { status: 'skipped', reason: 'already-exists' };
+    }
+    if (existsSync(target)) {
+      return { status: 'skipped', reason: 'path-exists-as-file' };
+    }
+    mkdirSync(target, { recursive: true });
+    return { status: 'applied', touchedPath: repair.targetPath };
+  }
+
+  if (repair.kind === 'restore-file') {
+    if (isFilePath(target)) {
+      return { status: 'skipped', reason: 'already-exists' };
+    }
+    if (existsSync(target)) {
+      return { status: 'skipped', reason: 'path-exists-as-directory' };
+    }
+    const content = scaffoldContentForPath(root, repair.targetPath);
+    if (content === undefined) {
+      return { status: 'skipped', reason: 'no-scaffold-template' };
+    }
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, content, 'utf8');
+    return { status: 'applied', touchedPath: repair.targetPath };
+  }
+
+  if (repair.kind === 'frontmatter-stub') {
+    if (!isFilePath(target)) {
+      return { status: 'skipped', reason: 'file-missing' };
+    }
+    const raw = readFileSync(target, 'utf8');
+    if (/^\uFEFF?---\r?\n/u.test(raw)) {
+      return { status: 'skipped', reason: 'frontmatter-present' };
+    }
+    const normalized = raw.replace(/^\uFEFF/u, '');
+    const title = inferFrontmatterTitle(repair.targetPath, normalized);
+    const frontmatter = ['---', `title: "${title.replace(/"/gu, '\\"')}"`, '---'].join('\n');
+    writeFileSync(target, normalized.length === 0 ? `${frontmatter}\n` : `${frontmatter}\n\n${normalized}`, 'utf8');
+    return { status: 'applied', touchedPath: repair.targetPath };
+  }
+
+  if (repair.kind === 'flatten-design-doc') {
+    if (!isDirectoryPath(target)) {
+      return { status: 'skipped', reason: 'directory-missing' };
+    }
+    const mdFiles = readdirSync(target).filter((name) => name.endsWith('.md'));
+    if (mdFiles.length === 0) {
+      return { status: 'skipped', reason: 'no-md-files' };
+    }
+    const sourceFile = resolve(target, mdFiles[0]);
+    const raw = readFileSync(sourceFile, 'utf8');
+
+    // Derive the new cycle name from frontmatter legend + slug, or fall back to dir name
+    const dirName = basename(target);
+    const legacyMatch = /^(\d{4})-(.+)$/u.exec(dirName);
+    const slug = legacyMatch !== null ? legacyMatch[2] : dirName;
+    const legendMatch = /^legend:\s*"?([A-Z][A-Z0-9]*)"?\s*$/mu.exec(raw);
+    const legend = legendMatch !== null ? legendMatch[1] : undefined;
+    const cycleName = legend !== undefined ? `${legend}_${slug}` : slug;
+
+    const designRoot = dirname(target);
+    const flatPath = resolve(designRoot, `${cycleName}.md`);
+    if (existsSync(flatPath)) {
+      return { status: 'skipped', reason: 'flat-target-exists' };
+    }
+
+    // Update the cycle frontmatter field if present
+    const updated = raw.replace(
+      /^(cycle:\s*)"[^"]*"\s*$/mu,
+      `$1"${cycleName}"`,
+    );
+    writeFileSync(flatPath, updated, 'utf8');
+
+    // Remove the old directory (all files should be the single md)
+    rmSync(target, { recursive: true });
+
+    // Also rename the corresponding retro directory if it exists
+    const configInspection = inspectConfig(root);
+    const paths = configInspection.paths ?? DEFAULT_PATHS;
+    const retroDir = resolve(root, paths.retro, dirName);
+    if (isDirectoryPath(retroDir) && dirName !== cycleName) {
+      const newRetroDir = resolve(root, paths.retro, cycleName);
+      if (!existsSync(newRetroDir)) {
+        renameSync(retroDir, newRetroDir);
+        // Rename the retro doc inside to match the new cycle name
+        const oldRetroDoc = resolve(newRetroDir, `${slug}.md`);
+        const newRetroDoc = resolve(newRetroDir, `${cycleName}.md`);
+        if (isFilePath(oldRetroDoc) && !existsSync(newRetroDoc)) {
+          const retroRaw = readFileSync(oldRetroDoc, 'utf8');
+          const retroUpdated = retroRaw
+            .replace(/^(cycle:\s*)"[^"]*"\s*$/mu, `$1"${cycleName}"`)
+            .replace(/^(design_doc:\s*)"[^"]*"\s*$/mu, `$1"${paths.design}/${cycleName}.md"`);
+          writeFileSync(newRetroDoc, retroUpdated, 'utf8');
+          if (oldRetroDoc !== newRetroDoc) {
+            rmSync(oldRetroDoc);
+          }
+        }
+      }
+    }
+
+    return { status: 'applied', touchedPath: relative(root, flatPath) };
+  }
+
+  return { status: 'skipped', reason: 'unsupported-repair-kind' };
+}
+
+function scaffoldContentForPath(root: string, targetPath: string): string | undefined {
+  const configInspection = inspectConfig(root);
+  const scaffold = workspaceScaffold(root, configInspection.paths ?? DEFAULT_PATHS);
+  return scaffold.files.get(resolve(root, targetPath));
+}
+
+function inferFrontmatterTitle(targetPath: string, raw: string): string {
+  const heading = /^\s*#\s+(.+)$/mu.exec(raw)?.[1]?.trim();
+  if (heading !== undefined && heading.length > 0) {
+    return heading;
+  }
+
+  const stem = basename(targetPath, '.md')
+    .replace(/^[A-Z][A-Z0-9]*_/u, '')
+    .replace(/^\d{4}-\d{2}-\d{2}-/u, '');
+  return stem
+    .split(/[-_]+/u)
+    .filter((part) => part.length > 0)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
 }
 
 function collectMarkdownFiles(root: string, maxDepth = 10): string[] {
