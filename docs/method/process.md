@@ -16,6 +16,9 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
 - If a claimed result cannot be reproduced, it is not done.
 - Drift is checked explicitly at close, not hand-waved after the fact.
   Invariant preservation is part of the drift check.
+- This repo must pass `method doctor` with zero issues before any
+  release. METHOD must be an example of the correct application of
+  what it preaches.
 - `human`, `agent`, and `user` are abstract seats or perspectives in
   METHOD doctrine, not literal people, accounts, or model brands.
 - Backlog maintenance happens at cycle boundaries, not continuously.

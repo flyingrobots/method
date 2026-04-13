@@ -68,10 +68,13 @@ the decision by themselves.
 
 1. Shape the release in `docs/method/releases/vX.Y.Z/release.md`.
 2. Accept the release scope and version justification before tagging.
-3. Draft the user-facing release notes in `docs/releases/vX.Y.Z.md`.
-4. Run the sequential pre-flight in `docs/method/release-runbook.md`.
-5. Tag, publish, and verify delivery directly.
-6. Ship sync repo-level surfaces that the release changed.
+3. Run `method doctor` and resolve all issues. Zero issues is a release
+   gate — this repo must be an example of the correct application of
+   what it preaches.
+4. Draft the user-facing release notes in `docs/releases/vX.Y.Z.md`.
+5. Run the sequential pre-flight in `docs/method/release-runbook.md`.
+6. Tag, publish, and verify delivery directly.
+7. Ship sync repo-level surfaces that the release changed.
 
 Future automation may add a release-readiness witness or rollup, but it
 should summarize the release-scoped cycle evidence above rather than

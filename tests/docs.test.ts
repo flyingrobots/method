@@ -210,8 +210,8 @@ describe('METHOD docs', () => {
   });
 
   it('records synthesis protocol and provenance contract details in backlog docs', () => {
-    const protocol = readBacklogDoc('executive-summary-protocol.md');
-    const provenance = readBacklogDoc('generated-signpost-provenance.md');
+    const protocol = readBacklogDoc('SYNTH_executive-summary-protocol.md');
+    const provenance = readBacklogDoc('SYNTH_generated-signpost-provenance.md');
     const legendAudit = readBacklogDoc('PROCESS_legend-audit-and-assignment.md');
 
     expect(protocol).toContain('### Phase 1: Inventory');
@@ -259,7 +259,7 @@ describe('METHOD docs', () => {
   });
 
   it('proves both clean and drift-found exit codes in the 0005 verification witness', () => {
-    const verification = readRepoFile('docs/method/retro/0005-drift-detector/witness/verification.md');
+    const verification = readRepoFile('docs/method/retro/PROCESS_drift-detector/witness/verification.md');
 
     expect(verification).toContain('$ echo $?\n0');
     expect(verification).toContain('$ echo $?\n2');
