@@ -46,6 +46,21 @@ import {
 } from './frontmatter.js';
 import { generateReferenceDocs, initializeReferenceDoc, resolveSignpostSpec, SIGNPOST_SPECS } from './generate.js';
 import { renderBearing, renderDesignDoc, renderRetroDoc, renderWitnessDoc, titleCase } from './renderers.js';
+import {
+  CYCLE_NAME_PATTERN,
+  LEGACY_CYCLE_PATTERN,
+  readCycleFromDoc,
+  readCycleRelease,
+  resolveCyclePacketPaths,
+} from './cycle-ops.js';
+import {
+  assertWorkspacePath,
+  collectMarkdownFiles,
+  fileStem,
+  normalizeOptionalString,
+  normalizeRepoPath,
+  slugify,
+} from './workspace-utils.js';
 
 export interface ResolvedPaths {
   backlog: string;
@@ -134,8 +149,7 @@ function resolvePaths(root: string, paths: PathsConfig): ResolvedPaths {
 
 const LEGEND_CODE_PATTERN = /^[A-Z][A-Z0-9]*$/u;
 const LEGEND_PATTERN = /^(?<legend>[A-Z][A-Z0-9]*)_(?<slug>.+)$/;
-const CYCLE_NAME_PATTERN = /^(?:(?<legend>[A-Z][A-Z0-9]*)_)?(?<slug>[a-z0-9][a-z0-9-]*)$/;
-const LEGACY_CYCLE_PATTERN = /^(?<number>\d{4})-(?<slug>[a-z0-9][a-z0-9-]*)$/;
+// CYCLE_NAME_PATTERN and LEGACY_CYCLE_PATTERN imported from ./cycle-ops.js
 const FEEDBACK_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
 
 export function workspaceScaffold(root: string, pathsConfig: PathsConfig = DEFAULT_PATHS): { directories: string[]; files: Map<string, string> } {
@@ -1177,32 +1191,7 @@ export class Workspace {
   }
 }
 
-function collectMarkdownFiles(root: string, maxDepth = 10): string[] {
-  if (maxDepth <= 0 || !existsSync(root)) {
-    return [];
-  }
-
-  const files: string[] = [];
-  for (const entry of readdirSync(root, { withFileTypes: true })) {
-    const path = resolve(root, entry.name);
-    if (entry.isDirectory() && !entry.isSymbolicLink()) {
-      files.push(...collectMarkdownFiles(path, maxDepth - 1));
-    } else if (entry.isFile() && entry.name.endsWith('.md')) {
-      files.push(path);
-    }
-  }
-
-  return files.sort((left, right) => left.localeCompare(right));
-}
-
-function assertWorkspacePath(root: string, fullPath: string, label: string): void {
-  const relativePath = relative(root, fullPath);
-  if (relativePath === '' || (!relativePath.startsWith('..') && !isAbsolute(relativePath))) {
-    return;
-  }
-  throw new MethodError(`${label} must stay inside the workspace: ${fullPath}`);
-}
-
+// collectMarkdownFiles, assertWorkspacePath imported from ./workspace-utils.js
 
 function splitLegend(stem: string): { legend?: string; slug: string } {
   const match = LEGEND_PATTERN.exec(stem);
@@ -1439,13 +1428,7 @@ function deriveNextWorkOverrideNotes(
   return notes;
 }
 
-function normalizeOptionalString(value: unknown): string | undefined {
-  if (typeof value !== 'string') {
-    return undefined;
-  }
-  const normalized = value.trim();
-  return normalized.length === 0 ? undefined : normalized;
-}
+// normalizeOptionalString imported from ./workspace-utils.js
 
 function normalizeRequiredMetadataString(value: string | undefined, field: string): string {
   const normalized = normalizeOptionalString(value);
@@ -1877,226 +1860,11 @@ function inferBacklogRelease(
   return isReleaseLane(lane) ? lane : undefined;
 }
 
-function resolveCyclePacketPaths(
-  root: string,
-  paths: ResolvedPaths,
-  cycleName: string,
-  release?: string,
-): { designDoc: string; retroDoc: string } {
-  if (release === undefined) {
-    return {
-      designDoc: resolve(paths.design, `${cycleName}.md`),
-      retroDoc: resolve(paths.retro, cycleName, `${cycleName}.md`),
-    };
-  }
+// resolveCyclePacketPaths imported from ./cycle-ops.js
 
-  return {
-    designDoc: resolve(root, 'docs/releases', release, 'design', `${cycleName}.md`),
-    retroDoc: resolve(root, 'docs/releases', release, 'retros', cycleName, `${cycleName}.md`),
-  };
-}
+// readCycleFromDoc, readCycleRelease, and path helpers imported from ./cycle-ops.js
 
-function readCycleFromDoc(
-  root: string,
-  paths: ResolvedPaths,
-  file: string,
-): Cycle | undefined {
-  // Flat design doc: docs/design/<cycleName>.md
-  if (isFlatDesignDocPath(paths, file)) {
-    const stem = fileStem(file);
-    const nameMatch = CYCLE_NAME_PATTERN.exec(stem);
-    if (nameMatch?.groups === undefined) {
-      return undefined;
-    }
-    return {
-      name: stem,
-      slug: nameMatch.groups.slug,
-      designDoc: file,
-      retroDoc: inferRetroDocFromDesign(root, paths, file),
-    };
-  }
-
-  // Retro in dir: docs/method/retro/<cycleName>/<cycleName>.md
-  if (isRetroDocPath(paths, file)) {
-    const retroDir = basename(dirname(file));
-    const stem = fileStem(file);
-    if (stem !== retroDir) {
-      return undefined;
-    }
-    const nameMatch = CYCLE_NAME_PATTERN.exec(stem);
-    if (nameMatch?.groups === undefined) {
-      return undefined;
-    }
-    return {
-      name: stem,
-      slug: nameMatch.groups.slug,
-      designDoc: inferDesignDocFromRetro(root, paths, file),
-      retroDoc: file,
-    };
-  }
-
-  // Flat release design doc: docs/releases/v1.0.0/design/<cycleName>.md
-  if (isReleaseDesignDocPath(root, file) && dirname(file) !== file) {
-    const parentDir = basename(dirname(file));
-    if (parentDir === 'design') {
-      const stem = fileStem(file);
-      const nameMatch = CYCLE_NAME_PATTERN.exec(stem);
-      if (nameMatch?.groups !== undefined) {
-        return {
-          name: stem,
-          slug: nameMatch.groups.slug,
-          designDoc: file,
-          retroDoc: inferRetroDocFromDesign(root, paths, file),
-        };
-      }
-    }
-  }
-
-  // Release retro dir: docs/releases/v1.0.0/retros/<cycleName>/<cycleName>.md
-  if (isReleaseRetroDocPath(root, file)) {
-    const retroDir = basename(dirname(file));
-    const stem = fileStem(file);
-    if (stem === retroDir) {
-      const nameMatch = CYCLE_NAME_PATTERN.exec(stem);
-      if (nameMatch?.groups !== undefined) {
-        return {
-          name: stem,
-          slug: nameMatch.groups.slug,
-          designDoc: inferDesignDocFromRetro(root, paths, file),
-          retroDoc: file,
-        };
-      }
-    }
-  }
-
-  // Legacy layout: docs/design/<NNNN-slug>/<slug>.md or retro/<NNNN-slug>/<slug>.md
-  const cycleDir = basename(dirname(file));
-  const legacyMatch = LEGACY_CYCLE_PATTERN.exec(cycleDir);
-  if (legacyMatch?.groups === undefined) {
-    return undefined;
-  }
-
-  const slug = legacyMatch.groups.slug;
-  if (fileStem(file) !== slug) {
-    return undefined;
-  }
-
-  if (isDesignDocPath(paths, file) || isReleaseDesignDocPath(root, file)) {
-    return {
-      name: cycleDir,
-      slug,
-      designDoc: file,
-      retroDoc: inferRetroDocFromDesign(root, paths, file),
-    };
-  }
-  if (isRetroDocPath(paths, file) || isReleaseRetroDocPath(root, file)) {
-    return {
-      name: cycleDir,
-      slug,
-      designDoc: inferDesignDocFromRetro(root, paths, file),
-      retroDoc: file,
-    };
-  }
-  return undefined;
-}
-
-function isFlatDesignDocPath(paths: ResolvedPaths, file: string): boolean {
-  return dirname(file) === paths.design && file.endsWith('.md');
-}
-
-function isDesignDocPath(paths: ResolvedPaths, file: string): boolean {
-  return file.startsWith(`${paths.design}/`);
-}
-
-function isRetroDocPath(paths: ResolvedPaths, file: string): boolean {
-  return file.startsWith(`${paths.retro}/`);
-}
-
-function isReleaseDesignDocPath(root: string, file: string): boolean {
-  const normalized = normalizeRepoPath(relative(root, file));
-  return /^docs\/releases\/v\d+\.\d+\.\d+\/design\//u.test(normalized);
-}
-
-function isReleaseRetroDocPath(root: string, file: string): boolean {
-  const normalized = normalizeRepoPath(relative(root, file));
-  return /^docs\/releases\/v\d+\.\d+\.\d+\/retros\//u.test(normalized);
-}
-
-function inferRetroDocFromDesign(root: string, paths: ResolvedPaths, designDoc: string): string {
-  if (isReleaseDesignDocPath(root, designDoc)) {
-    const relPath = normalizeRepoPath(relative(root, designDoc));
-    const parentDir = basename(dirname(designDoc));
-    const stem = fileStem(designDoc);
-    // Flat release design: docs/releases/v1.0.0/design/CYCLE.md → retros/CYCLE/CYCLE.md
-    if (parentDir === 'design') {
-      const retroPath = relPath.replace(/\/design\/[^/]+\.md$/u, `/retros/${stem}/${stem}.md`);
-      return resolve(root, retroPath);
-    }
-    // Legacy release design: docs/releases/v1.0.0/design/NNNN-slug/slug.md → retros/NNNN-slug/slug.md
-    return resolve(root, normalizeRepoPath(relative(root, designDoc)).replace('/design/', '/retros/'));
-  }
-  // Flat design doc: docs/design/CYCLE.md → docs/method/retro/CYCLE/CYCLE.md
-  if (isFlatDesignDocPath(paths, designDoc)) {
-    const stem = fileStem(designDoc);
-    return resolve(paths.retro, stem, `${stem}.md`);
-  }
-  // Legacy design doc: docs/design/<dir>/<slug>.md → docs/method/retro/<dir>/<slug>.md
-  const cycleDir = basename(dirname(designDoc));
-  const slug = fileStem(designDoc);
-  return resolve(paths.retro, cycleDir, `${slug}.md`);
-}
-
-function inferDesignDocFromRetro(root: string, paths: ResolvedPaths, retroDoc: string): string {
-  if (isReleaseRetroDocPath(root, retroDoc)) {
-    const relPath = normalizeRepoPath(relative(root, retroDoc));
-    const retroDir = basename(dirname(retroDoc));
-    const stem = fileStem(retroDoc);
-    // New format: dir name = file stem → flat design
-    if (retroDir === stem) {
-      const designPath = relPath.replace(/\/retros\/[^/]+\/[^/]+\.md$/u, `/design/${stem}.md`);
-      return resolve(root, designPath);
-    }
-    // Legacy format: dir name = NNNN-slug, file stem = slug → nested design
-    return resolve(root, normalizeRepoPath(relative(root, retroDoc)).replace('/retros/', '/design/'));
-  }
-  const retroDir = basename(dirname(retroDoc));
-  const stem = fileStem(retroDoc);
-  // New format: dir name = cycle name = file stem → flat design doc
-  if (retroDir === stem) {
-    return resolve(paths.design, `${stem}.md`);
-  }
-  // Legacy format: dir name = NNNN-slug → nested design doc
-  return resolve(paths.design, retroDir, `${stem}.md`);
-}
-
-function readCycleRelease(cycle: Cycle): string | undefined {
-  const frontmatter = fmReadFrontmatter(cycle.designDoc);
-  const release = normalizeOptionalString(frontmatter.release);
-  if (release === undefined) {
-    return undefined;
-  }
-  if (!isReleaseLane(release)) {
-    throw new MethodError(`Invalid release tag: ${release}`);
-  }
-  return release;
-}
-
-function normalizeRepoPath(value: string): string {
-  return value.replace(/\\/gu, '/');
-}
-
-function slugify(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/gu, '-')
-    .replace(/^-+|-+$/gu, '');
-}
-
-function fileStem(path: string): string {
-  const name = basename(path);
-  return name.endsWith('.md') ? name.slice(0, -3) : name;
-}
+// normalizeRepoPath, slugify, fileStem imported from ./workspace-utils.js
 
 function createBacklogBuckets(): WorkspaceStatus['backlog'] {
   return Object.fromEntries(

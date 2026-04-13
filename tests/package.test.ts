@@ -37,6 +37,6 @@ describe('METHOD package', () => {
     expect(packedPaths.some((path) => path.startsWith('docs/'))).toBe(false);
     expect(packedPaths.some((path) => path.startsWith('.'))).toBe(false);
     expect(packedPaths.some((path) => path.endsWith('.map'))).toBe(false);
-    expect(packedPaths.length).toBeLessThan(40);
+    expect(packedPaths.length).toBeLessThan(45);
   });
 });
