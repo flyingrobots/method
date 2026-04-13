@@ -2,7 +2,16 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join, relative as pathRelative } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { runCli } from '../src/cli.js';
 import { initWorkspace, Workspace } from '../src/index.js';
+
+class MemoryWriter {
+  output = '';
+  write(data: string | Buffer): boolean {
+    this.output += typeof data === 'string' ? data : data.toString('utf8');
+    return true;
+  }
+}
 
 const tempRoots: string[] = [];
 
@@ -1073,5 +1082,78 @@ describe('Method API', () => {
 
     const cycle = workspace.pullItem('PROCESS_full-item');
     expect(cycle.warnings).toEqual([]);
+  });
+
+  it('Does `method close` require human witness verification before writing the retro?', async () => {
+    const root = createTempRoot();
+    await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    writeFileSync(join(root, 'docs/design/method-cli.md'), '# Method CLI\n\nLegend: none\n', 'utf8');
+
+    // Without --witness-verified, close should prompt (and fail in non-interactive test)
+    const stderr = new MemoryWriter();
+    const exitCode = await runCli(['close', '--drift-check', 'yes', '--outcome', 'partial', '--summary', 'Test'], {
+      cwd: root,
+      stdout: new MemoryWriter(),
+      stderr,
+      confirmPrompt: async () => false, // simulate human rejecting witness
+    });
+
+    expect(exitCode).toBe(1);
+    expect(stderr.output).toContain('witness verification');
+  });
+
+  it('Does the retro doc contain the summary provided during close instead of TBD?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.captureIdea('Summary Test', 'PROCESS', 'Summary Test');
+    workspace.pullItem('PROCESS_summary-test');
+
+    const cycle = await workspace.closeCycle('PROCESS_summary-test', true, 'hill-met', {
+      summary: 'Real summary content here.',
+    });
+
+    const retroContent = readFileSync(cycle.retroDoc, 'utf8');
+    expect(retroContent).toContain('Real summary content here.');
+    expect(retroContent).not.toMatch(/^TBD$/mu);
+  });
+
+  it('Does `closeCycle` accept optional retro content and pass it through to the rendered retro doc?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.captureIdea('Retro Content', 'PROCESS', 'Retro Content Test');
+    workspace.pullItem('PROCESS_retro-content-test');
+
+    const cycle = await workspace.closeCycle('PROCESS_retro-content-test', true, 'hill-met', {
+      summary: 'This is the actual retro summary.',
+      drift: '- Minor wording drift in README.',
+      newDebt: '- Need to refactor the widget module.',
+      coolIdeas: '- Could add a dashboard view.',
+    });
+
+    const retroContent = readFileSync(cycle.retroDoc, 'utf8');
+    expect(retroContent).toContain('This is the actual retro summary.');
+    expect(retroContent).toContain('Minor wording drift in README.');
+    expect(retroContent).toContain('Need to refactor the widget module.');
+    expect(retroContent).toContain('Could add a dashboard view.');
+    expect(retroContent).not.toContain('TBD');
+  });
+
+  it('Does `--witness-verified` skip the interactive witness confirmation prompt?', async () => {
+    const root = createTempRoot();
+    await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    writeFileSync(join(root, 'docs/design/method-cli.md'), '# Method CLI\n\nLegend: none\n', 'utf8');
+
+    const stdout = new MemoryWriter();
+    const exitCode = await runCli(
+      ['close', '--drift-check', 'yes', '--outcome', 'partial', '--witness-verified', '--summary', 'Verified via flag'],
+      { cwd: root, stdout, stderr: new MemoryWriter() },
+    );
+
+    expect(exitCode).toBe(0);
+    expect(stdout.output).toContain('Closed method-cli');
   });
 });

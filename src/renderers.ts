@@ -218,7 +218,17 @@ export function renderDesignDoc(options: {
   ].join('\n');
 }
 
-export function renderRetroDoc(options: { cycle: Cycle; root: string; outcome: Outcome; witnessDir: string; release?: string }): string {
+export function renderRetroDoc(options: {
+  cycle: Cycle;
+  root: string;
+  outcome: Outcome;
+  witnessDir: string;
+  release?: string;
+  summary?: string;
+  drift?: string;
+  newDebt?: string;
+  coolIdeas?: string;
+}): string {
   if (options.outcome !== 'hill-met' && options.outcome !== 'partial' && options.outcome !== 'not-met') {
     throw new Error('Outcome is required and must be one of: hill-met, partial, not-met.');
   }
@@ -239,7 +249,7 @@ export function renderRetroDoc(options: { cycle: Cycle; root: string; outcome: O
     '',
     '## Summary',
     '',
-    'TBD',
+    options.summary?.trim() || 'TBD',
     '',
     '## Playback Witness',
     '',
@@ -247,15 +257,15 @@ export function renderRetroDoc(options: { cycle: Cycle; root: string; outcome: O
     '',
     '## Drift',
     '',
-    '- None recorded.',
+    options.drift?.trim() || '- None recorded.',
     '',
     '## New Debt',
     '',
-    '- None recorded.',
+    options.newDebt?.trim() || '- None recorded.',
     '',
     '## Cool Ideas',
     '',
-    '- None recorded.',
+    options.coolIdeas?.trim() || '- None recorded.',
     '',
     '## Backlog Maintenance',
     '',

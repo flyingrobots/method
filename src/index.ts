@@ -364,7 +364,17 @@ export class Workspace {
     };
   }
 
-  async closeCycle(cycleName: string | undefined, completedDriftCheck: boolean, outcome: Outcome): Promise<Cycle> {
+  async closeCycle(
+    cycleName: string | undefined,
+    completedDriftCheck: boolean,
+    outcome: Outcome,
+    retroContent?: {
+      summary?: string;
+      drift?: string;
+      newDebt?: string;
+      coolIdeas?: string;
+    },
+  ): Promise<Cycle> {
     if (!completedDriftCheck) {
       throw new MethodError('Cannot close a cycle without completing the drift check.');
     }
@@ -389,6 +399,10 @@ export class Workspace {
         outcome,
         witnessDir: relative(this.root, witnessDir),
         release: readCycleRelease(cycle),
+        summary: retroContent?.summary,
+        drift: retroContent?.drift,
+        newDebt: retroContent?.newDebt,
+        coolIdeas: retroContent?.coolIdeas,
       }),
       'utf8',
     );

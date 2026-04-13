@@ -65,7 +65,14 @@ export type ParsedCommand =
       json?: boolean;
     }
   | { command: 'pull'; item: string }
-  | { command: 'close'; cycle?: string; driftCheck?: 'yes' | 'no'; outcome: Outcome }
+  | {
+      command: 'close';
+      cycle?: string;
+      driftCheck?: 'yes' | 'no';
+      outcome: Outcome;
+      witnessVerified?: boolean;
+      summary?: string;
+    }
   | { command: 'drift'; cycle?: string }
   | { command: 'review-state'; pr?: number; currentBranch?: boolean; json?: boolean }
   | { command: 'status' }
@@ -1107,6 +1114,8 @@ function parseCloseArgs(args: readonly string[]): ParsedCommand {
   let cycle: string | undefined;
   let driftCheck: 'yes' | 'no' | undefined;
   let outcome: Outcome | undefined;
+  let witnessVerified: boolean | undefined;
+  let summary: string | undefined;
 
   for (let index = 0; index < args.length; index += 1) {
     const value = args[index];
@@ -1115,7 +1124,7 @@ function parseCloseArgs(args: readonly string[]): ParsedCommand {
       index += 1;
       continue;
     }
-    if (value.startsWith('--drift-check=')) {
+    if (value?.startsWith('--drift-check=')) {
       driftCheck = parseDriftCheckValue(value.slice('--drift-check='.length));
       continue;
     }
@@ -1124,11 +1133,24 @@ function parseCloseArgs(args: readonly string[]): ParsedCommand {
       index += 1;
       continue;
     }
-    if (value.startsWith('--outcome=')) {
+    if (value?.startsWith('--outcome=')) {
       outcome = parseOutcomeValue(value.slice('--outcome='.length));
       continue;
     }
-    if (value.startsWith('-')) {
+    if (value === '--witness-verified') {
+      witnessVerified = true;
+      continue;
+    }
+    if (value === '--summary') {
+      summary = requireOptionValue(args, index, '--summary');
+      index += 1;
+      continue;
+    }
+    if (value?.startsWith('--summary=')) {
+      summary = value.slice('--summary='.length);
+      continue;
+    }
+    if (value?.startsWith('-')) {
       throw new MethodError(`Unknown option: ${value}`);
     }
     if (cycle !== undefined) {
@@ -1141,7 +1163,7 @@ function parseCloseArgs(args: readonly string[]): ParsedCommand {
     throw new MethodError(usage('close'));
   }
 
-  return { command: 'close', cycle, driftCheck, outcome };
+  return { command: 'close', cycle, driftCheck, outcome, witnessVerified, summary };
 }
 
 function parseDriftArgs(args: readonly string[]): ParsedCommand {

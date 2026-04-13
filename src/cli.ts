@@ -2,7 +2,7 @@
 import { realpathSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { alert, confirm } from '@flyingrobots/bijou';
+import { alert, confirm, input } from '@flyingrobots/bijou';
 import { createNodeContext } from '@flyingrobots/bijou-node';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { GitHubAdapter } from './adapters/github.js';
@@ -39,11 +39,13 @@ import { queryReviewState, type ReviewStateQueryOptions, type ReviewStateResult,
 
 type Writer = Pick<NodeJS.WritableStream, 'write'>;
 type ConfirmPrompt = (options: { title: string; defaultValue: boolean }) => Promise<boolean>;
+type TextPrompt = (options: { title: string; defaultValue?: string }) => Promise<string>;
 export interface RunCliOptions {
   cwd?: string;
   stdout?: Writer;
   stderr?: Writer;
   confirmPrompt?: ConfirmPrompt;
+  textPrompt?: TextPrompt;
   reviewStateQuery?: (options: ReviewStateQueryOptions) => Promise<ReviewStateResult>;
 }
 export async function runCli(argv: readonly string[], options: RunCliOptions = {}): Promise<number> {
@@ -53,6 +55,8 @@ export async function runCli(argv: readonly string[], options: RunCliOptions = {
   const ctx = createNodeContext();
   const promptConfirm =
     options.confirmPrompt ?? ((promptOptions) => confirm({ title: promptOptions.title, defaultValue: promptOptions.defaultValue, ctx }));
+  const promptText =
+    options.textPrompt ?? ((promptOptions) => input({ title: promptOptions.title, defaultValue: promptOptions.defaultValue ?? '', ctx }));
   try {
     const parsed = parseCliArgs(argv);
     if (parsed.command === 'help') {
@@ -194,7 +198,36 @@ export async function runCli(argv: readonly string[], options: RunCliOptions = {
       if (!completedDriftCheck) {
         throw new Error('Cannot close a cycle without completing the drift check.');
       }
-      const cycle = await workspace.closeCycle(parsed.cycle, completedDriftCheck, parsed.outcome);
+
+      // Human-in-the-loop: verify the witness before close
+      const witnessVerified =
+        parsed.witnessVerified === true ||
+        (await promptConfirm({
+          title: 'Have you verified the witness and confirmed that all human playback questions hold true?',
+          defaultValue: false,
+        }));
+      if (!witnessVerified) {
+        throw new Error('Cannot close a cycle without human witness verification. Review the witness and human playback questions first.');
+      }
+
+      // Conversational retro prompts (skip if --summary provided)
+      let retroSummary = parsed.summary ?? '';
+      let retroDrift = '';
+      let retroDebt = '';
+      let retroIdeas = '';
+      if (parsed.summary === undefined) {
+        retroSummary = await promptText({ title: 'Retro summary (what happened?):', defaultValue: '' });
+        retroDrift = await promptText({ title: 'Drift notes (empty if none):', defaultValue: '' });
+        retroDebt = await promptText({ title: 'New debt discovered (empty if none):', defaultValue: '' });
+        retroIdeas = await promptText({ title: 'Cool ideas surfaced (empty if none):', defaultValue: '' });
+      }
+
+      const cycle = await workspace.closeCycle(parsed.cycle, completedDriftCheck, parsed.outcome, {
+        summary: retroSummary.length > 0 ? retroSummary : undefined,
+        drift: retroDrift.length > 0 ? retroDrift : undefined,
+        newDebt: retroDebt.length > 0 ? retroDebt : undefined,
+        coolIdeas: retroIdeas.length > 0 ? retroIdeas : undefined,
+      });
       stdout.write(`${alert(`Closed ${cycle.name}`, { variant: 'success', ctx })}\n`);
       stdout.write(`${relative(root, cycle.retroDoc)}\n`);
       return 0;
