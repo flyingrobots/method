@@ -1429,7 +1429,9 @@ describe('method CLI', () => {
     expect(stdout.output).toContain('Playback-question drift found.');
     expect(stdout.output).toContain('docs/design/PROCESS_drift-detector.md');
     expect(stdout.output).toContain('Human: Can I see a concise drift report?');
-    expect(stdout.output).toContain('Agent: Does a near miss still count as unmatched?');
+    // "Does a near miss still count as unmatched?" now semantically matches
+    // "Does a near miss still count as unmatched eventually?" (0.875 similarity)
+    expect(stdout.output).not.toContain('Agent: Does a near miss still count as unmatched?');
     // Near-miss hints are shown when test descriptions are close but not exact
     expect(stdout.output).toContain('Near miss');
   });
@@ -1624,7 +1626,7 @@ describe('method CLI', () => {
     expect(exitCode).toBe(2);
     expect(stdout.output).toContain('Playback-question drift found.');
     expect(stdout.output).toContain('Human: Does drift return a distinct exit code?');
-    expect(stdout.output).toContain('No exact normalized test description match found.');
+    expect(stdout.output).toContain('No matching test description found.');
   });
 
   it('returns exit code 1 for operator errors', async () => {

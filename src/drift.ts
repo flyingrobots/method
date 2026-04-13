@@ -24,10 +24,30 @@ export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], tes
 
   const questions = cycles.flatMap((cycle) => extractPlaybackQuestions(cycle.designDoc));
   const testDescriptions = collectTestDescriptions(testsDir ?? resolve(root, 'tests'));
-  const unmatched = questions.filter((question) =>
-    !testDescriptions.some((description) => normalizeForMatch(description) === question.normalized));
+  const normalizedDescriptions = testDescriptions.map((d) => ({
+    original: d,
+    normalized: normalizeForMatch(d),
+    semantic: normalizeForSemanticMatch(d),
+  }));
+  const unmatched = questions.filter((question) => {
+    // Tier 1: exact normalized match
+    if (normalizedDescriptions.some((desc) => desc.normalized === question.normalized)) {
+      return false;
+    }
+    // Tier 2: semantic normalization match (strips question form, backticks, etc.)
+    const semanticQ = normalizeForSemanticMatch(question.text);
+    if (normalizedDescriptions.some((desc) => desc.semantic === semanticQ)) {
+      return false;
+    }
+    // Tier 3: high-confidence token similarity
+    const bestScore = Math.max(
+      ...normalizedDescriptions.map((desc) => tokenSimilarity(semanticQ, desc.semantic)),
+      0,
+    );
+    return bestScore < SEMANTIC_MATCH_THRESHOLD;
+  });
   const summaryLine = `Scanned ${cycles.length} active cycle${plural(cycles.length)}, ${questions.length} playback question${plural(questions.length)}, ${testDescriptions.length} test description${plural(testDescriptions.length)}.`;
-  const searchBasis = 'Search basis: exact normalized match in tests/**/*.test.* and tests/**/*.spec.* descriptions.';
+  const searchBasis = 'Search basis: normalized match, semantic normalization, or high-confidence token similarity in tests/**/*.test.* and tests/**/*.spec.* descriptions.';
 
   if (unmatched.length === 0) {
     return {
@@ -48,21 +68,16 @@ export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], tes
     grouped.set(question.designDoc, current);
   }
 
-  const normalizedDescriptions = testDescriptions.map((d) => ({
-    original: d,
-    normalized: normalizeForMatch(d),
-  }));
-
   const findingLines: string[] = [];
   for (const designDoc of [...grouped.keys()].sort((left, right) => left.localeCompare(right))) {
     findingLines.push(relative(root, designDoc));
     for (const question of grouped.get(designDoc) ?? []) {
       findingLines.push(`- ${question.sponsor}: ${question.text}`);
-      const hint = findNearMiss(question.normalized, normalizedDescriptions);
+      const hint = findNearMiss(question.text, normalizedDescriptions);
       if (hint !== undefined) {
         findingLines.push(`  Near miss: "${hint}"`);
       } else {
-        findingLines.push('  No exact normalized test description match found.');
+        findingLines.push('  No matching test description found.');
       }
     }
     findingLines.push('');
@@ -181,29 +196,33 @@ function extractPlaybackQuestions(path: string): PlaybackQuestion[] {
   return questions;
 }
 
-const NEAR_MISS_THRESHOLD = 0.7;
+const SEMANTIC_MATCH_THRESHOLD = 0.85;
+const NEAR_MISS_THRESHOLD = 0.65;
 
 function findNearMiss(
-  normalizedQuestion: string,
-  descriptions: readonly { original: string; normalized: string }[],
+  question: string,
+  descriptions: readonly { original: string; semantic: string }[],
 ): string | undefined {
+  const semanticQ = normalizeForSemanticMatch(question);
   let bestScore = 0;
   let bestOriginal: string | undefined;
 
   for (const desc of descriptions) {
-    const score = tokenSimilarity(normalizedQuestion, desc.normalized);
+    const score = tokenSimilarity(semanticQ, desc.semantic);
     if (score > bestScore) {
       bestScore = score;
       bestOriginal = desc.original;
     }
   }
 
-  return bestScore >= NEAR_MISS_THRESHOLD ? bestOriginal : undefined;
+  return bestScore >= NEAR_MISS_THRESHOLD && bestScore < SEMANTIC_MATCH_THRESHOLD
+    ? bestOriginal
+    : undefined;
 }
 
 function tokenSimilarity(left: string, right: string): number {
   const tokenize = (value: string): Set<string> =>
-    new Set(value.replace(/[^\p{L}\p{N}\s]/gu, '').split(' ').filter((t) => t.length > 0));
+    new Set(value.replace(/[^\p{L}\p{N}\s]/gu, '').split(' ').filter((t) => t.length > 0).map(stemToken));
   const leftTokens = tokenize(left);
   const rightTokens = tokenize(right);
 
@@ -226,11 +245,52 @@ function tokenSimilarity(left: string, right: string): number {
   return intersection / union;
 }
 
+function stemToken(token: string): string {
+  // Minimal English suffix stripping for verb/noun forms.
+  // Goal: "creates" and "create" should produce the same stem.
+  if (token.length <= 3) {
+    return token;
+  }
+  if (token.endsWith('ing') && token.length > 5) {
+    return token.slice(0, -3);
+  }
+  if (token.endsWith('ied') && token.length > 4) {
+    return `${token.slice(0, -3)}y`;
+  }
+  if (token.endsWith('ies') && token.length > 4) {
+    return `${token.slice(0, -3)}y`;
+  }
+  if (token.endsWith('ed') && token.length > 4) {
+    return token.slice(0, -2);
+  }
+  // Strip trailing "s" (handles "creates" → "create", "docs" → "doc")
+  // but not "ss" (e.g. "pass") or "us"/"is" endings
+  if (token.endsWith('s') && !token.endsWith('ss') && !token.endsWith('us') && token.length > 3) {
+    return token.slice(0, -1);
+  }
+  return token;
+}
+
 function normalizeForMatch(value: string): string {
   return value
     .trim()
     .toLowerCase()
     .replace(/\s+/gu, ' ');
+}
+
+function normalizeForSemanticMatch(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    // Strip backticks
+    .replace(/`/gu, '')
+    // Strip leading question words: "Does", "Is", "Can", "Will", "Are", "Do", "Has", "Have"
+    .replace(/^(?:does|is|can|will|are|do|has|have)\s+/u, '')
+    // Collapse whitespace
+    .replace(/\s+/gu, ' ')
+    // Strip trailing punctuation
+    .replace(/[.?!]+$/u, '')
+    .trim();
 }
 
 function plural(count: number): string {

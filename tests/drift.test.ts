@@ -70,19 +70,17 @@ describe('Drift Detection', () => {
   it('When a playback question has no exact match but a test description is close, the drift output shows the near-miss candidate.', () => {
     const root = createTempRoot();
     const cycle = setupCycleWithQuestions(root, [
-      '`method drift` shows near-miss hints for unmatched questions.',
+      'The drift detector catches renamed test descriptions in the workspace test directory.',
     ]);
     setupTestFile(root, [
-      'method drift shows near-miss hints for unmatched questions',
+      'The drift detector catches renamed test descriptions in the project test folder.',
     ]);
 
     const report = detectWorkspaceDrift(root, [cycle]);
 
-    // Still drift (not exact match due to backticks)
+    // High overlap but not identical — near-miss range (0.7-0.85)
     expect(report.exitCode).toBe(2);
-    // But should show a near-miss hint
     expect(report.output).toContain('Near miss');
-    expect(report.output).toContain('method drift shows near-miss hints for unmatched questions');
   });
 
   it('Near-miss hints never change the pass/fail exit code. Drift with hints still exits 2.', () => {
@@ -115,16 +113,16 @@ describe('Drift Detection', () => {
 
     expect(report.exitCode).toBe(2);
     expect(report.output).not.toContain('Near miss');
-    expect(report.output).toContain('No exact normalized test description match found.');
+    expect(report.output).toContain('No matching test description found.');
   });
 
   it('detectWorkspaceDrift includes near-miss hints in the output for unmatched questions.', () => {
     const root = createTempRoot();
     const cycle = setupCycleWithQuestions(root, [
-      '`tests/docs.test.ts` proves the branch naming rule is consistent between README and process.md.',
+      'The backlog query returns items filtered by lane and sorted by priority rank.',
     ]);
     setupTestFile(root, [
-      'tests/docs.test.ts proves the branch naming rule is consistent between README and process.md',
+      'The backlog query returns items sorted by priority rank.',
     ]);
 
     const report = detectWorkspaceDrift(root, [cycle]);
@@ -156,5 +154,45 @@ describe('Drift Detection', () => {
 
     expect(report.exitCode).toBe(0);
     expect(report.output).toContain('No active cycles found.');
+  });
+
+  it('Does the drift detector match question-form playback questions against statement-form test descriptions?', () => {
+    const root = createTempRoot();
+    const cycle = setupCycleWithQuestions(root, [
+      'Does `method pull` create a flat design doc?',
+    ]);
+    setupTestFile(root, [
+      'method pull creates a flat design doc',
+    ]);
+
+    const report = detectWorkspaceDrift(root, [cycle]);
+    expect(report.exitCode).toBe(0);
+  });
+
+  it('Does the drift detector match despite backtick differences between questions and test descriptions?', () => {
+    const root = createTempRoot();
+    const cycle = setupCycleWithQuestions(root, [
+      'Does `readCycleFromDoc()` discover both flat and legacy nested design docs?',
+    ]);
+    setupTestFile(root, [
+      'Does readCycleFromDoc() discover both flat and legacy nested design docs?',
+    ]);
+
+    const report = detectWorkspaceDrift(root, [cycle]);
+    expect(report.exitCode).toBe(0);
+  });
+
+  it('Does the drift detector treat high-confidence near-misses as semantic matches instead of drift?', () => {
+    const root = createTempRoot();
+    const cycle = setupCycleWithQuestions(root, [
+      'Does `method doctor` detect legacy nested design doc directories and offer to flatten them?',
+    ]);
+    setupTestFile(root, [
+      'Does method doctor detect legacy nested design doc directories and offer to flatten them',
+    ]);
+
+    const report = detectWorkspaceDrift(root, [cycle]);
+    // Only difference is backticks and trailing punctuation — should match semantically
+    expect(report.exitCode).toBe(0);
   });
 });
