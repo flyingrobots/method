@@ -95,7 +95,7 @@ describe('GitHub Adapter Two-way Sync', () => {
         return Promise.resolve({
           ok: true,
           json: async () => [
-            { user: { login: 'user1' }, body: 'First comment' },
+            { id: 1001, user: { login: 'user1' }, body: 'First comment' },
           ],
         });
       }
@@ -121,7 +121,8 @@ describe('GitHub Adapter Two-way Sync', () => {
 
     const body = readBody(join(root, itemPath));
     expect(body).toContain('## GitHub Comments');
-    expect(body).toContain('**@user1**: First comment');
+    expect(body).toContain('**@user1** (comment 1001): First comment');
+    expect(frontmatter.github_synced_comment_ids).toBe('1001');
   });
 
   it('Local files reflect GitHub status (e.g., if an issue is closed on GitHub, the local file is updated or moved).', async () => {
@@ -172,5 +173,82 @@ describe('GitHub Adapter Two-way Sync', () => {
     expect(existsSync(inboxPath), 'file should no longer exist in inbox').toBe(false);
     expect(readFileSync(graveyardPath, 'utf8')).toContain('Closed Item');
     expect(workspace.readFrontmatter('docs/method/graveyard/PROCESS_closed.md').lane).toBe('graveyard');
+  });
+
+  it('Does pull use stable comment IDs instead of string matching to avoid duplicating already-synced comments?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.captureIdea('Comment Identity', 'PROCESS', 'Comment Identity');
+    const itemPath = 'docs/method/backlog/inbox/PROCESS_comment-identity.md';
+    workspace.updateFrontmatter(itemPath, { github_issue_id: '55' });
+
+    // First pull: one comment
+    const fetchSpy = vi.fn().mockImplementation((url) => {
+      if (url.endsWith('/issues/55')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            id: 55555, number: 55,
+            html_url: 'https://github.com/owner/repo/issues/55',
+            state: 'open', labels: [],
+          }),
+        });
+      }
+      if (url.endsWith('/comments')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [
+            { id: 2001, user: { login: 'alice' }, body: 'First review' },
+          ],
+        });
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    });
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const adapter = new GitHubAdapter({
+      workspace, token: 'fake', owner: 'owner', repo: 'repo',
+    });
+
+    await adapter.pullBacklog();
+    const bodyAfterFirst = readBody(join(root, itemPath));
+    expect(bodyAfterFirst).toContain('comment 2001');
+    expect(workspace.readFrontmatter(itemPath).github_synced_comment_ids).toBe('2001');
+
+    // Second pull: same comment + a new one
+    fetchSpy.mockImplementation((url: string) => {
+      if (url.endsWith('/issues/55')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            id: 55555, number: 55,
+            html_url: 'https://github.com/owner/repo/issues/55',
+            state: 'open', labels: [],
+          }),
+        });
+      }
+      if (url.endsWith('/comments')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => [
+            { id: 2001, user: { login: 'alice' }, body: 'First review' },
+            { id: 2002, user: { login: 'bob' }, body: 'Second review' },
+          ],
+        });
+      }
+      return Promise.reject(new Error('Unknown URL'));
+    });
+
+    await adapter.pullBacklog();
+    const bodyAfterSecond = readBody(join(root, itemPath));
+
+    // Comment 2001 should appear exactly once (not duplicated)
+    const count2001 = (bodyAfterSecond.match(/comment 2001/gu) ?? []).length;
+    expect(count2001).toBe(1);
+    // Comment 2002 should appear (newly synced)
+    expect(bodyAfterSecond).toContain('comment 2002');
+    expect(workspace.readFrontmatter(itemPath).github_synced_comment_ids).toBe('2001,2002');
   });
 });
