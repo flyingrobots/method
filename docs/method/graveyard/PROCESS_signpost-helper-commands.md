@@ -1,17 +1,23 @@
 ---
-title: "Signpost Helper Commands"
+title: Signpost Helper Commands
 legend: PROCESS
-lane: v1.1.0
-owner: "METHOD maintainers"
+lane: graveyard
+owner: METHOD maintainers
 priority: medium
 acceptance_criteria:
-  - "The note defines a bounded status/init helper surface for expected signposts."
-  - "The first slice names concrete helpers such as signpost status and signpost init for missing canonical signposts."
-  - "The contract keeps signpost work explicit and narrower than a full ship sync or full doctor run."
-  - "CLI and MCP results name missing signposts, initialized targets, and any skipped paths."
+  - The note defines a bounded status/init helper surface for expected signposts.
+  - The first slice names concrete helpers such as signpost status and signpost init for missing canonical signposts.
+  - The contract keeps signpost work explicit and narrower than a full ship sync or full doctor run.
+  - CLI and MCP results name missing signposts, initialized targets, and any skipped paths.
 ---
 
 # Signpost Helper Commands
+
+## Disposition
+
+Already implemented and shipped prior to v2.0.0 release.
+
+## Original Proposal
 
 METHOD has strong repo-level signpost doctrine, but the operational
 surface is still broad: either run ship sync for generated references or

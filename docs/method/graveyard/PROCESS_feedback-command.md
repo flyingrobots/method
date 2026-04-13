@@ -1,17 +1,23 @@
 ---
-title: "Feedback Command"
+title: Feedback Command
 legend: PROCESS
-lane: v1.1.0
-owner: "METHOD maintainers"
+lane: graveyard
+owner: METHOD maintainers
 priority: medium
 acceptance_criteria:
-  - "The note defines a bounded CLI and MCP surface for capturing raw feedback into docs/method/feedback/."
-  - "The contract also covers archiving processed feedback with a short disposition note instead of silent deletion."
-  - "The result shape preserves feedback identity fields such as path, title, source, captured_at, and status."
-  - "The design keeps feedback distinct from backlog items so critique remains source material until processed."
+  - The note defines a bounded CLI and MCP surface for capturing raw feedback into docs/method/feedback/.
+  - The contract also covers archiving processed feedback with a short disposition note instead of silent deletion.
+  - The result shape preserves feedback identity fields such as path, title, source, captured_at, and status.
+  - The design keeps feedback distinct from backlog items so critique remains source material until processed.
 ---
 
 # Feedback Command
+
+## Disposition
+
+Replaced by method inbox with --source, --captured-at, and --body-file flags.
+
+## Original Proposal
 
 METHOD already has a documented `docs/method/feedback/` workflow, but no
 native mutation surface for it. That is a repo concept without a

@@ -1,17 +1,23 @@
 ---
-title: "Structured Repair Hints"
+title: Structured Repair Hints
 legend: PROCESS
-lane: v1.1.0
-owner: "METHOD maintainers"
+lane: graveyard
+owner: METHOD maintainers
 priority: medium
 acceptance_criteria:
-  - "The note defines a bounded structured repair-hint contract for diagnostics such as doctor findings."
-  - "The proposal includes machine-usable fields beyond prose, such as repair kind, candidate command, or edit scope."
-  - "The contract keeps human-readable fix text while adding structured data for agents instead of replacing the current prose."
-  - "The design names at least one immediate consumer such as MCP callers that want to turn doctor findings into repair plans."
+  - The note defines a bounded structured repair-hint contract for diagnostics such as doctor findings.
+  - The proposal includes machine-usable fields beyond prose, such as repair kind, candidate command, or edit scope.
+  - The contract keeps human-readable fix text while adding structured data for agents instead of replacing the current prose.
+  - The design names at least one immediate consumer such as MCP callers that want to turn doctor findings into repair plans.
 ---
 
 # Structured Repair Hints
+
+## Disposition
+
+Already implemented and shipped prior to v2.0.0 release.
+
+## Original Proposal
 
 METHOD diagnostics currently speak in good human prose, but agents still
 have to parse that prose to decide whether the next action is "run a

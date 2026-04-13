@@ -1,17 +1,23 @@
 ---
-title: "Doctor Repair Command"
+title: Doctor Repair Command
 legend: PROCESS
-lane: v1.1.0
-owner: "METHOD maintainers"
+lane: graveyard
+owner: METHOD maintainers
 priority: high
 acceptance_criteria:
-  - "The note defines a bounded repair surface for safe doctor findings such as missing directories, missing scaffold files, and repairable frontmatter stubs."
-  - "The contract separates planning (`--plan`) from mutation (`--apply`) so callers can inspect the proposed repairs first."
-  - "The design names how structured repair hints feed the repair command instead of duplicating diagnosis rules by hand."
-  - "CLI and MCP return stable structured results describing findings selected, files touched, and anything left unresolved."
+  - The note defines a bounded repair surface for safe doctor findings such as missing directories, missing scaffold files, and repairable frontmatter stubs.
+  - The contract separates planning (`--plan`) from mutation (`--apply`) so callers can inspect the proposed repairs first.
+  - The design names how structured repair hints feed the repair command instead of duplicating diagnosis rules by hand.
+  - CLI and MCP return stable structured results describing findings selected, files touched, and anything left unresolved.
 ---
 
 # Doctor Repair Command
+
+## Disposition
+
+Already implemented and shipped prior to v2.0.0 release.
+
+## Original Proposal
 
 `method doctor` is now good at diagnosing repo-shape problems, but it
 still stops at prose. The next manual step is often obvious:

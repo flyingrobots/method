@@ -1,17 +1,23 @@
 ---
-title: "Retire Command"
+title: Retire Command
 legend: PROCESS
-lane: v1.1.0
-owner: "METHOD maintainers"
+lane: graveyard
+owner: METHOD maintainers
 priority: medium
 acceptance_criteria:
-  - "The note defines a bounded CLI and MCP surface for retiring live backlog items into docs/method/graveyard/."
-  - "The contract requires an explicit human- or agent-supplied reason so retirement never becomes silent deletion."
-  - "The proposed output preserves historical context by moving the item and recording a disposition note rather than just removing the file."
-  - "The write behavior stays explicit, inspectable, and safe for agent use."
+  - The note defines a bounded CLI and MCP surface for retiring live backlog items into docs/method/graveyard/.
+  - The contract requires an explicit human- or agent-supplied reason so retirement never becomes silent deletion.
+  - The proposed output preserves historical context by moving the item and recording a disposition note rather than just removing the file.
+  - The write behavior stays explicit, inspectable, and safe for agent use.
 ---
 
 # Retire Command
+
+## Disposition
+
+Already implemented and shipped prior to v2.0.0 release.
+
+## Original Proposal
 
 Retiring stale or superseded backlog items is currently a manual repo
 edit: move the file into `docs/method/graveyard/`, update its lane,

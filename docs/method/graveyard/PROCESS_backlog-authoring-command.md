@@ -1,17 +1,23 @@
 ---
-title: "Backlog Authoring Command"
+title: Backlog Authoring Command
 legend: PROCESS
-lane: v1.1.0
-owner: "METHOD maintainers"
+lane: graveyard
+owner: METHOD maintainers
 priority: high
 acceptance_criteria:
-  - "The note defines a bounded CLI and MCP surface for creating backlog notes directly in an explicit lane."
-  - "The contract supports title, body, legend, and lane without requiring manual markdown file creation."
-  - "Write behavior stays explicit and inspectable, with stable structured results for agents."
-  - "The first slice names how frontmatter is seeded so repo truth stays aligned after creation."
+  - The note defines a bounded CLI and MCP surface for creating backlog notes directly in an explicit lane.
+  - The contract supports title, body, legend, and lane without requiring manual markdown file creation.
+  - Write behavior stays explicit and inspectable, with stable structured results for agents.
+  - The first slice names how frontmatter is seeded so repo truth stays aligned after creation.
 ---
 
 # Backlog Authoring Command
+
+## Disposition
+
+Already implemented and shipped prior to v2.0.0 release.
+
+## Original Proposal
 
 METHOD currently offers `method inbox <idea>`, but not a first-class
 way to create a shaped backlog note directly in an intentional lane.

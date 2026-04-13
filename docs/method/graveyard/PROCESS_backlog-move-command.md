@@ -1,17 +1,23 @@
 ---
-title: "Backlog Move Command"
+title: Backlog Move Command
 legend: PROCESS
-lane: v1.1.0
-owner: "METHOD maintainers"
+lane: graveyard
+owner: METHOD maintainers
 priority: high
 acceptance_criteria:
-  - "The note defines a bounded CLI and MCP surface for moving a live backlog item between live lanes."
-  - "The contract preserves frontmatter lane truth instead of relying on path inference."
-  - "The first slice supports canonical lanes and repo-defined lanes such as v1.1.0."
-  - "The result shape names the source path, destination path, destination lane, and touched files."
+  - The note defines a bounded CLI and MCP surface for moving a live backlog item between live lanes.
+  - The contract preserves frontmatter lane truth instead of relying on path inference.
+  - The first slice supports canonical lanes and repo-defined lanes such as v1.1.0.
+  - The result shape names the source path, destination path, destination lane, and touched files.
 ---
 
 # Backlog Move Command
+
+## Disposition
+
+Already implemented and shipped prior to v2.0.0 release.
+
+## Original Proposal
 
 METHOD already knows how to read backlog items by path, slug, or stem,
 and the internal API can move them, but there is no first-class CLI or
