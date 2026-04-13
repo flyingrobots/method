@@ -156,6 +156,27 @@ describe('Drift Detection', () => {
     expect(report.output).toContain('No active cycles found.');
   });
 
+  it('Does the drift detector respect configurable thresholds from `.method.json` instead of using hardcoded values?', () => {
+    const root = createTempRoot();
+    const cycle = setupCycleWithQuestions(root, [
+      'The widget renders correctly on mobile.',
+    ]);
+    setupTestFile(root, [
+      'The widget renders correctly on desktop.',
+    ]);
+
+    // With default thresholds, this is a near-miss (not a match)
+    const defaultReport = detectWorkspaceDrift(root, [cycle]);
+    expect(defaultReport.exitCode).toBe(2);
+
+    // With a lower semantic match threshold, it becomes a match
+    const lenientReport = detectWorkspaceDrift(root, [cycle], undefined, {
+      semantic_match: 0.5,
+      near_miss: 0.3,
+    });
+    expect(lenientReport.exitCode).toBe(0);
+  });
+
   it('Does the drift detector show the similarity score alongside near-miss hints?', () => {
     const root = createTempRoot();
     const cycle = setupCycleWithQuestions(root, [

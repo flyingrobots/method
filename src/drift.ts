@@ -1,6 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import type { Cycle } from './domain.js';
+import type { DriftThresholds } from './config.js';
 
 interface PlaybackQuestion {
   designDoc: string;
@@ -14,7 +15,9 @@ export interface DriftReport {
   output: string;
 }
 
-export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], testsDir?: string): DriftReport {
+export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], testsDir?: string, thresholds?: DriftThresholds): DriftReport {
+  const semanticMatchThreshold = thresholds?.semantic_match ?? DEFAULT_SEMANTIC_MATCH_THRESHOLD;
+  const nearMissThreshold = thresholds?.near_miss ?? DEFAULT_NEAR_MISS_THRESHOLD;
   if (cycles.length === 0) {
     return {
       exitCode: 0,
@@ -44,7 +47,7 @@ export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], tes
       ...normalizedDescriptions.map((desc) => tokenSimilarity(semanticQ, desc.semantic)),
       0,
     );
-    return bestScore < SEMANTIC_MATCH_THRESHOLD;
+    return bestScore < semanticMatchThreshold;
   });
   const summaryLine = `Scanned ${cycles.length} active cycle${plural(cycles.length)}, ${questions.length} playback question${plural(questions.length)}, ${testDescriptions.length} test description${plural(testDescriptions.length)}.`;
   const searchBasis = 'Search basis: normalized match, semantic normalization, or high-confidence token similarity in tests/**/*.test.* and tests/**/*.spec.* descriptions.';
@@ -73,7 +76,7 @@ export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], tes
     findingLines.push(relative(root, designDoc));
     for (const question of grouped.get(designDoc) ?? []) {
       findingLines.push(`- ${question.sponsor}: ${question.text}`);
-      const hint = findNearMiss(question.text, normalizedDescriptions);
+      const hint = findNearMiss(question.text, normalizedDescriptions, nearMissThreshold, semanticMatchThreshold);
       if (hint !== undefined) {
         const pct = Math.round(hint.score * 100);
         findingLines.push(`  Near miss (${pct}%): "${hint.text}"`);
@@ -197,12 +200,14 @@ function extractPlaybackQuestions(path: string): PlaybackQuestion[] {
   return questions;
 }
 
-const SEMANTIC_MATCH_THRESHOLD = 0.85;
-const NEAR_MISS_THRESHOLD = 0.65;
+const DEFAULT_SEMANTIC_MATCH_THRESHOLD = 0.85;
+const DEFAULT_NEAR_MISS_THRESHOLD = 0.65;
 
 function findNearMiss(
   question: string,
   descriptions: readonly { original: string; semantic: string }[],
+  nearMissThreshold: number,
+  semanticMatchThreshold: number,
 ): { text: string; score: number } | undefined {
   const semanticQ = normalizeForSemanticMatch(question);
   let bestScore = 0;
@@ -216,7 +221,7 @@ function findNearMiss(
     }
   }
 
-  return bestScore >= NEAR_MISS_THRESHOLD && bestScore < SEMANTIC_MATCH_THRESHOLD && bestOriginal !== undefined
+  return bestScore >= nearMissThreshold && bestScore < semanticMatchThreshold && bestOriginal !== undefined
     ? { text: bestOriginal, score: bestScore }
     : undefined;
 }

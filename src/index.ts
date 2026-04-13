@@ -376,7 +376,7 @@ export class Workspace {
 
   detectDrift(cycleName?: string): DriftReport {
     const cycles = cycleName === undefined ? this.openCycles() : [this.resolveCycle(cycleName)];
-    return detectWorkspaceDrift(this.root, cycles, this.paths.tests);
+    return detectWorkspaceDrift(this.root, cycles, this.paths.tests, this.config.drift_thresholds);
   }
 
   syncRefs(): { targets: string[]; updated: string[] } {
