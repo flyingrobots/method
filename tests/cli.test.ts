@@ -164,7 +164,8 @@ describe('method CLI', () => {
     const plan = JSON.parse(planStdout.output);
     expect(planExitCode).toBe(0);
     expect(plan.mode).toBe('plan');
-    expect(plan.repairs.map((repair: { status: string }) => repair.status)).toEqual(['planned', 'planned', 'planned']);
+    expect(plan.repairs.every((repair: { status: string }) => repair.status === 'planned')).toBe(true);
+    expect(plan.repairs.length).toBeGreaterThanOrEqual(3);
 
     const applyStdout = new MemoryWriter();
     const applyExitCode = await runCli(['repair', '--apply', '--json'], {
@@ -176,7 +177,8 @@ describe('method CLI', () => {
     const applied = JSON.parse(applyStdout.output);
     expect(applyExitCode).toBe(0);
     expect(applied.mode).toBe('apply');
-    expect(applied.repairs.map((repair: { status: string }) => repair.status)).toEqual(['applied', 'applied', 'applied']);
+    expect(applied.repairs.every((repair: { status: string }) => repair.status === 'applied')).toBe(true);
+    expect(applied.repairs.length).toBeGreaterThanOrEqual(3);
     expect(readFile(root, 'docs/method/release-runbook.md')).toContain('# Release Runbook');
     expect(readFile(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md')).toMatch(
       /^---\ntitle: "Missing Frontmatter"\n---\n\n# Missing Frontmatter/mu,
@@ -202,7 +204,8 @@ describe('method CLI', () => {
     expect(result.changed).toBe(true);
     expect(result.initialReport.status).toBe('error');
     expect(result.repair.mode).toBe('apply');
-    expect(result.repair.repairs.map((repair: { status: string }) => repair.status)).toEqual(['applied', 'applied', 'applied']);
+    expect(result.repair.repairs.every((repair: { status: string }) => repair.status === 'applied')).toBe(true);
+    expect(result.repair.repairs.length).toBeGreaterThanOrEqual(3);
     expect(readFile(root, 'docs/method/release-runbook.md')).toContain('# Release Runbook');
     expect(readFile(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md')).toMatch(
       /^---\ntitle: "Missing Frontmatter"\n---\n\n# Missing Frontmatter/mu,

@@ -315,6 +315,21 @@ function inspectStructure(root: string, paths: PathsConfig): DoctorIssue[] {
 
   for (const directory of requiredDirectories) {
     if (isDirectoryPath(directory)) {
+      const gitkeepPath = resolve(directory, '.gitkeep');
+      if (!existsSync(gitkeepPath)) {
+        const relGitkeep = `${relative(root, directory)}/.gitkeep`;
+        issues.push(
+          createIssue(
+            'missing-gitkeep',
+            'structure',
+            'warning',
+            'A required METHOD directory is missing its `.gitkeep` file and may vanish on clone.',
+            relGitkeep,
+            `Run \`method init\` or create \`${relGitkeep}\` so the directory survives git clone.`,
+            { kind: 'create-gitkeep', targetPath: relGitkeep },
+          ),
+        );
+      }
       continue;
     }
     if (existsSync(directory)) {
@@ -711,6 +726,18 @@ function applyRepair(root: string, issue: DoctorIssue): { status: 'applied' | 's
     const title = inferFrontmatterTitle(repair.targetPath, normalized);
     const frontmatter = ['---', `title: "${title.replace(/"/gu, '\\"')}"`, '---'].join('\n');
     writeFileSync(target, normalized.length === 0 ? `${frontmatter}\n` : `${frontmatter}\n\n${normalized}`, 'utf8');
+    return { status: 'applied', touchedPath: repair.targetPath };
+  }
+
+  if (repair.kind === 'create-gitkeep') {
+    if (isFilePath(target)) {
+      return { status: 'skipped', reason: 'already-exists' };
+    }
+    const parentDir = dirname(target);
+    if (!isDirectoryPath(parentDir)) {
+      mkdirSync(parentDir, { recursive: true });
+    }
+    writeFileSync(target, '', 'utf8');
     return { status: 'applied', touchedPath: repair.targetPath };
   }
 

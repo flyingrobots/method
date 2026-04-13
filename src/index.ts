@@ -170,6 +170,10 @@ export function initWorkspace(root: string, pathsConfig?: PathsConfig): { create
     } else {
       mkdirSync(directory, { recursive: true });
     }
+    const gitkeep = resolve(directory, '.gitkeep');
+    if (!existsSync(gitkeep)) {
+      writeFileSync(gitkeep, '', 'utf8');
+    }
   }
 
   for (const [file, content] of files) {

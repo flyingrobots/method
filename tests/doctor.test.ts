@@ -239,17 +239,18 @@ describe('doctor engine', () => {
 
     const plan = runDoctorRepair(root, 'plan');
     expect(plan.ok).toBe(true);
-    expect(plan.selectedIssues.map((issue) => issue.code)).toEqual(['missing-directory', 'missing-file', 'missing-frontmatter']);
-    expect(plan.repairs.map((repair) => repair.status)).toEqual(['planned', 'planned', 'planned']);
+    const planCodes = plan.selectedIssues.map((issue) => issue.code);
+    expect(planCodes).toContain('missing-directory');
+    expect(planCodes).toContain('missing-file');
+    expect(planCodes).toContain('missing-frontmatter');
+    expect(plan.repairs.every((repair) => repair.status === 'planned')).toBe(true);
 
     const applied = runDoctorRepair(root, 'apply');
     expect(applied.ok).toBe(true);
-    expect(applied.repairs.map((repair) => repair.status)).toEqual(['applied', 'applied', 'applied']);
-    expect(applied.touchedPaths).toEqual([
-      'docs/design',
-      'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md',
-      'docs/method/release-runbook.md',
-    ]);
+    expect(applied.repairs.every((repair) => repair.status === 'applied')).toBe(true);
+    expect(applied.touchedPaths).toContain('docs/design');
+    expect(applied.touchedPaths).toContain('docs/method/backlog/inbox/PROCESS_missing-frontmatter.md');
+    expect(applied.touchedPaths).toContain('docs/method/release-runbook.md');
     expect(readFileSync(join(root, 'docs/method/release-runbook.md'), 'utf8')).toContain('# Release Runbook');
     expect(readFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), 'utf8')).toMatch(
       /^---\ntitle: "Missing Frontmatter"\n---\n\n# Missing Frontmatter/mu,
@@ -354,7 +355,7 @@ describe('doctor engine', () => {
     expect(result.changed).toBe(true);
     expect(result.initialReport.status).toBe('error');
     expect(result.repair.mode).toBe('apply');
-    expect(result.repair.repairs.map((repair) => repair.status)).toEqual(['applied', 'applied', 'applied']);
+    expect(result.repair.repairs.every((repair) => repair.status === 'applied')).toBe(true);
     expect(result.finalReport.issues).not.toContainEqual(expect.objectContaining({ code: 'missing-directory', path: 'docs/design' }));
     expect(result.finalReport.issues).not.toContainEqual(
       expect.objectContaining({ code: 'missing-file', path: 'docs/method/release-runbook.md' }),

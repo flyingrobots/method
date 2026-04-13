@@ -204,7 +204,13 @@ export const DoctorCheckSchema = z.object({
 });
 export type DoctorCheck = z.infer<typeof DoctorCheckSchema>;
 
-export const DoctorRepairKindSchema = z.enum(['create-directory', 'restore-file', 'frontmatter-stub', 'flatten-design-doc']);
+export const DoctorRepairKindSchema = z.enum([
+  'create-directory',
+  'restore-file',
+  'frontmatter-stub',
+  'flatten-design-doc',
+  'create-gitkeep',
+]);
 export type DoctorRepairKind = z.infer<typeof DoctorRepairKindSchema>;
 
 export const DoctorRepairHintSchema = z.object({
