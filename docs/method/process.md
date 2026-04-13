@@ -19,6 +19,13 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
 - This repo must pass `method doctor` with zero issues before any
   release. METHOD must be an example of the correct application of
   what it preaches.
+- All cycle witnesses included in a release must be re-executed and
+  green at the release commit. A witness from a prior commit is stale
+  evidence.
+- Human playback questions require explicit human sign-off before
+  release. An agent cannot unilaterally confirm a human hill. The
+  release runbook must include a human-in-the-loop confirmation step
+  where a human operator attests that each human hill holds true.
 - `human`, `agent`, and `user` are abstract seats or perspectives in
   METHOD doctrine, not literal people, accounts, or model brands.
 - Backlog maintenance happens at cycle boundaries, not continuously.

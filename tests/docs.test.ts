@@ -660,8 +660,9 @@ describe('METHOD docs', () => {
       '## Phase 0: Discovery',
       '## Phase 1: Guards',
       '## Phase 2: Versioning and release notes',
-      '## Phase 3: Validation',
-      '## Phase 4: Commit, tag, and publish',
+      '## Phase 3: Witness and human verification',
+      '## Phase 4: Validation',
+      '## Phase 5: Commit, tag, and publish',
     ];
     let lastIndex = abortIndex;
     for (const phase of phases) {

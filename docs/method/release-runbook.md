@@ -66,7 +66,24 @@ Do not continue past the first failed guard.
 `README.md` may link to durable release surfaces, but it should not
 become a per-version release log by default.
 
-## Phase 3: Validation
+## Phase 3: Witness and human verification
+
+These gates must pass before technical validation.
+
+1. Run `method doctor` and confirm zero issues.
+2. Re-execute all cycle witnesses at the current commit:
+   - `npm run build && npm test && method drift` for each active or
+     release-scoped cycle.
+   - Abort if any witness is not green at this commit.
+3. Human-in-the-loop confirmation:
+   - A human operator reviews every human playback question across all
+     release-scoped cycles.
+   - For each human hill, the operator attests: "I have verified this
+     holds true at the current commit."
+   - An agent cannot skip, simulate, or unilaterally confirm this step.
+   - Record the attestation in the release verification witness.
+
+## Phase 4: Validation
 
 Run validation strictly in order, using repo-native commands where
 available:
@@ -83,7 +100,7 @@ available:
 Abort on the first hard failure. Do not claim success from queued or
 in-progress CI state.
 
-## Phase 4: Commit, tag, and publish
+## Phase 5: Commit, tag, and publish
 
 1. Review the final diff.
 2. Stage the release changes.

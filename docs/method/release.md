@@ -71,10 +71,16 @@ the decision by themselves.
 3. Run `method doctor` and resolve all issues. Zero issues is a release
    gate — this repo must be an example of the correct application of
    what it preaches.
-4. Draft the user-facing release notes in `docs/releases/vX.Y.Z.md`.
-5. Run the sequential pre-flight in `docs/method/release-runbook.md`.
-6. Tag, publish, and verify delivery directly.
-7. Ship sync repo-level surfaces that the release changed.
+4. Re-execute all cycle witnesses at the release commit and verify they
+   are green. Stale witnesses from prior commits do not satisfy this
+   gate.
+5. Human-in-the-loop: a human operator reviews and attests that each
+   human playback question across all release-scoped cycles holds true.
+   An agent cannot unilaterally confirm human hills.
+6. Draft the user-facing release notes in `docs/releases/vX.Y.Z.md`.
+7. Run the sequential pre-flight in `docs/method/release-runbook.md`.
+8. Tag, publish, and verify delivery directly.
+9. Ship sync repo-level surfaces that the release changed.
 
 Future automation may add a release-readiness witness or rollup, but it
 should summarize the release-scoped cycle evidence above rather than
