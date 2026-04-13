@@ -54,7 +54,9 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
 5. Produce a reproducible playback witness, including reduced/
    linearized, localized, or agent-facing paths when the hill claims
    them. A purely observational artifact may support the witness, but
-   it does not satisfy done on its own.
+   it does not satisfy done on its own. The witness must include
+   executable verification instructions and sandbox setup steps so a
+   reviewer can reproduce the verification independently.
 6. Close the cycle packet with a retro in either
    `docs/method/retro/<cycle>/<cycle>.md` or
    `docs/releases/<version>/retros/<cycle>/<cycle>.md`, depending on
