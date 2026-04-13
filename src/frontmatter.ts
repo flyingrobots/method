@@ -76,6 +76,10 @@ export function updateTypedFrontmatter(path: string, updates: TypedFrontmatter):
       delete merged[key];
       continue;
     }
+    const existing = merged[key];
+    if (existing !== undefined) {
+      assertNoTypeDowngrade(key, existing, value);
+    }
     merged[key] = value;
   }
 
@@ -142,6 +146,24 @@ function deriveLegacyTitle(raw: string): string | undefined {
   }
 
   return undefined;
+}
+
+function typeName(value: unknown): string {
+  if (Array.isArray(value)) {
+    return 'array';
+  }
+  return typeof value;
+}
+
+function assertNoTypeDowngrade(key: string, existing: unknown, incoming: unknown): void {
+  const existingType = typeName(existing);
+  const incomingType = typeName(incoming);
+  if (existingType === incomingType) {
+    return;
+  }
+  throw new Error(
+    `Cannot downgrade typed field '${key}': expected ${existingType}, attempted ${incomingType}`,
+  );
 }
 
 function stringifyFrontmatterValue(value: unknown): string {
