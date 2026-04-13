@@ -555,8 +555,11 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
       if (request.params.name === 'method_pull') {
         const item = validateString(args.item, 'item');
         const cycle = workspace.pullItem(item);
-        return successResult('method_pull', `Pulled into ${cycle.name}`, {
+        const summary =
+          cycle.warnings.length > 0 ? `Pulled into ${cycle.name} (${cycle.warnings.length} warning(s))` : `Pulled into ${cycle.name}`;
+        return successResult('method_pull', summary, {
           cycle: relativizeCycle(workspace, cycle),
+          warnings: cycle.warnings,
         });
       }
 

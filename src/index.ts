@@ -320,12 +320,14 @@ export class Workspace {
     });
   }
 
-  pullItem(item: string): Cycle {
+  pullItem(item: string): Cycle & { warnings: string[] } {
     const backlogItem = this.resolveBacklogItem(item);
     const title = readHeading(backlogItem);
     if (title.length === 0) {
       throw new MethodError(`${relative(this.root, backlogItem)} is missing a heading.`);
     }
+
+    const warnings = validateBacklogReadiness(backlogItem, relative(this.root, backlogItem));
 
     const { legend, slug, release } = readBacklogPullContext(backlogItem, inferBacklogLane(this.paths.backlog, backlogItem));
     const cycleName = legend !== undefined ? `${legend}_${slug}` : slug;
@@ -354,6 +356,7 @@ export class Workspace {
       slug,
       designDoc,
       retroDoc,
+      warnings,
     };
   }
 
@@ -1808,6 +1811,34 @@ function longestDependencyPathTo(targetPath: string, itemsByPath: ReadonlyMap<st
   };
 
   return visit(targetPath);
+}
+
+/**
+ * Backlog readiness contract for pull:
+ *
+ * Required: title (heading), legend (frontmatter or filename prefix).
+ * Warn if missing: acceptance_criteria, priority.
+ * Optional: owner, keywords, blocked_by, blocks.
+ */
+function validateBacklogReadiness(path: string, relativePath: string): string[] {
+  const frontmatter = fmReadTypedFrontmatter(path);
+  const warnings: string[] = [];
+
+  const hasLegend =
+    (typeof frontmatter.legend === 'string' && frontmatter.legend.trim().length > 0) || LEGEND_PATTERN.exec(fileStem(path)) !== null;
+  if (!hasLegend) {
+    warnings.push(`${relativePath}: missing legend — assign a legend via frontmatter or filename prefix.`);
+  }
+
+  if (!Object.hasOwn(frontmatter, 'acceptance_criteria')) {
+    warnings.push(`${relativePath}: missing acceptance_criteria — consider adding criteria before pulling.`);
+  }
+
+  if (!Object.hasOwn(frontmatter, 'priority')) {
+    warnings.push(`${relativePath}: missing priority — consider setting priority before pulling.`);
+  }
+
+  return warnings;
 }
 
 function readBacklogPullContext(path: string, fallbackLane: BacklogLane): { legend?: string; slug: string; release?: string } {

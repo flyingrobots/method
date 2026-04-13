@@ -179,6 +179,9 @@ export async function runCli(argv: readonly string[], options: RunCliOptions = {
     }
     if (parsed.command === 'pull') {
       const cycle = workspace.pullItem(parsed.item);
+      for (const warning of cycle.warnings) {
+        stderr.write(`${alert(warning, { variant: 'warning', ctx })}\n`);
+      }
       stdout.write(`${alert(`Pulled into ${cycle.name}`, { variant: 'success', ctx })}\n`);
       stdout.write(`${relative(root, cycle.designDoc)}\n`);
       return 0;

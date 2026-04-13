@@ -108,9 +108,9 @@ export function runDoctorRepair(root: string, mode: DoctorRepairMode): DoctorRep
       selectedIssues,
       repairs: selectedIssues.map((issue) => ({
         issueCode: issue.code,
-        kind: issue.repair?.kind,
-        targetPath: issue.repair?.targetPath,
-        status: 'planned',
+        kind: issue.repair!.kind,
+        targetPath: issue.repair!.targetPath,
+        status: 'planned' as const,
       })),
       touchedPaths: [],
       unresolvedIssues: initialReport.issues,

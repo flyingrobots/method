@@ -1040,4 +1040,38 @@ describe('Method API', () => {
     expect(result.targets).toEqual(['ARCHITECTURE.md', 'docs/CLI.md', 'docs/MCP.md', 'docs/GUIDE.md']);
     expect(Array.isArray(result.updated)).toBe(true);
   });
+
+  it('Does `pullItem` warn when a backlog item is missing acceptance criteria or priority?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    // Create item without acceptance_criteria or priority
+    workspace.captureIdea('Bare Item', 'PROCESS', 'Bare Item');
+    const cycle = workspace.pullItem('PROCESS_bare-item');
+
+    expect(cycle.warnings.length).toBeGreaterThan(0);
+    expect(cycle.warnings.some((w) => w.includes('acceptance_criteria'))).toBe(true);
+    expect(cycle.warnings.some((w) => w.includes('priority'))).toBe(true);
+  });
+
+  it('Does `pullItem` produce no warnings for a fully shaped backlog item?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.createBacklogItem({
+      lane: 'asap',
+      title: 'Full Item',
+      legend: 'PROCESS',
+      body: 'Body',
+    });
+    // Add acceptance_criteria and priority via typed frontmatter
+    const itemPath = join(root, 'docs/method/backlog/asap/PROCESS_full-item.md');
+    const raw = readFileSync(itemPath, 'utf8');
+    writeFileSync(itemPath, raw.replace('---\n\n', 'priority: high\nacceptance_criteria:\n  - "Criterion"\n---\n\n'), 'utf8');
+
+    const cycle = workspace.pullItem('PROCESS_full-item');
+    expect(cycle.warnings).toEqual([]);
+  });
 });
