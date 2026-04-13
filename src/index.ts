@@ -20,6 +20,7 @@ import {
   type Cycle,
   type Lane,
   LANES,
+  SCAFFOLD_LANES,
   type NextWorkRecommendation,
   type NextWorkResult,
   type NextWorkScoreBand,
@@ -141,10 +142,7 @@ export function workspaceScaffold(root: string, pathsConfig: PathsConfig = DEFAU
   const p = resolvePaths(root, pathsConfig);
   return {
     directories: [
-      resolve(p.backlog, 'inbox'),
-      resolve(p.backlog, 'asap'),
-      resolve(p.backlog, 'cool-ideas'),
-      resolve(p.backlog, 'bad-code'),
+      ...SCAFFOLD_LANES.map((lane) => resolve(p.backlog, lane)),
       resolve(p.methodDir, 'legends'),
       p.graveyard,
       resolve(p.methodDir, 'releases'),

@@ -3,6 +3,21 @@ import { z } from 'zod';
 export const LANES = ['inbox', 'asap', 'bad-code', 'cool-ideas'] as const;
 export type CanonicalLane = typeof LANES[number];
 const CANONICAL_LANE_SET = new Set<string>(LANES);
+
+/**
+ * Lane materialization contract:
+ *
+ * - `init` creates directories for all canonical lanes (`LANES`).
+ * - Individual lane directories may be absent when empty without making
+ *   the workspace unhealthy. Only the backlog root must exist.
+ * - `doctor` does not flag missing lane directories as structural errors.
+ * - `status` reports empty lanes as empty, not as failures.
+ *
+ * This contract is the single source of truth for lane-materialization
+ * expectations. `init`, `doctor`, `status`, and backlog queries all
+ * share it through `LANES` and this documentation.
+ */
+export const SCAFFOLD_LANES: readonly string[] = LANES;
 const LANE_PATTERN = /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/u;
 const RELEASE_LANE_PATTERN = /^v(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)$/u;
 
