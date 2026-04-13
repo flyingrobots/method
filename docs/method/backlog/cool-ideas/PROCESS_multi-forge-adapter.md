@@ -1,7 +1,7 @@
 ---
 title: "Multi-Forge Adapter"
 legend: PROCESS
-lane: inbox
+lane: cool-ideas
 ---
 
 # Multi-Forge Adapter

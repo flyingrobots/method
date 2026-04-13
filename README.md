@@ -8,8 +8,12 @@ A backlog, a loop, and honest bookkeeping.
 
 **The agent and the human sit at the same table.** They see different
 things. Both are named in every design as abstract roles (e.g.,
-"Repository Operator", "System Architect"). Both must agree before work
-ships.
+"Repository Operator", "System Architect"), not literal people or tool
+instances. Both must agree before work ships.
+
+When METHOD says `user`, it means the served perspective or beneficiary
+of the change, like in a user story. It does not mean a specific named
+person who must be present during authorship or playback.
 
 **The METHOD repo gets no special pleading.** The repository that
 defines METHOD should use METHOD on itself. If repo truth conflicts with
@@ -74,12 +78,11 @@ docs/
     backlog/
       inbox/                        raw ideas, anyone, anytime
       asap/                         do this now
-      up-next/                      do this soon
       cool-ideas/                   experiments, wild thoughts
       bad-code/                     tech debt
+      vX.Y.Z/                       release-scoped planning lane
+      <repo-lane>/                  other repo-defined planning lanes
       *.md                          everything else
-    feedback/                       raw feedback awaiting triage
-    feedback/archive/               processed feedback kept for provenance
     legends/                        named domains
     retro/<cycle>/<task>.md         retrospectives
     releases/vX.Y.Z/                internal release packets
@@ -143,14 +146,18 @@ The inbox is processed during maintenance.
 |------|---------|
 | `inbox/` | Unprocessed. |
 | `asap/` | Pull into a cycle soon. |
-| `up-next/` | Next in line. |
 | `cool-ideas/` | Not commitments. |
 | `bad-code/` | It works, but it bothers you. |
 
-Anything else sits in the backlog root.
+Repos may also create custom first-level backlog lanes when the default
+buckets stop being the right planning surface. A lane such as
+`v1.1.0/` is valid when the repo wants to group candidate work toward a
+named release target or another explicit planning bucket.
 
-`method init` scaffolds all lane directories. Lanes exist from
-initialization, not on first use.
+`method init` scaffolds the canonical lanes above. Custom lanes are
+created intentionally on demand. Backlog root remains a valid escape
+hatch, but items there should be short-lived because `method doctor`
+warns on unclassified root backlog files.
 
 ### Naming
 
@@ -164,10 +171,13 @@ debt-trailer-codec-dts.md
 
 ### Promoting
 
-When a backlog item is pulled into a cycle, it becomes a design doc:
+When a backlog item is pulled into a cycle, it becomes a design doc.
+Unreleased work without explicit release scope goes to `docs/design/`.
+Release-tagged work goes to `docs/releases/<version>/design/`.
 
 ```text
 backlog/asap/SYNTH_executive-summary-protocol.md -> design/<cycle>/executive-summary-protocol.md
+backlog/v2.4.5/PROCESS_release-scope.md -> releases/v2.4.5/design/<cycle>/release-scope.md
 ```
 
 The backlog file is removed. Work does not live in two places.
@@ -296,6 +306,10 @@ in one sentence, the cycle is too big. Split it.
 4. **Playback** - produce a witness. The agent answers agent
    questions. The human answers user questions. Write it down.
 
+   Those are perspective labels, not literal identities. `agent` names
+   the machine-operable seat in the workflow, and `user` names the
+   served perspective the hill claims to satisfy.
+
    The **witness** is the concrete artifact - test output, transcript,
    screenshot, recording - that shows both answers. No clear yes means
    no. If the witness cannot be reproduced from committed commands,
@@ -380,7 +394,7 @@ a standup:
 - Is this workspace structurally healthy? -> `method doctor`
 - What is under review? -> `method review-state`
 - What is committed? -> each design doc names its sponsors and hill
-- What is next? -> `ls docs/method/backlog/asap/`
+- What is next? -> `method status` and the current lane under `docs/method/backlog/`
 - What failed and why? -> `ls docs/method/retro/`
 - What did we decide not to do? -> `ls docs/method/graveyard/`
 
@@ -436,37 +450,32 @@ Rejected work moves to `docs/method/graveyard/` with a note explaining
 why. The graveyard prevents re-proposing without context. If you want
 to resurrect something, you must address the note.
 
-## Feedback
+Use `method retire` when a live backlog item should become a graveyard
+tombstone instead of silently disappearing.
 
-Feedback that is not yet shaped into backlog or design work belongs in
-`docs/method/feedback/`.
+## Intake
 
-Treat feedback docs as an inbox for critique, review notes, and
-outside-in observations. When processed, turn accepted feedback into
-explicit repo artifacts such as backlog items, design edits, signpost
-updates, or release notes. Then move the processed feedback document to
-`docs/method/feedback/archive/` with a short disposition note instead
-of deleting it.
+Anything not yet shaped into planned work belongs in `inbox/`,
+including critique, review notes, and outside-in observations.
 
-The archive preserves provenance, shows what feedback already landed,
-and prevents the same point from being rediscovered without context.
+Use `method inbox` to capture raw intake without prematurely deciding
+whether it belongs in `asap/`, a release lane such as `v2.4.5/`,
+`bad-code/`, `cool-ideas/`, or the graveyard. When provenance matters,
+record it explicitly with `--source` and `--captured-at`.
 
 ---
 
 ## Flow
 
 ```text
-idea -> inbox/ -> cool-ideas/ -> up-next/ -> asap/
-  -> design/<cycle>/  (committed)
+idea -> inbox/ -> chosen lane (cool-ideas/, asap/, v2.4.5/, bad-code/, ...)
+  -> design/<cycle>/ or releases/<version>/design/<cycle>/  (committed)
   -> RED -> GREEN -> playback (witness)
-  -> retro/<cycle>/   (cycle packet closed)
+  -> retro/<cycle>/ or releases/<version>/retros/<cycle>/   (cycle packet closed)
   -> PR/review -> main
   -> ship sync (BEARING / CHANGELOG / release when meaningful)
       - or ->
   -> graveyard/
-
-feedback -> feedback/ -> backlog/design/signpost/release/no-action
-  -> feedback/archive/
 ```
 
 ---
@@ -488,15 +497,22 @@ Run during development:
 npm run method -- status
 ```
 
-Core commands: `method init`, `method doctor`, `method inbox`,
-`method pull`, `method close`, `method drift`, `method status`,
-`method mcp`, `method sync github`, `method sync ship`.
+Core commands: `method init`, `method doctor`, `method migrate`, `method inbox`,
+`method backlog add`, `method backlog move`, `method backlog edit`, `method backlog list`, `method backlog deps`, `method retire`,
+`method signpost status`, `method signpost init`,
+`method repair`, `method next`, `method pull`,
+`method close`, `method drift`, `method status`, `method mcp`,
+`method sync github`, `method sync ship`, `method sync refs`.
 
 See `docs/CLI.md` for the full command reference with flags and
 examples. See `docs/MCP.md` for the MCP tool reference
-(`method_doctor`, `method_status`, `method_inbox`, `method_pull`,
-`method_drift`, `method_close`, `method_sync_ship`, `method_sync_github`,
-`method_capture_witness`).
+(`method_doctor`, `method_migrate`, `method_status`, `method_inbox`, `method_backlog_add`,
+`method_backlog_move`, `method_backlog_edit`, `method_backlog_query`, `method_backlog_dependencies`,
+`method_next_work`,
+`method_signpost_status`, `method_signpost_init`,
+`method_retire`, `method_pull`, `method_drift`,
+`method_repair`, `method_close`, `method_sync_ship`, `method_sync_refs`,
+`method_sync_github`, `method_capture_witness`).
 
 Repo-local CI currently uses GitHub Actions as a host adapter through
 `.github/workflows/ci.yml`. The first cut stays narrow and explicit:

@@ -39,7 +39,7 @@ describe('Async Exec', () => {
     workspace.captureIdea('Test Idea', 'PROCESS', 'Async Test');
     workspace.pullItem('PROCESS_async-test');
 
-    const result = workspace.captureWitness('0001-async-test');
+    const result = workspace.captureWitness('PROCESS_async-test');
     expect(result).toBeInstanceOf(Promise);
     const path = await result;
     expect(path).toContain('witness/verification.md');
@@ -53,10 +53,10 @@ describe('Async Exec', () => {
     workspace.captureIdea('Test Idea', 'PROCESS', 'Close Test');
     workspace.pullItem('PROCESS_close-test');
 
-    const result = workspace.closeCycle('0001-close-test', true, 'hill-met');
+    const result = workspace.closeCycle('PROCESS_close-test', true, 'hill-met');
     expect(result).toBeInstanceOf(Promise);
     const cycle = await result;
-    expect(cycle.name).toBe('0001-close-test');
+    expect(cycle.name).toBe('PROCESS_close-test');
   });
 
   it('METHOD_TEST mock path still works and returns the same format.', async () => {

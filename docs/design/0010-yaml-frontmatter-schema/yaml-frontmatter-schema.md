@@ -92,8 +92,11 @@ document-specific, and how strict the validation should be.
 - `source_files`: array of strings
 
 ### Design Docs (Recommended)
-- `sponsors`: object (`human`, `agent`)
+- `sponsors`: object (`human`, `agent`) with abstract role labels, not
+  literal identities
 - `source_backlog`: string (path)
+- `release`: string (optional version scope when the cycle belongs to a
+  release packet)
 
 ### Retros (Recommended)
 - `design_doc`: string (path)
@@ -103,3 +106,6 @@ document-specific, and how strict the validation should be.
 ### Backlog Items (Minimal)
 - `legend`: string
 - `lane`: string
+- `release`: string (optional durable release association)
+- `source`: string (optional capture provenance)
+- `captured_at`: string (optional YYYY-MM-DD capture date)

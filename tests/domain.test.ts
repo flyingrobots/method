@@ -12,8 +12,7 @@ describe('Domain Models', () => {
     
     // Invalid Cycle (wrong types)
     expect(() => CycleSchema.parse({
-      name: '0001-test',
-      number: '1', // should be number
+      name: 123,
       slug: 'test',
       designDoc: 'path',
       retroDoc: 'path',
@@ -21,18 +20,17 @@ describe('Domain Models', () => {
 
     // Valid Cycle
     const validCycle = {
-      name: '0001-test',
-      number: 1,
+      name: 'PROCESS_test',
       slug: 'test',
-      designDoc: 'docs/design/0001-test/test.md',
-      retroDoc: 'docs/method/retro/0001-test/test.md',
+      designDoc: 'docs/design/PROCESS_test.md',
+      retroDoc: 'docs/method/retro/PROCESS_test/PROCESS_test.md',
     };
     expect(CycleSchema.parse(validCycle)).toEqual(validCycle);
 
-    // Invalid BacklogItem (invalid lane)
+    // Invalid BacklogItem (malformed lane)
     expect(() => BacklogItemSchema.parse({
       stem: 'test',
-      lane: 'invalid-lane',
+      lane: '../invalid-lane',
       path: 'path',
       slug: 'test',
     })).toThrow();

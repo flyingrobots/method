@@ -1,3 +1,11 @@
+---
+title: "Task Dependency DAG"
+legend: PROCESS
+lane: v1.1.0
+owner: "METHOD maintainers"
+priority: medium
+---
+
 # Add blocks/blocked_by fields to task YAML frontmatter
 
 ## What

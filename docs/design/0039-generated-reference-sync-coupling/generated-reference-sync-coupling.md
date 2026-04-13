@@ -1,17 +1,54 @@
 ---
 title: "Generated Reference Sync Coupling"
-legend: PROCESS
-lane: bad-code
-owner: "METHOD maintainers"
-priority: medium
-acceptance_criteria:
-  - "The note names the current bad behavior: refreshing generated reference docs like docs/MCP.md or docs/CLI.md currently requires `method sync ship`, which also mutates repo-level ship surfaces such as BEARING and CHANGELOG."
-  - "The proposal defines a bounded way to regenerate reference docs without touching ship-only artifacts that are supposed to move on merged main."
-  - "The contract keeps full `method sync ship` as the post-merge main maneuver rather than weakening that workflow."
-  - "The contract specifies regression expectations proving a scoped reference-doc refresh leaves BEARING and CHANGELOG unchanged on branch-local runs."
+legend: "PROCESS"
+cycle: "0039-generated-reference-sync-coupling"
+source_backlog: "docs/method/backlog/bad-code/PROCESS_generated-reference-sync-coupling.md"
 ---
 
 # Generated Reference Sync Coupling
+
+Source backlog item: `docs/method/backlog/bad-code/PROCESS_generated-reference-sync-coupling.md`
+Legend: PROCESS
+
+## Sponsors
+
+- Human: Backlog operator
+- Agent: Implementation agent
+
+## Hill
+
+TBD
+
+## Playback Questions
+
+### Human
+
+- [ ] TBD
+
+### Agent
+
+- [ ] TBD
+
+## Accessibility and Assistive Reading
+
+- Linear truth / reduced-complexity posture: TBD
+- Non-visual or alternate-reading expectations: TBD
+
+## Localization and Directionality
+
+- Locale / wording / formatting assumptions: TBD
+- Logical direction / layout assumptions: TBD
+
+## Agent Inspectability and Explainability
+
+- What must be explicit and deterministic for agents: TBD
+- What must be attributable, evidenced, or governed: TBD
+
+## Non-goals
+
+- [ ] TBD
+
+## Backlog Context
 
 Refreshing generated reference docs during PR work currently requires
 running `method sync ship`, even when the only intended output is a file

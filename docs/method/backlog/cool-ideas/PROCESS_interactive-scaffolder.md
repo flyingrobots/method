@@ -1,7 +1,7 @@
 ---
 title: "Interactive Scaffolder"
 legend: PROCESS
-lane: inbox
+lane: cool-ideas
 ---
 
 # Interactive Scaffolder

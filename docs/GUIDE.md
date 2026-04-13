@@ -1,6 +1,6 @@
 ---
 title: "Guide"
-generator: "method sync ship"
+generator: "method sync refs"
 provenance_level: artifact_history
 ---
 
@@ -42,24 +42,25 @@ Why this is good practice:
   current feature work.
 - It avoids awkward cleanup and weird Git operations later.
 
-## Process feedback in batches
+## Keep one raw-intake path
 
 If review notes or operator feedback start piling up, capture them in
-`docs/method/feedback/` instead of scattering them across chat or
-deleting them after triage.
+`docs/method/backlog/inbox/` instead of inventing a second holding area
+for critique.
 
-Treat a feedback doc as raw input, not as a backlog item yet. During a
-maintenance pass, read it carefully, split accepted points into the
-right durable artifacts, and then move the source document into
-`docs/method/feedback/archive/` with a short note about what happened.
+Use `method inbox` for this too. Add `--source` and `--captured-at`
+when origin and timing matter.
+
+Treat the inbox item as raw input, not as already-prioritized work.
+During a maintenance pass, split accepted points into the right durable
+artifacts and then move or retire the inbox item intentionally.
 
 Why this is good practice:
 
-- It keeps the backlog from becoming a dumping ground for half-processed
-  critique.
+- It keeps raw intake legible in one place.
 - It preserves the original wording and context behind later backlog or
   docs changes.
-- It makes "no action" a visible decision instead of silent deletion.
+- It makes triage visible instead of hiding it in parallel inboxes.
 
 ## Advice is not doctrine
 

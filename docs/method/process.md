@@ -12,10 +12,12 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
 - If a claimed result cannot be reproduced, it is not done.
 - Drift is checked explicitly at close, not hand-waved after the fact.
   Invariant preservation is part of the drift check.
+- `human`, `agent`, and `user` are abstract seats or perspectives in
+  METHOD doctrine, not literal people, accounts, or model brands.
 - Backlog maintenance happens at cycle boundaries, not continuously.
-- Feedback capture can happen anytime, but processing feedback into
-  backlog, design, signpost, or release work should happen at cycle
-  boundaries or on a dedicated triage branch.
+- All raw intake, including feedback or review notes, lands in
+  `docs/method/backlog/inbox/`. Use explicit metadata such as
+  `source` and `captured_at` when provenance matters.
 - Repo-level ship surfaces such as `BEARING.md` and `CHANGELOG.md`
   reflect merged `main` state, not branch-local closeout state.
 - If merged `main` is ever found carrying an open cycle packet, treat
@@ -24,7 +26,7 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
 - Review visibility is available through `method review-state`, which
   summarizes branch and PR context without turning METHOD into a forge
   cockpit.
-- All cycle work must be done on a branch named `cycles/####-slug`.
+- All cycle work must be done on a branch named `cycles/<LEGEND>_<slug>`.
 - Once a full cycle is complete (after the retro), the operator must
   push the branch and open a PR to the target branch (usually `main`).
 - Agents must stage and commit all modified files at the end of each turn
@@ -32,18 +34,24 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
 
 ## Default Loop
 
-1. Pull an item from the backlog into `docs/design/<cycle>/`.
+1. Pull an item from the backlog into `docs/design/<cycle>.md` or, for
+   release-tagged work, into `docs/releases/<version>/design/<cycle>.md`.
 2. Write the design with both human and agent sponsors named as
    abstract roles (e.g., "System Architect", "Workflow Automator"),
    plus the accessibility, localization, and agent-inspectability
-   contract.
+   contract. Treat `user` the same way: it names the served perspective
+   in the hill or witness, like a user story, not a literal named
+   person.
 3. Write failing tests from the playback questions.
 4. Make the tests pass.
 5. Produce a reproducible playback witness, including reduced/
    linearized, localized, or agent-facing paths when the hill claims
    them. A purely observational artifact may support the witness, but
    it does not satisfy done on its own.
-6. Close the cycle packet with a retro in `docs/method/retro/<cycle>/`.
+6. Close the cycle packet with a retro in either
+   `docs/method/retro/<cycle>/<cycle>.md` or
+   `docs/releases/<version>/retros/<cycle>/<cycle>.md`, depending on
+   whether the cycle carries release scope.
 7. Review the complete cycle packet on a branch or PR.
 8. After merge, update repo-level ship surfaces on `main` such as
    `BEARING.md`, `CHANGELOG.md`, and release notes when relevant.
@@ -58,8 +66,8 @@ METHOD uses Git for distributed coordination but remains forge-agnostic.
 
 ### Branch Naming
 
-- **Cycle Branches:** Use `cycles/####-slug` (e.g.,
-  `cycles/0015-git-branch-workflow-policy`).
+- **Cycle Branches:** Use `cycles/<LEGEND>_<slug>` (e.g.,
+  `cycles/PROCESS_git-branch-workflow-policy`).
 - **Maintenance Branches:** Use `maint-slug` for low-risk changes that
   require review (e.g., `maint-fix-typos`).
 - **Triage/Backlog:** Small backlog captures or moves can happen
@@ -73,20 +81,17 @@ METHOD uses Git for distributed coordination but remains forge-agnostic.
 4. **Close:** Run `method close` to write the retro and witness metadata.
 5. **Merge:** Open a PR/Review. Once approved, merge to `main`.
 
-### Feedback Processing
+### Intake and Triage
 
 1. **Capture:** Store raw review notes, critique, or outside-in
-   observations as markdown files under `docs/method/feedback/`.
-2. **Classify:** Treat each feedback doc as unprocessed input, not as
-   backlog or doctrine on its own.
-3. **Process:** During a maintenance pass, convert accepted feedback
-   into explicit repo artifacts such as backlog items, design edits,
-   signpost updates, or release notes.
-4. **Record disposition:** Add a short note to the feedback document
-   describing what changed, what was rejected, or why no action was
-   taken.
-5. **Archive:** Move the processed document to
-   `docs/method/feedback/archive/` instead of deleting it.
+   observations as backlog notes in `docs/method/backlog/inbox/`.
+2. **Annotate when useful:** Record explicit frontmatter metadata such
+   as `source` and `captured_at` when the origin or timing matters.
+3. **Process:** During a maintenance pass, convert the inbox item into
+   a durable choice: `asap`, a release lane such as `v2.4.5`,
+   `bad-code`, `cool-ideas`, a direct docs repair, or the graveyard.
+4. **Do not split intake systems:** The inbox is the raw intake path.
+   Avoid parallel holding areas for critique or review notes.
 
 ### The Ship Sync Maneuver
 
@@ -138,9 +143,9 @@ A specialized cycle for "reading the repo and summarizing what it is." This prot
    - `README.md`
    - repo instructions and `docs/method/process.md`
    - `docs/method/legends/*.md`
-   - `docs/design/*/`
+   - `docs/design/*.md`
    - `docs/method/retro/*/`
-   - backlog lanes in priority order
+   - backlog lanes in repo-defined order
    - `docs/method/graveyard/`
 2. Record the exact source list that will ground the synthesis.
 

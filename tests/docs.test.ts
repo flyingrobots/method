@@ -14,6 +14,7 @@ function readBacklogDoc(filename: string): string {
   const matches = [
     ...walkMarkdownFiles('docs/method/backlog'),
     ...walkMarkdownFiles('docs/design'),
+    ...walkMarkdownFiles('docs/releases'),
   ].filter((relativePath) => relativePath.endsWith(`/${filename}`));
 
   if (matches.length === 0) {
@@ -100,7 +101,7 @@ describe('METHOD docs', () => {
     expect(readme).toContain('It is updated during ship sync after merge.');
     expect(readme).toContain('-> PR/review -> main');
     expect(process).toContain('METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loop.');
-    expect(process).toContain('6. Close the cycle packet with a retro in `docs/method/retro/<cycle>/`.');
+    expect(process).toMatch(/6\.\s+Close the cycle packet with a retro in either[\s\S]*`docs\/method\/retro\/<cycle>\/<cycle>\.md`[\s\S]*`docs\/releases\/<version>\/retros\/<cycle>\/<cycle>\.md`[\s\S]*cycle carries release scope\./u);
     expect(process).toContain('7. Review the complete cycle packet on a branch or PR.');
     expect(process).toContain('8. After merge, update repo-level ship surfaces on `main` such as');
     expect(process).toContain('reflect merged `main` state, not branch-local closeout state.');
@@ -169,6 +170,19 @@ describe('METHOD docs', () => {
         }
       }
     }
+  });
+
+  it('formalizes human, agent, and user as abstract seats in doctrine', () => {
+    const invariant = readRepoFile('docs/invariants/sponsor-abstractness.md');
+    const readme = readRepoFile('README.md');
+    const process = readRepoFile('docs/method/process.md');
+
+    expect(invariant).toContain('same way it is in a user story');
+    expect(invariant).toContain('not a specific individual, account, model brand, or');
+    expect(readme).toContain('like in a user story');
+    expect(readme).toContain('It does not mean a specific named');
+    expect(process).toContain('like a user story');
+    expect(process).toContain('not a literal named');
   });
 
   it('keeps this repo inbox aligned with the current legend split', () => {
@@ -321,8 +335,8 @@ describe('METHOD docs', () => {
     const docs = walkMarkdownFiles('docs');
     for (const doc of docs) {
       const content = readRepoFile(doc);
-      const isDesign = doc.startsWith('docs/design/');
-      const isRetro = doc.startsWith('docs/method/retro/') && !doc.includes('/witness/');
+      const isDesign = doc.startsWith('docs/design/') || doc.includes('/design/');
+      const isRetro = (doc.startsWith('docs/method/retro/') || doc.includes('/retros/')) && !doc.includes('/witness/');
 
       if (isDesign) {
         expect(content, `${doc} (design) must have a legend field in frontmatter`).toMatch(/^legend:\s+\S+$/mu);
@@ -350,13 +364,20 @@ describe('METHOD docs', () => {
       'cycle',
       'sponsors',
       'source_backlog',
+      'release',
       'design_doc',
       'outcome',
       'drift_check',
       'lane',
       'owner',
       'priority',
+      'keywords',
       'acceptance_criteria',
+      'blocked_by',
+      'blocks',
+      'captured_at',
+      'source',
+      'status',
       'github_issue_id',
       'github_issue_url',
       'github_labels',
@@ -410,7 +431,7 @@ describe('METHOD docs', () => {
 
   it('docs/method/process.md contains the branching and commitment rules.', () => {
     const process = readRepoFile('docs/method/process.md');
-    expect(process).toContain('cycles/####-slug');
+    expect(process).toContain('cycles/<LEGEND>_<slug>');
     expect(process).toContain('stage and commit all modified files');
   });
 
@@ -419,9 +440,9 @@ describe('METHOD docs', () => {
     expect(process).toContain('## Workflow');
   });
 
-  it('`docs.test.ts` validates that the policy includes specific naming patterns (e.g., `####-slug`).', () => {
+  it('`docs.test.ts` validates that the policy includes specific naming patterns (e.g., `<LEGEND>_<slug>`).', () => {
     const process = readRepoFile('docs/method/process.md');
-    expect(process).toContain('####-slug');
+    expect(process).toContain('<LEGEND>_<slug>');
     expect(process).toContain('maint-slug');
   });
 
@@ -612,7 +633,7 @@ describe('METHOD docs', () => {
     expect(readme).toContain('npm test');
   });
 
-  it('defines shaped releases as artifacts, not versioned backlog lanes', () => {
+  it('defines shaped releases as artifacts while allowing version-target backlog lanes as planning input', () => {
     const release = readRepoFile('docs/method/release.md');
 
     expect(release).toContain('docs/method/releases/vX.Y.Z/release.md');
@@ -620,7 +641,8 @@ describe('METHOD docs', () => {
     expect(release).toContain('docs/releases/vX.Y.Z.md');
     expect(release).toContain('`CHANGELOG.md` remains the ledger');
     expect(release).toContain('Releases aggregate shipped work.');
-    expect(release).toMatch(/They do not create\s+`docs\/method\/backlog\/<version>\/`/u);
+    expect(release).toContain('docs/method/backlog/v1.1.0/');
+    expect(release).toContain('planning input, not release truth');
     expect(release).toMatch(/The release design names and justifies the intended version/u);
   });
 
@@ -652,16 +674,16 @@ describe('METHOD docs', () => {
     const readme = readRepoFile('README.md');
     const process = readRepoFile('docs/method/process.md');
 
-    // Both docs must name the cycles/####-slug pattern
+    // Both docs must name the cycles/<LEGEND>_<slug> pattern
     expect(readme).toContain('cycles/');
-    expect(process).toContain('cycles/####-slug');
+    expect(process).toContain('cycles/<LEGEND>_<slug>');
 
-    // process.md Rules section must use cycles/####-slug, not bare cycles/<cycle_name>
+    // process.md Rules section must use cycles/<LEGEND>_<slug>, not bare cycles/<cycle_name>
     expect(process).not.toContain('cycles/<cycle_name>');
 
     // Branch naming section must show cycles/ prefix
     expect(process).toContain('cycles/');
-    expect(process).toContain('`cycles/####-slug`');
+    expect(process).toContain('`cycles/<LEGEND>_<slug>`');
   });
 
   it('The RED step in README.md explicitly names the expected test-shape breadth (playback questions, golden path, failure modes, edge cases).', () => {
@@ -716,7 +738,18 @@ describe('METHOD docs', () => {
 
     // CLI doc names every command
     expect(cli).toContain('method init');
+    expect(cli).toContain('method migrate');
     expect(cli).toContain('method inbox');
+    expect(cli).toContain('method backlog add');
+    expect(cli).toContain('method backlog move');
+    expect(cli).toContain('method backlog edit');
+    expect(cli).toContain('method backlog list');
+    expect(cli).toContain('method backlog deps');
+    expect(cli).toContain('method next');
+    expect(cli).toContain('method retire');
+    expect(cli).toContain('method signpost status');
+    expect(cli).toContain('method signpost init');
+    expect(cli).toContain('method repair');
     expect(cli).toContain('method pull');
     expect(cli).toContain('method close');
     expect(cli).toContain('method drift');
@@ -724,6 +757,7 @@ describe('METHOD docs', () => {
     expect(cli).toContain('method status');
     expect(cli).toContain('method mcp');
     expect(cli).toContain('method sync');
+    expect(cli).toContain('sync refs');
     expect(cli).toContain('--push');
     expect(cli).toContain('--pull');
     expect(cli).toContain('Ship Sync');
@@ -732,11 +766,23 @@ describe('METHOD docs', () => {
     // MCP doc names every tool
     expect(mcp).toContain('method_status');
     expect(mcp).toContain('method_review_state');
+    expect(mcp).toContain('method_migrate');
     expect(mcp).toContain('method_inbox');
+    expect(mcp).toContain('method_backlog_add');
+    expect(mcp).toContain('method_backlog_move');
+    expect(mcp).toContain('method_backlog_edit');
+    expect(mcp).toContain('method_backlog_query');
+    expect(mcp).toContain('method_backlog_dependencies');
+    expect(mcp).toContain('method_next_work');
+    expect(mcp).toContain('method_signpost_status');
+    expect(mcp).toContain('method_signpost_init');
+    expect(mcp).toContain('method_retire');
+    expect(mcp).toContain('method_repair');
     expect(mcp).toContain('method_pull');
     expect(mcp).toContain('method_close');
     expect(mcp).toContain('method_drift');
     expect(mcp).toContain('method_sync_ship');
+    expect(mcp).toContain('method_sync_refs');
     expect(mcp).toContain('method_sync_github');
     expect(mcp).toContain('method_capture_witness');
     expect(mcp).toMatch(/### `method_status`[\s\S]*- `summary` \(optional\) `boolean`/u);
@@ -747,6 +793,24 @@ describe('METHOD docs', () => {
     // README references both docs
     expect(readme).toContain('docs/CLI.md');
     expect(readme).toContain('docs/MCP.md');
+    expect(readme).toContain('method migrate');
+    expect(readme).toContain('method backlog list');
+    expect(readme).toContain('method backlog deps');
+    expect(readme).toContain('method backlog edit');
+    expect(readme).toContain('method next');
+    expect(readme).toContain('method retire');
+    expect(readme).toContain('method signpost status');
+    expect(readme).toContain('method signpost init');
+    expect(readme).toContain('method_backlog_edit');
+    expect(readme).toContain('method_backlog_query');
+    expect(readme).toContain('method_backlog_dependencies');
+    expect(readme).toContain('method_next_work');
+    expect(readme).toContain('method_retire');
+    expect(readme).toContain('method_signpost_status');
+    expect(readme).toContain('method_signpost_init');
+    expect(readme).toContain('method repair');
+    expect(readme).toContain('method_repair');
+    expect(readme).toContain('method_migrate');
   });
 
   it('documents release-note surfaces in the repo structure and release guidance', () => {

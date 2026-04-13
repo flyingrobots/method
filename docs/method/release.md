@@ -30,10 +30,25 @@ surface lives in `docs/releases/`.
 
 ## Scope
 
-Releases aggregate shipped work. They do not create
-`docs/method/backlog/<version>/` directories, and they do not move
-backlog items by version. Backlog lanes stay about priority and scope,
-not release membership.
+Releases aggregate shipped work. Release truth still lives in
+`docs/method/releases/vX.Y.Z/`, `docs/releases/vX.Y.Z.md`, and
+`CHANGELOG.md`.
+
+A repo may use a backlog lane such as `docs/method/backlog/v1.1.0/` as
+the primary planning bucket for a release. That is a good way to keep
+release scope legible in the backlog.
+
+Release lanes are still planning input, not release truth. Creating or
+filling that lane does not declare the release accepted, does not
+guarantee that every item in the lane ships together, and does not
+replace the release packet or user-facing release notes.
+
+When work is pulled from a release lane, the cycle packet may live under
+`docs/releases/vX.Y.Z/design/<cycle>/` and
+`docs/releases/vX.Y.Z/retros/<cycle>/` so the filesystem keeps release
+scope and cycle evidence adjacent. If an item is temporarily promoted to
+`asap/`, durable `release:` metadata should preserve that release
+association.
 
 The release design names and justifies the intended version before
 tagging. Commit history, diff inspection, and validation can support or
@@ -57,6 +72,10 @@ the decision by themselves.
 4. Run the sequential pre-flight in `docs/method/release-runbook.md`.
 5. Tag, publish, and verify delivery directly.
 6. Ship sync repo-level surfaces that the release changed.
+
+Future automation may add a release-readiness witness or rollup, but it
+should summarize the release-scoped cycle evidence above rather than
+replace it.
 
 ## User-Facing Release Notes
 

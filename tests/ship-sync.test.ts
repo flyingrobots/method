@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -48,9 +48,9 @@ describe('Ship Sync', () => {
     initWorkspace(root);
     const workspace = new Workspace(root);
 
-    // Create a backlog item and move it to up-next
-    workspace.captureIdea('Next priority', 'PROCESS', 'Up Next');
-    workspace.moveBacklogItem('docs/method/backlog/inbox/PROCESS_up-next.md', 'up-next');
+    // Create a backlog item and move it to asap
+    workspace.captureIdea('Next priority', 'PROCESS', 'ASAP Priority');
+    workspace.moveBacklogItem('docs/method/backlog/inbox/PROCESS_asap-priority.md', 'asap');
 
     const itemPath = workspace.captureIdea('Feature Z', 'PROCESS', 'Just Shipped');
     const cycle = workspace.pullItem('PROCESS_just-shipped');
@@ -62,7 +62,7 @@ describe('Ship Sync', () => {
     // Verify BEARING
     const bearing = readFileSync(join(root, 'docs/BEARING.md'), 'utf8');
     expect(bearing).toContain(`- \`${cycle.name}\`: Just Shipped`);
-    expect(bearing).toContain('PROCESS_up-next');
+    expect(bearing).toContain('PROCESS_asap-priority');
   });
 
   it('`src/index.ts` provides a `shipSync()` method that performs the orchestration.', () => {
@@ -96,7 +96,7 @@ describe('Ship Sync', () => {
     expect(countSecond).toBe(1);
   });
 
-  it('treats cycle ranges and numeric references in release sections as already shipped.', async () => {
+  it('treats cycle name references in release sections as already shipped.', async () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);
@@ -120,7 +120,8 @@ describe('Ship Sync', () => {
         '',
         '## v0.1.0',
         '',
-        'Released cycle work: 0001–0002.',
+        `- Feature A (${cycleOne.name})`,
+        `- Feature B (${cycleTwo.name})`,
       ].join('\n'),
       'utf8',
     );
@@ -139,6 +140,23 @@ describe('Ship Sync', () => {
     expect(result.newShips.length).toBe(0);
     expect(result.updated).toContain('docs/BEARING.md');
     expect(result.updated).not.toContain('CHANGELOG.md');
+  });
+
+  it('refreshes generated reference docs without mutating ship-only artifacts.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+    const changelogBefore = readFileSync(join(root, 'CHANGELOG.md'), 'utf8');
+    const bearingPath = join(root, 'docs/BEARING.md');
+    expect(existsSync(bearingPath)).toBe(false);
+
+    const result = workspace.syncRefs();
+
+    expect(result.targets).toEqual(['ARCHITECTURE.md', 'docs/CLI.md', 'docs/MCP.md', 'docs/GUIDE.md']);
+    expect(result.targets).not.toContain('CHANGELOG.md');
+    expect(result.targets).not.toContain('docs/BEARING.md');
+    expect(readFileSync(join(root, 'CHANGELOG.md'), 'utf8')).toBe(changelogBefore);
+    expect(existsSync(bearingPath)).toBe(false);
   });
 
   it('Does generated `BEARING.md` stop claiming witness generation is not automated?', async () => {
@@ -232,7 +250,7 @@ describe('Ship Sync', () => {
     const workspace = new Workspace(root);
 
     const bearing = renderBearing(workspace.status(), [], 'test-sha');
-    expect(bearing).toContain('Current priority: no explicit `asap` or `up-next` item is currently recorded.');
+    expect(bearing).toContain('Current priority: no explicit `asap` item is currently recorded.');
     expect(bearing).toContain('No acute coordination pain is currently recorded.');
     expect(bearing).not.toContain('Current priority: pull TBD');
     expect(bearing).not.toContain('Backlog maintenance is still largely manual.');

@@ -3,9 +3,10 @@ import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 
 const FM_DELIMITER = '---\n';
 const FM_END = '\n---\n';
+export type TypedFrontmatter = Record<string, unknown>;
 
 interface ParsedDoc {
-  frontmatter: Record<string, string>;
+  frontmatter: TypedFrontmatter;
   body: string;
   raw: string;
 }
@@ -29,20 +30,19 @@ function parseDoc(path: string): ParsedDoc {
   const yamlBlock = raw.slice(FM_DELIMITER.length, end);
   const body = raw.slice(end + FM_END.length);
 
-  let frontmatter: Record<string, string> = {};
+  let frontmatter: TypedFrontmatter = {};
   try {
     const parsed = parseYaml(yamlBlock);
-    if (parsed !== null && typeof parsed === 'object') {
-      for (const [key, value] of Object.entries(parsed)) {
-        frontmatter[key] = String(value);
-      }
+    if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      frontmatter = { ...(parsed as TypedFrontmatter) };
     }
   } catch {
     // Malformed YAML — return empty frontmatter, preserve raw
     frontmatter = {};
   }
 
-  if ((frontmatter.title ?? '').trim().length === 0) {
+  const currentTitle = typeof frontmatter.title === 'string' ? frontmatter.title.trim() : '';
+  if (currentTitle.length === 0) {
     const title = deriveLegacyTitle(raw);
     if (title !== undefined) {
       frontmatter.title = title;
@@ -52,18 +52,32 @@ function parseDoc(path: string): ParsedDoc {
   return { frontmatter, body, raw };
 }
 
-function serializeDoc(frontmatter: Record<string, string>, body: string): string {
+function serializeDoc(frontmatter: TypedFrontmatter, body: string): string {
   const yamlBlock = stringifyYaml(frontmatter, { lineWidth: 0 }).trim();
   return `---\n${yamlBlock}\n---\n${body}`;
 }
 
-export function readFrontmatter(path: string): Record<string, string> {
-  return parseDoc(path).frontmatter;
+export function readTypedFrontmatter(path: string): TypedFrontmatter {
+  return { ...parseDoc(path).frontmatter };
 }
 
-export function updateFrontmatter(path: string, updates: Record<string, string>): void {
+export function readFrontmatter(path: string): Record<string, string> {
+  const frontmatter = parseDoc(path).frontmatter;
+  return Object.fromEntries(
+    Object.entries(frontmatter).map(([key, value]) => [key, stringifyFrontmatterValue(value)]),
+  );
+}
+
+export function updateTypedFrontmatter(path: string, updates: TypedFrontmatter): void {
   const doc = parseDoc(path);
-  const merged = { ...doc.frontmatter, ...updates };
+  const merged = { ...doc.frontmatter };
+  for (const [key, value] of Object.entries(updates)) {
+    if (value === undefined) {
+      delete merged[key];
+      continue;
+    }
+    merged[key] = value;
+  }
 
   if (doc.raw.startsWith(FM_DELIMITER)) {
     const end = doc.raw.indexOf(FM_END, FM_DELIMITER.length);
@@ -76,6 +90,10 @@ export function updateFrontmatter(path: string, updates: Record<string, string>)
 
   // No existing frontmatter — prepend it
   writeFileSync(path, serializeDoc(merged, `\n${doc.raw}`), 'utf8');
+}
+
+export function updateFrontmatter(path: string, updates: Record<string, string>): void {
+  updateTypedFrontmatter(path, updates);
 }
 
 export function readBody(path: string): string {
@@ -124,4 +142,11 @@ function deriveLegacyTitle(raw: string): string | undefined {
   }
 
   return undefined;
+}
+
+function stringifyFrontmatterValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value.map((entry) => String(entry)).join(',');
+  }
+  return String(value);
 }

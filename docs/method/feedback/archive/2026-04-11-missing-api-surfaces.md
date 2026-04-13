@@ -2,7 +2,7 @@
 title: "Missing METHOD API surfaces found during repo work"
 captured_at: "2026-04-11"
 source: "Cross-repo usage while working in warp-ttd, Echo, Wesley, Continuum, and git-warp"
-status: "unprocessed"
+status: "archived"
 ---
 
 # Missing METHOD API surfaces found during repo work
@@ -167,3 +167,25 @@ agent surface for process.
 The more deterministic repo-shape operations METHOD can own directly,
 the less often agents and humans need to improvise around the method
 instead of through it.
+
+## Disposition
+
+Accepted as `v1.1.0` planning input on 2026-04-11.
+
+Created backlog notes:
+
+- `PROCESS_backlog-authoring-command`
+- `PROCESS_backlog-move-command`
+- `PROCESS_doctor-repair-command`
+- `PROCESS_feedback-command`
+- `PROCESS_signpost-helper-commands`
+
+Moved related existing backlog notes into `docs/method/backlog/v1.1.0/`:
+
+- `PROCESS_task-dependency-dag`
+- `PROCESS_retire-command`
+- `PROCESS_structured-repair-hints`
+
+The feedback document now belongs in the archive because its accepted
+points have been converted into explicit backlog work rather than left
+as a live unprocessed note.

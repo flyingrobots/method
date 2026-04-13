@@ -1,5 +1,5 @@
 import * as path from 'node:path';
-import type { Cycle, Outcome, WorkspaceStatus } from './domain.js';
+import { isCanonicalLane, orderedBacklogLaneNames, type BacklogItem, type Cycle, type Outcome, type WorkspaceStatus } from './domain.js';
 import { readHeading } from './frontmatter.js';
 
 export function titleCase(value: string): string {
@@ -12,11 +12,15 @@ export function titleCase(value: string): string {
 
 export function renderBearing(status: WorkspaceStatus, closedCycles: Cycle[], commitSha: string): string {
   const latestShips = [...closedCycles].reverse().slice(0, 3);
-  const nextUp = [...status.backlog.asap, ...status.backlog['up-next']].slice(0, 2);
+  const asap = status.backlog.asap ?? [];
+  const nextUp = asap.slice(0, 2);
+  const customPriorityLane = firstCustomPriorityLane(status);
   const frictionLines = deriveBearingFriction(status);
   const priorityLine = nextUp.length > 0
     ? `Current priority: pull ${nextUp.map(i => `\`${i.stem}\``).join(' or ')} to continue the system's maturity.`
-    : 'Current priority: no explicit `asap` or `up-next` item is currently recorded.';
+    : customPriorityLane !== undefined
+      ? `Current priority: focus \`${customPriorityLane.lane}\` by pulling ${customPriorityLane.items.map((item) => `\`${item.stem}\``).join(' or ')}.`
+    : 'Current priority: no explicit `asap` item is currently recorded.';
 
   const shipLines = latestShips.map(cycle => {
     const title = readHeading(cycle.designDoc) || titleCase(cycle.slug);
@@ -54,15 +58,18 @@ export function renderBearing(status: WorkspaceStatus, closedCycles: Cycle[], co
 
 function deriveBearingFriction(status: WorkspaceStatus): string[] {
   const lines: string[] = [];
+  const inbox = status.backlog.inbox ?? [];
+  const asap = status.backlog.asap ?? [];
+  const badCode = status.backlog['bad-code'] ?? [];
 
-  if (status.backlog.inbox.length > 0) {
-    lines.push(`- Inbox still holds ${status.backlog.inbox.length} untriaged item(s).`);
+  if (inbox.length > 0) {
+    lines.push(`- Inbox still holds ${inbox.length} untriaged item(s).`);
   }
-  if (status.backlog.asap.length > 0) {
-    lines.push(`- ${status.backlog.asap.length} ASAP backlog item(s) are still unresolved.`);
+  if (asap.length > 0) {
+    lines.push(`- ${asap.length} ASAP backlog item(s) are still unresolved.`);
   }
-  if (status.backlog['bad-code'].length > 0) {
-    lines.push(`- ${status.backlog['bad-code'].length} bad-code item(s) remain tracked.`);
+  if (badCode.length > 0) {
+    lines.push(`- ${badCode.length} bad-code item(s) remain tracked.`);
   }
   if (status.activeCycles.length > 0) {
     lines.push(`- ${status.activeCycles.length} active cycle(s) are still open.`);
@@ -71,6 +78,21 @@ function deriveBearingFriction(status: WorkspaceStatus): string[] {
   return lines.length > 0
     ? lines
     : ['- No acute coordination pain is currently recorded.'];
+}
+
+function firstCustomPriorityLane(status: WorkspaceStatus): { lane: string; items: BacklogItem[] } | undefined {
+  for (const lane of orderedBacklogLaneNames(Object.keys(status.backlog))) {
+    if (lane === 'root' || isCanonicalLane(lane)) {
+      continue;
+    }
+
+    const items = (status.backlog[lane] ?? []).slice(0, 2);
+    if (items.length > 0) {
+      return { lane, items };
+    }
+  }
+
+  return undefined;
 }
 
 export function renderWitnessDoc(options: {
@@ -87,10 +109,10 @@ export function renderWitnessDoc(options: {
     : options.driftResult;
   return [
     '---',
-    `title: "Verification Witness for Cycle ${options.cycle.number}"`,
+    `title: "Verification Witness for Cycle ${options.cycle.name}"`,
     '---',
     '',
-    `# Verification Witness for Cycle ${options.cycle.number}`,
+    `# Verification Witness for Cycle ${options.cycle.name}`,
     '',
     `This witness proves that \`${title}\` now carries the required`,
     'behavior and adheres to the repo invariants.',
@@ -120,6 +142,7 @@ export function renderDesignDoc(options: {
   legend?: string;
   source: string;
   backlogBody: string;
+  release?: string;
 }): string {
   const legendValue = options.legend ?? 'none';
   const sourcePath = normalizeRepoPath(options.source);
@@ -128,6 +151,7 @@ export function renderDesignDoc(options: {
     `title: ${yamlString(options.title)}`,
     `legend: ${yamlString(legendValue)}`,
     `cycle: ${yamlString(options.cycleName)}`,
+    ...(options.release === undefined ? [] : [`release: ${yamlString(options.release)}`]),
     `source_backlog: ${yamlString(sourcePath)}`,
     '---',
     '',
@@ -140,6 +164,10 @@ export function renderDesignDoc(options: {
     '',
     '- Human: Backlog operator',
     '- Agent: Implementation agent',
+    '',
+    'These labels are abstract roles. In this design, `user` means the served',
+    'perspective, like in a user story, not a literal named person or',
+    'specific agent instance.',
     '',
     '## Hill',
     '',
@@ -186,6 +214,7 @@ export function renderRetroDoc(options: {
   root: string;
   outcome: Outcome;
   witnessDir: string;
+  release?: string;
 }): string {
   if (options.outcome !== 'hill-met' && options.outcome !== 'partial' && options.outcome !== 'not-met') {
     throw new Error('Outcome is required and must be one of: hill-met, partial, not-met.');
@@ -197,6 +226,7 @@ export function renderRetroDoc(options: {
     '---',
     `title: ${yamlString(title)}`,
     `cycle: ${yamlString(options.cycle.name)}`,
+    ...(options.release === undefined ? [] : [`release: ${yamlString(options.release)}`]),
     `design_doc: ${yamlString(designDoc)}`,
     `outcome: ${options.outcome}`,
     'drift_check: yes',

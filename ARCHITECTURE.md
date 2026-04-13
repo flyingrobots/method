@@ -1,6 +1,6 @@
 ---
 title: "Architecture"
-generator: "method sync ship"
+generator: "method sync refs"
 provenance_level: artifact_history
 ---
 
@@ -27,6 +27,7 @@ src/
   domain.ts
   drift.ts
   errors.ts
+  feedback-surface.ts
   frontmatter.ts
   generate.ts
   index.ts
@@ -45,6 +46,7 @@ The `Workspace` class is the core. It owns:
 - **Backlog operations**: `captureIdea`, `pullItem`, `moveBacklogItem`
 - **Cycle lifecycle**: `closeCycle`, `openCycles`, `captureWitness`
 - **Drift detection**: `detectDrift` (delegates to `drift.ts`)
+- **Reference sync**: `syncRefs` (refreshes generated reference docs without touching ship-only artifacts)
 - **Ship sync**: `shipSync` (updates CHANGELOG and BEARING)
 - **Status**: `status` (backlog lanes, active cycles, legend health)
 
