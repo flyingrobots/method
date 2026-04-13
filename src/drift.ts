@@ -75,7 +75,8 @@ export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], tes
       findingLines.push(`- ${question.sponsor}: ${question.text}`);
       const hint = findNearMiss(question.text, normalizedDescriptions);
       if (hint !== undefined) {
-        findingLines.push(`  Near miss: "${hint}"`);
+        const pct = Math.round(hint.score * 100);
+        findingLines.push(`  Near miss (${pct}%): "${hint.text}"`);
       } else {
         findingLines.push('  No matching test description found.');
       }
@@ -202,7 +203,7 @@ const NEAR_MISS_THRESHOLD = 0.65;
 function findNearMiss(
   question: string,
   descriptions: readonly { original: string; semantic: string }[],
-): string | undefined {
+): { text: string; score: number } | undefined {
   const semanticQ = normalizeForSemanticMatch(question);
   let bestScore = 0;
   let bestOriginal: string | undefined;
@@ -215,8 +216,8 @@ function findNearMiss(
     }
   }
 
-  return bestScore >= NEAR_MISS_THRESHOLD && bestScore < SEMANTIC_MATCH_THRESHOLD
-    ? bestOriginal
+  return bestScore >= NEAR_MISS_THRESHOLD && bestScore < SEMANTIC_MATCH_THRESHOLD && bestOriginal !== undefined
+    ? { text: bestOriginal, score: bestScore }
     : undefined;
 }
 

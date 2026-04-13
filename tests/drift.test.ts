@@ -156,6 +156,20 @@ describe('Drift Detection', () => {
     expect(report.output).toContain('No active cycles found.');
   });
 
+  it('Does the drift detector show the similarity score alongside near-miss hints?', () => {
+    const root = createTempRoot();
+    const cycle = setupCycleWithQuestions(root, [
+      'The drift detector catches renamed test descriptions in the workspace test directory.',
+    ]);
+    setupTestFile(root, [
+      'The drift detector catches renamed test descriptions in the project test folder.',
+    ]);
+
+    const report = detectWorkspaceDrift(root, [cycle]);
+    expect(report.exitCode).toBe(2);
+    expect(report.output).toMatch(/Near miss \(\d+%\):/u);
+  });
+
   it('Does the drift detector match question-form playback questions against statement-form test descriptions?', () => {
     const root = createTempRoot();
     const cycle = setupCycleWithQuestions(root, [
