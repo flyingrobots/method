@@ -6,6 +6,10 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
 
 - Pulling work is commitment. The backlog item does not go back.
 - Playback questions drive the design and the tests.
+- Playback verification requires the matching perspective: Human
+  playback questions must be verified by a human operator, and Agent
+  playback questions must be verified by an agent. Neither seat can
+  unilaterally sign off on the other's hill.
 - Designs must name their accessibility/assistive posture,
   localization/directionality posture, and agent inspectability posture
   explicitly, even if the answer is "not in scope."
