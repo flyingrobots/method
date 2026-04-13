@@ -57,6 +57,13 @@ export async function runCli(
       }
       return report.status === 'error' ? 1 : 0;
     }
+    if (parsed.command === 'mcp') {
+      const server = createMcpServer({ reviewStateQuery: options.reviewStateQuery ?? queryReviewState });
+      const transport = new StdioServerTransport();
+      await server.connect(transport);
+      // Let it run indefinitely
+      return new Promise<number>(() => {});
+    }
     const workspace = new Workspace(root);
     workspace.ensureInitialized();
     if (parsed.command === 'inbox') {
@@ -100,13 +107,6 @@ export async function runCli(
         stdout.write(`${renderReviewStateText(result)}\n`);
       }
       return 0;
-    }
-    if (parsed.command === 'mcp') {
-      const server = createMcpServer({ reviewStateQuery: options.reviewStateQuery ?? queryReviewState });
-      const transport = new StdioServerTransport();
-      await server.connect(transport);
-      // Let it run indefinitely
-      return new Promise<number>(() => {});
     }
     if (parsed.command === 'sync') {
       if (parsed.adapter === 'github') {

@@ -1,6 +1,8 @@
 import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { initWorkspace } from '../src/index.js';
 import { runCli } from '../src/cli.js';
@@ -121,6 +123,26 @@ describe('method CLI', () => {
     expect(exitCode).toBe(1);
     expect(stderr.output).toContain('Unknown option: --bogus');
     expect(stderr.output).toContain('Usage: method doctor [--json]');
+  });
+
+  it('starts `method mcp` from a non-METHOD cwd because MCP callers pass explicit workspace arguments per tool.', async () => {
+    const root = createTempRoot();
+    const client = new Client({ name: 'cli-test-probe', version: '1.0.0' });
+    const transport = new StdioClientTransport({
+      command: join(process.cwd(), 'node_modules/.bin/tsx'),
+      args: [join(process.cwd(), 'src/cli.ts'), 'mcp'],
+      cwd: root,
+    });
+
+    try {
+      await client.connect(transport);
+      const result = await client.listTools();
+
+      expect(result.tools.length).toBeGreaterThan(0);
+      expect(result.tools.map((tool) => tool.name)).toContain('method_status');
+    } finally {
+      await client.close();
+    }
   });
 
   it('captures backlog ideas in inbox', async () => {
