@@ -1,7 +1,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
-import type { Cycle } from './domain.js';
 import type { DriftThresholds } from './config.js';
+import type { Cycle } from './domain.js';
 
 interface PlaybackQuestion {
   designDoc: string;
@@ -43,24 +43,17 @@ export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], tes
       return false;
     }
     // Tier 3: high-confidence token similarity
-    const bestScore = Math.max(
-      ...normalizedDescriptions.map((desc) => tokenSimilarity(semanticQ, desc.semantic)),
-      0,
-    );
+    const bestScore = Math.max(...normalizedDescriptions.map((desc) => tokenSimilarity(semanticQ, desc.semantic)), 0);
     return bestScore < semanticMatchThreshold;
   });
   const summaryLine = `Scanned ${cycles.length} active cycle${plural(cycles.length)}, ${questions.length} playback question${plural(questions.length)}, ${testDescriptions.length} test description${plural(testDescriptions.length)}.`;
-  const searchBasis = 'Search basis: normalized match, semantic normalization, or high-confidence token similarity in tests/**/*.test.* and tests/**/*.spec.* descriptions.';
+  const searchBasis =
+    'Search basis: normalized match, semantic normalization, or high-confidence token similarity in tests/**/*.test.* and tests/**/*.spec.* descriptions.';
 
   if (unmatched.length === 0) {
     return {
       exitCode: 0,
-      output: [
-        'No playback-question drift found.',
-        summaryLine,
-        searchBasis,
-        '',
-      ].join('\n'),
+      output: ['No playback-question drift found.', summaryLine, searchBasis, ''].join('\n'),
     };
   }
 
@@ -89,13 +82,7 @@ export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], tes
 
   return {
     exitCode: 2,
-    output: [
-      'Playback-question drift found.',
-      summaryLine,
-      searchBasis,
-      '',
-      ...findingLines,
-    ].join('\n'),
+    output: ['Playback-question drift found.', summaryLine, searchBasis, '', ...findingLines].join('\n'),
   };
 }
 
@@ -228,7 +215,13 @@ function findNearMiss(
 
 function tokenSimilarity(left: string, right: string): number {
   const tokenize = (value: string): Set<string> =>
-    new Set(value.replace(/[^\p{L}\p{N}\s]/gu, '').split(' ').filter((t) => t.length > 0).map(stemToken));
+    new Set(
+      value
+        .replace(/[^\p{L}\p{N}\s]/gu, '')
+        .split(' ')
+        .filter((t) => t.length > 0)
+        .map(stemToken),
+    );
   const leftTokens = tokenize(left);
   const rightTokens = tokenize(right);
 
@@ -278,25 +271,24 @@ function stemToken(token: string): string {
 }
 
 function normalizeForMatch(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/gu, ' ');
+  return value.trim().toLowerCase().replace(/\s+/gu, ' ');
 }
 
 function normalizeForSemanticMatch(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    // Strip backticks
-    .replace(/`/gu, '')
-    // Strip leading question words: "Does", "Is", "Can", "Will", "Are", "Do", "Has", "Have"
-    .replace(/^(?:does|is|can|will|are|do|has|have)\s+/u, '')
-    // Collapse whitespace
-    .replace(/\s+/gu, ' ')
-    // Strip trailing punctuation
-    .replace(/[.?!]+$/u, '')
-    .trim();
+  return (
+    value
+      .trim()
+      .toLowerCase()
+      // Strip backticks
+      .replace(/`/gu, '')
+      // Strip leading question words: "Does", "Is", "Can", "Will", "Are", "Do", "Has", "Have"
+      .replace(/^(?:does|is|can|will|are|do|has|have)\s+/u, '')
+      // Collapse whitespace
+      .replace(/\s+/gu, ' ')
+      // Strip trailing punctuation
+      .replace(/[.?!]+$/u, '')
+      .trim()
+  );
 }
 
 function plural(count: number): string {
@@ -355,9 +347,9 @@ function stripComments(value: string): string {
       } else if (current === '\\') {
         escaped = true;
       } else if (
-        (state === 'single-quote' && current === '\'')
-        || (state === 'double-quote' && current === '"')
-        || (state === 'template' && current === '`')
+        (state === 'single-quote' && current === "'") ||
+        (state === 'double-quote' && current === '"') ||
+        (state === 'template' && current === '`')
       ) {
         state = 'code';
       }
@@ -380,7 +372,7 @@ function stripComments(value: string): string {
       continue;
     }
 
-    if (current === '\'') {
+    if (current === "'") {
       state = 'single-quote';
       result += current;
       index += 1;

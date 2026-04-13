@@ -1,9 +1,9 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { initWorkspace, Workspace, readBody } from '../src/index.js';
 import { GitHubAdapter } from '../src/adapters/github.js';
+import { initWorkspace, readBody, Workspace } from '../src/index.js';
 
 const tempRoots: string[] = [];
 
@@ -54,7 +54,7 @@ describe('GitHub Adapter Two-way Sync', () => {
     });
 
     const results = await adapter.pushBacklog();
-    
+
     expect(results.length).toBe(1);
     expect(results[0].action).toBe('push');
     expect(fetchSpy).toHaveBeenCalled();
@@ -94,9 +94,7 @@ describe('GitHub Adapter Two-way Sync', () => {
       if (url.endsWith('/comments')) {
         return Promise.resolve({
           ok: true,
-          json: async () => [
-            { id: 1001, user: { login: 'user1' }, body: 'First comment' },
-          ],
+          json: async () => [{ id: 1001, user: { login: 'user1' }, body: 'First comment' }],
         });
       }
       return Promise.reject(new Error('Unknown URL'));
@@ -111,7 +109,7 @@ describe('GitHub Adapter Two-way Sync', () => {
     });
 
     const results = await adapter.pullBacklog();
-    
+
     expect(results.length).toBe(1);
     expect(results[0].action).toBe('pull');
 
@@ -168,7 +166,7 @@ describe('GitHub Adapter Two-way Sync', () => {
     // Verify file was moved to graveyard
     const graveyardPath = join(root, 'docs/method/graveyard/PROCESS_closed.md');
     const inboxPath = join(root, 'docs/method/backlog/inbox/PROCESS_closed.md');
-    
+
     expect(existsSync(graveyardPath), 'file should exist in graveyard').toBe(true);
     expect(existsSync(inboxPath), 'file should no longer exist in inbox').toBe(false);
     expect(readFileSync(graveyardPath, 'utf8')).toContain('Closed Item');
@@ -190,18 +188,18 @@ describe('GitHub Adapter Two-way Sync', () => {
         return Promise.resolve({
           ok: true,
           json: async () => ({
-            id: 55555, number: 55,
+            id: 55555,
+            number: 55,
             html_url: 'https://github.com/owner/repo/issues/55',
-            state: 'open', labels: [],
+            state: 'open',
+            labels: [],
           }),
         });
       }
       if (url.endsWith('/comments')) {
         return Promise.resolve({
           ok: true,
-          json: async () => [
-            { id: 2001, user: { login: 'alice' }, body: 'First review' },
-          ],
+          json: async () => [{ id: 2001, user: { login: 'alice' }, body: 'First review' }],
         });
       }
       return Promise.reject(new Error('Unknown URL'));
@@ -209,7 +207,10 @@ describe('GitHub Adapter Two-way Sync', () => {
     vi.stubGlobal('fetch', fetchSpy);
 
     const adapter = new GitHubAdapter({
-      workspace, token: 'fake', owner: 'owner', repo: 'repo',
+      workspace,
+      token: 'fake',
+      owner: 'owner',
+      repo: 'repo',
     });
 
     await adapter.pullBacklog();
@@ -223,9 +224,11 @@ describe('GitHub Adapter Two-way Sync', () => {
         return Promise.resolve({
           ok: true,
           json: async () => ({
-            id: 55555, number: 55,
+            id: 55555,
+            number: 55,
             html_url: 'https://github.com/owner/repo/issues/55',
-            state: 'open', labels: [],
+            state: 'open',
+            labels: [],
           }),
         });
       }

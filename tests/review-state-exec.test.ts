@@ -63,15 +63,23 @@ describe('review-state exec client', () => {
 
       throw new Error(`Unexpected command: ${command} ${args.join(' ')}`);
     };
-    const execFileMock = vi.fn((command: string, args: string[], options: Record<string, unknown>, callback: (error: Error | null, stdout?: string, stderr?: string) => void) => {
-      try {
-        const result = resolveCommand(command, args, options);
-        callback(null, result.stdout, result.stderr);
-      } catch (error) {
-        callback(error as Error);
-      }
-    });
-    execFileMock[promisify.custom] = (command: string, args: string[], options: Record<string, unknown>) => Promise.resolve(resolveCommand(command, args, options));
+    const execFileMock = vi.fn(
+      (
+        command: string,
+        args: string[],
+        options: Record<string, unknown>,
+        callback: (error: Error | null, stdout?: string, stderr?: string) => void,
+      ) => {
+        try {
+          const result = resolveCommand(command, args, options);
+          callback(null, result.stdout, result.stderr);
+        } catch (error) {
+          callback(error as Error);
+        }
+      },
+    );
+    execFileMock[promisify.custom] = (command: string, args: string[], options: Record<string, unknown>) =>
+      Promise.resolve(resolveCommand(command, args, options));
 
     vi.doMock('node:child_process', () => ({
       execFile: execFileMock,

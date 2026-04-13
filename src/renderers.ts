@@ -1,5 +1,5 @@
 import * as path from 'node:path';
-import { isCanonicalLane, orderedBacklogLaneNames, type BacklogItem, type Cycle, type Outcome, type WorkspaceStatus } from './domain.js';
+import { type BacklogItem, type Cycle, isCanonicalLane, type Outcome, orderedBacklogLaneNames, type WorkspaceStatus } from './domain.js';
 import { readHeading } from './frontmatter.js';
 
 export function titleCase(value: string): string {
@@ -16,13 +16,14 @@ export function renderBearing(status: WorkspaceStatus, closedCycles: Cycle[], co
   const nextUp = asap.slice(0, 2);
   const customPriorityLane = firstCustomPriorityLane(status);
   const frictionLines = deriveBearingFriction(status);
-  const priorityLine = nextUp.length > 0
-    ? `Current priority: pull ${nextUp.map(i => `\`${i.stem}\``).join(' or ')} to continue the system's maturity.`
-    : customPriorityLane !== undefined
-      ? `Current priority: focus \`${customPriorityLane.lane}\` by pulling ${customPriorityLane.items.map((item) => `\`${item.stem}\``).join(' or ')}.`
-    : 'Current priority: no explicit `asap` item is currently recorded.';
+  const priorityLine =
+    nextUp.length > 0
+      ? `Current priority: pull ${nextUp.map((i) => `\`${i.stem}\``).join(' or ')} to continue the system's maturity.`
+      : customPriorityLane !== undefined
+        ? `Current priority: focus \`${customPriorityLane.lane}\` by pulling ${customPriorityLane.items.map((item) => `\`${item.stem}\``).join(' or ')}.`
+        : 'Current priority: no explicit `asap` item is currently recorded.';
 
-  const shipLines = latestShips.map(cycle => {
+  const shipLines = latestShips.map((cycle) => {
     const title = readHeading(cycle.designDoc) || titleCase(cycle.slug);
     return `- \`${cycle.name}\`: ${title}`;
   });
@@ -75,9 +76,7 @@ function deriveBearingFriction(status: WorkspaceStatus): string[] {
     lines.push(`- ${status.activeCycles.length} active cycle(s) are still open.`);
   }
 
-  return lines.length > 0
-    ? lines
-    : ['- No acute coordination pain is currently recorded.'];
+  return lines.length > 0 ? lines : ['- No acute coordination pain is currently recorded.'];
 }
 
 function firstCustomPriorityLane(status: WorkspaceStatus): { lane: string; items: BacklogItem[] } | undefined {
@@ -95,18 +94,10 @@ function firstCustomPriorityLane(status: WorkspaceStatus): { lane: string; items
   return undefined;
 }
 
-export function renderWitnessDoc(options: {
-  cycle: Cycle;
-  testResult: string;
-  driftResult: string;
-}): string {
+export function renderWitnessDoc(options: { cycle: Cycle; testResult: string; driftResult: string }): string {
   const title = readHeading(options.cycle.designDoc) || titleCase(options.cycle.slug);
-  const testResult = options.testResult.trim().length === 0
-    ? 'No test output captured.'
-    : options.testResult;
-  const driftResult = options.driftResult.trim().length === 0
-    ? 'No drift output captured.'
-    : options.driftResult;
+  const testResult = options.testResult.trim().length === 0 ? 'No test output captured.' : options.testResult;
+  const driftResult = options.driftResult.trim().length === 0 ? 'No drift output captured.' : options.driftResult;
   return [
     '---',
     `title: "Verification Witness for Cycle ${options.cycle.name}"`,
@@ -209,13 +200,7 @@ export function renderDesignDoc(options: {
   ].join('\n');
 }
 
-export function renderRetroDoc(options: {
-  cycle: Cycle;
-  root: string;
-  outcome: Outcome;
-  witnessDir: string;
-  release?: string;
-}): string {
+export function renderRetroDoc(options: { cycle: Cycle; root: string; outcome: Outcome; witnessDir: string; release?: string }): string {
   if (options.outcome !== 'hill-met' && options.outcome !== 'partial' && options.outcome !== 'not-met') {
     throw new Error('Outcome is required and must be one of: hill-met, partial, not-met.');
   }

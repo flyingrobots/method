@@ -1,8 +1,7 @@
 import { headerBox, separator } from '@flyingrobots/bijou';
 import { createNodeContext } from '@flyingrobots/bijou-node';
-import type { NextWorkResult, WorkspaceStatus } from './domain.js';
+import type { BacklogQueryResult, NextWorkResult, WorkspaceStatus } from './domain.js';
 import type { BacklogDependencyReport } from './index.js';
-import type { BacklogQueryResult } from './domain.js';
 
 export function renderStatus(status: WorkspaceStatus): string {
   const ctx = createNodeContext();
@@ -13,13 +12,13 @@ export function renderStatus(status: WorkspaceStatus): string {
     }),
   ];
 
-  const cycleLines = status.activeCycles.length > 0
-    ? status.activeCycles.map((cycle) => `${cycle.name.padEnd(18, ' ')} ${cycle.slug}`)
-    : ['-'];
+  const cycleLines =
+    status.activeCycles.length > 0 ? status.activeCycles.map((cycle) => `${cycle.name.padEnd(18, ' ')} ${cycle.slug}`) : ['-'];
 
-  const legendLines = status.legendHealth.length > 0
-    ? status.legendHealth.map(({ legend, backlog, active }) => `${legend.padEnd(8, ' ')} backlog=${backlog} active=${active}`)
-    : ['-'];
+  const legendLines =
+    status.legendHealth.length > 0
+      ? status.legendHealth.map(({ legend, backlog, active }) => `${legend.padEnd(8, ' ')} backlog=${backlog} active=${active}`)
+      : ['-'];
 
   return [
     `${headerBox('METHOD Status', { detail: status.root, ctx })}`,
@@ -42,8 +41,9 @@ export function renderSignpostStatus(result: {
   missing: string[];
 }): string {
   const ctx = createNodeContext();
-  const lines = result.signposts.map((signpost) =>
-    `${signpost.name.padEnd(12, ' ')} ${signpost.exists ? 'present' : 'missing'} ${signpost.kind.padEnd(13, ' ')} ${signpost.initable ? 'initable' : 'manual  '} ${signpost.path}`,
+  const lines = result.signposts.map(
+    (signpost) =>
+      `${signpost.name.padEnd(12, ' ')} ${signpost.exists ? 'present' : 'missing'} ${signpost.kind.padEnd(13, ' ')} ${signpost.initable ? 'initable' : 'manual  '} ${signpost.path}`,
   );
 
   return [
@@ -58,11 +58,7 @@ export function renderSignpostStatus(result: {
   ].join('\n');
 }
 
-export function renderSignpostInit(result: {
-  requested: string;
-  initializedTargets: string[];
-  skippedPaths: string[];
-}): string {
+export function renderSignpostInit(result: { requested: string; initializedTargets: string[]; skippedPaths: string[] }): string {
   const ctx = createNodeContext();
   return [
     `${headerBox('METHOD Signpost Init', { detail: result.requested, ctx })}`,
@@ -91,21 +87,22 @@ export function renderBacklogQuery(result: BacklogQueryResult): string {
     `sort=${result.filters.sort}`,
     `limit=${result.filters.limit}`,
   ].filter((value): value is string => value !== undefined);
-  const lines = result.items.length === 0
-    ? ['-']
-    : result.items.map((item) => {
-      const details = [
-        item.lane,
-        item.legend === undefined ? 'untagged' : item.legend,
-        item.priority === undefined ? undefined : `priority=${item.priority}`,
-        item.owner === undefined ? undefined : `owner=${item.owner}`,
-        item.keywords.length === 0 ? undefined : `keywords=${item.keywords.join(', ')}`,
-        item.blockedBy.length === 0 ? 'ready=true' : `blocked_by=${item.blockedBy.join(', ')}`,
-        item.blocks.length === 0 ? undefined : `blocks=${item.blocks.join(', ')}`,
-        item.hasAcceptanceCriteria ? 'has_acceptance_criteria=true' : undefined,
-      ].filter((value): value is string => value !== undefined);
-      return `${item.stem}  ${details.join('  ')}`;
-    });
+  const lines =
+    result.items.length === 0
+      ? ['-']
+      : result.items.map((item) => {
+          const details = [
+            item.lane,
+            item.legend === undefined ? 'untagged' : item.legend,
+            item.priority === undefined ? undefined : `priority=${item.priority}`,
+            item.owner === undefined ? undefined : `owner=${item.owner}`,
+            item.keywords.length === 0 ? undefined : `keywords=${item.keywords.join(', ')}`,
+            item.blockedBy.length === 0 ? 'ready=true' : `blocked_by=${item.blockedBy.join(', ')}`,
+            item.blocks.length === 0 ? undefined : `blocks=${item.blocks.join(', ')}`,
+            item.hasAcceptanceCriteria ? 'has_acceptance_criteria=true' : undefined,
+          ].filter((value): value is string => value !== undefined);
+          return `${item.stem}  ${details.join('  ')}`;
+        });
 
   return [
     `${headerBox('METHOD Backlog Query', { detail: result.root, ctx })}`,
@@ -127,13 +124,14 @@ export function renderNextWork(result: NextWorkResult): string {
   const laneCounts = Object.entries(result.summary.lane_counts)
     .map(([lane, count]) => `${lane}=${count}`)
     .join(', ');
-  const recommendationLines = result.recommendations.length === 0
-    ? ['-']
-    : result.recommendations.flatMap((item, index) => [
-      `${index + 1}. ${item.title} [${item.scoreBand}]`,
-      `   ${item.path}  lane=${item.lane}${item.priority === undefined ? '' : `  priority=${item.priority}`}`,
-      ...item.whyNow.map((reason) => `   - ${reason}`),
-    ]);
+  const recommendationLines =
+    result.recommendations.length === 0
+      ? ['-']
+      : result.recommendations.flatMap((item, index) => [
+          `${index + 1}. ${item.title} [${item.scoreBand}]`,
+          `   ${item.path}  lane=${item.lane}${item.priority === undefined ? '' : `  priority=${item.priority}`}`,
+          ...item.whyNow.map((reason) => `   - ${reason}`),
+        ]);
 
   return [
     `${headerBox('METHOD Next Work', { detail: result.generated_at, ctx })}`,
@@ -175,7 +173,9 @@ export function renderBacklogDependencies(result: BacklogDependencyReport): stri
       '',
       `${separator({ label: 'Item', ctx })}`,
       `${result.focus.item.stem} lane=${result.focus.item.lane} ready=${result.focus.item.ready ? 'yes' : 'no'}`,
-      ...(result.focus.item.unresolvedBlockedBy.length === 0 ? [] : [`unresolved blocked_by: ${result.focus.item.unresolvedBlockedBy.join(', ')}`]),
+      ...(result.focus.item.unresolvedBlockedBy.length === 0
+        ? []
+        : [`unresolved blocked_by: ${result.focus.item.unresolvedBlockedBy.join(', ')}`]),
       ...(result.focus.item.unresolvedBlocks.length === 0 ? [] : [`unresolved blocks: ${result.focus.item.unresolvedBlocks.join(', ')}`]),
       '',
       `${separator({ label: 'Blocked By', ctx })}`,
@@ -186,14 +186,14 @@ export function renderBacklogDependencies(result: BacklogDependencyReport): stri
       '',
       ...(result.query.criticalPath
         ? [
-          `${separator({ label: 'Critical Path', ctx })}`,
-          ...(result.focus.criticalPathReason === undefined
-            ? (result.focus.criticalPath.length === 0
-              ? ['-']
-              : result.focus.criticalPath.map((item) => `- ${item.stem}`))
-            : [result.focus.criticalPathReason]),
-          '',
-        ]
+            `${separator({ label: 'Critical Path', ctx })}`,
+            ...(result.focus.criticalPathReason === undefined
+              ? result.focus.criticalPath.length === 0
+                ? ['-']
+                : result.focus.criticalPath.map((item) => `- ${item.stem}`)
+              : [result.focus.criticalPathReason]),
+            '',
+          ]
         : []),
       `${separator({ label: 'Cycles', ctx })}`,
       ...(result.cycles.length === 0 ? ['-'] : result.cycles.map((cycle) => `- ${cycle.join(' -> ')}`)),

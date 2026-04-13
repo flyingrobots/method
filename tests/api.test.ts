@@ -34,7 +34,7 @@ describe('Method API', () => {
 
   it('`tests/api.test.ts` proves that a METHOD workspace can be initialized and queried via the new API without calling `runCli`.', () => {
     const root = createTempRoot();
-    
+
     const initResult = initWorkspace(root);
     expect(initResult.created.length).toBeGreaterThan(0);
 
@@ -102,17 +102,7 @@ describe('Method API', () => {
 
     writeFileSync(
       join(root, 'docs/method/backlog/up-next/PROCESS_foundation.md'),
-      [
-        '---',
-        'title: "Foundation"',
-        'legend: PROCESS',
-        'lane: up-next',
-        '---',
-        '',
-        '# Foundation',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Foundation"', 'legend: PROCESS', 'lane: up-next', '---', '', '# Foundation', '', 'Body'].join('\n'),
       'utf8',
     );
     writeFileSync(
@@ -136,19 +126,9 @@ describe('Method API', () => {
     );
     writeFileSync(
       join(root, 'docs/method/backlog/up-next/PROCESS_finish.md'),
-      [
-        '---',
-        'title: "Finish"',
-        'legend: PROCESS',
-        'lane: up-next',
-        'blocked_by:',
-        '  - build',
-        '---',
-        '',
-        '# Finish',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Finish"', 'legend: PROCESS', 'lane: up-next', 'blocked_by:', '  - build', '---', '', '# Finish', '', 'Body'].join(
+        '\n',
+      ),
       'utf8',
     );
 
@@ -166,11 +146,7 @@ describe('Method API', () => {
     });
     expect(report.focus?.item.stem).toBe('PROCESS_finish');
     expect(report.focus?.blockers.map((item) => item.stem)).toEqual(['PROCESS_build']);
-    expect(report.focus?.criticalPath.map((item) => item.stem)).toEqual([
-      'PROCESS_foundation',
-      'PROCESS_build',
-      'PROCESS_finish',
-    ]);
+    expect(report.focus?.criticalPath.map((item) => item.stem)).toEqual(['PROCESS_foundation', 'PROCESS_build', 'PROCESS_finish']);
     expect(report.cycles).toEqual([]);
 
     const moved = workspace.moveBacklogItem('docs/method/backlog/up-next/PROCESS_build.md', 'bad-code');
@@ -332,15 +308,10 @@ describe('Method API', () => {
 
     const query = workspace.backlogQuery({ owner: 'core team', limit: 10 });
     expect(query.filters.owner).toBe('core team');
-    expect(query.items.map((item) => item.stem)).toEqual([
-      'PROCESS_blocked-owner-match',
-      'PROCESS_ready-owner-match',
-    ]);
+    expect(query.items.map((item) => item.stem)).toEqual(['PROCESS_blocked-owner-match', 'PROCESS_ready-owner-match']);
 
     const readyOnly = workspace.nextWork({ owner: 'core team', keyword: 'roadmap', limit: 5 });
-    expect(readyOnly.recommendations.map((item) => item.path)).toEqual([
-      'docs/method/backlog/cool-ideas/PROCESS_ready-owner-match.md',
-    ]);
+    expect(readyOnly.recommendations.map((item) => item.path)).toEqual(['docs/method/backlog/cool-ideas/PROCESS_ready-owner-match.md']);
     expect(readyOnly.selection_notes).toContain('Skipped 1 blocked backlog item(s) because unblocked work is available.');
     expect(readyOnly.selection_notes).toContain('Applied filters: keyword=roadmap, owner=core team.');
 
@@ -426,18 +397,7 @@ describe('Method API', () => {
 
     writeFileSync(
       join(root, 'docs/method/backlog/up-next/PROCESS_alpha-low.md'),
-      [
-        '---',
-        'title: "Alpha Low"',
-        'legend: PROCESS',
-        'lane: up-next',
-        'priority: low',
-        '---',
-        '',
-        '# Alpha Low',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Alpha Low"', 'legend: PROCESS', 'lane: up-next', 'priority: low', '---', '', '# Alpha Low', '', 'Body'].join('\n'),
       'utf8',
     );
     writeFileSync(
@@ -458,35 +418,17 @@ describe('Method API', () => {
     );
     writeFileSync(
       join(root, 'docs/method/backlog/cool-ideas/PROCESS_gamma-unset.md'),
-      [
-        '---',
-        'title: "Gamma Unset"',
-        'legend: PROCESS',
-        'lane: cool-ideas',
-        '---',
-        '',
-        '# Gamma Unset',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Gamma Unset"', 'legend: PROCESS', 'lane: cool-ideas', '---', '', '# Gamma Unset', '', 'Body'].join('\n'),
       'utf8',
     );
 
     const prioritySorted = workspace.backlogQuery({ sort: 'priority', limit: 10 });
     expect(prioritySorted.filters.sort).toBe('priority');
-    expect(prioritySorted.items.map((item) => item.stem)).toEqual([
-      'PROCESS_beta-critical',
-      'PROCESS_alpha-low',
-      'PROCESS_gamma-unset',
-    ]);
+    expect(prioritySorted.items.map((item) => item.stem)).toEqual(['PROCESS_beta-critical', 'PROCESS_alpha-low', 'PROCESS_gamma-unset']);
 
     const pathSorted = workspace.backlogQuery({ sort: 'path', limit: 10 });
     expect(pathSorted.filters.sort).toBe('path');
-    expect(pathSorted.items.map((item) => item.stem)).toEqual([
-      'PROCESS_beta-critical',
-      'PROCESS_gamma-unset',
-      'PROCESS_alpha-low',
-    ]);
+    expect(pathSorted.items.map((item) => item.stem)).toEqual(['PROCESS_beta-critical', 'PROCESS_gamma-unset', 'PROCESS_alpha-low']);
   });
 
   it('edits schema-backed backlog metadata with normalized set and clear behavior.', () => {
@@ -570,18 +512,7 @@ describe('Method API', () => {
     );
     writeFileSync(
       join(root, 'docs/method/backlog/bad-code/PROCESS_bad-fix.md'),
-      [
-        '---',
-        'title: "Bad Fix"',
-        'legend: PROCESS',
-        'lane: bad-code',
-        'priority: medium',
-        '---',
-        '',
-        '# Bad Fix',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Bad Fix"', 'legend: PROCESS', 'lane: bad-code', 'priority: medium', '---', '', '# Bad Fix', '', 'Body'].join('\n'),
       'utf8',
     );
     writeFileSync(
@@ -743,7 +674,9 @@ describe('Method API', () => {
     expect(readFileSync(join(root, retired.graveyardPath), 'utf8')).toContain('lane: graveyard');
     expect(readFileSync(join(root, retired.graveyardPath), 'utf8')).toContain('## Disposition');
     expect(readFileSync(join(root, retired.graveyardPath), 'utf8')).toContain('Superseded by the broader release-scope cycle.');
-    expect(readFileSync(join(root, retired.graveyardPath), 'utf8')).toContain('Replacement: `docs/design/0040-release-scope/release-scope.md`');
+    expect(readFileSync(join(root, retired.graveyardPath), 'utf8')).toContain(
+      'Replacement: `docs/design/0040-release-scope/release-scope.md`',
+    );
     expect(readFileSync(join(root, retired.graveyardPath), 'utf8')).toContain('## Original Proposal');
     expect(readFileSync(join(root, retired.graveyardPath), 'utf8')).toContain('Original proposal body.');
   });
@@ -778,20 +711,24 @@ describe('Method API', () => {
     const statusBefore = workspace.signpostStatus();
     expect(statusBefore.missing).toContain('README.md');
     expect(statusBefore.missing).toContain('docs/BEARING.md');
-    expect(statusBefore.signposts).toContainEqual(expect.objectContaining({
-      name: 'BEARING',
-      path: 'docs/BEARING.md',
-      kind: 'Generated',
-      exists: false,
-      initable: true,
-    }));
-    expect(statusBefore.signposts).toContainEqual(expect.objectContaining({
-      name: 'VISION',
-      path: 'docs/VISION.md',
-      kind: 'Generated',
-      exists: false,
-      initable: false,
-    }));
+    expect(statusBefore.signposts).toContainEqual(
+      expect.objectContaining({
+        name: 'BEARING',
+        path: 'docs/BEARING.md',
+        kind: 'Generated',
+        exists: false,
+        initable: true,
+      }),
+    );
+    expect(statusBefore.signposts).toContainEqual(
+      expect.objectContaining({
+        name: 'VISION',
+        path: 'docs/VISION.md',
+        kind: 'Generated',
+        exists: false,
+        initable: false,
+      }),
+    );
 
     const initialized = await workspace.initSignpost('BEARING');
     expect(initialized.ok).toBe(true);
@@ -812,17 +749,7 @@ describe('Method API', () => {
 
     writeFileSync(
       join(root, 'docs/method/backlog/inbox/PROCESS_frontmatter-wins.md'),
-      [
-        '---',
-        'title: "Frontmatter Wins"',
-        'legend: SYNTH',
-        'lane: asap',
-        '---',
-        '',
-        '# Frontmatter Wins',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Frontmatter Wins"', 'legend: SYNTH', 'lane: asap', '---', '', '# Frontmatter Wins', '', 'Body'].join('\n'),
       'utf8',
     );
 
@@ -848,16 +775,9 @@ describe('Method API', () => {
     initWorkspace(root);
     const workspace = new Workspace(root);
 
-    writeFileSync(
-      join(root, 'docs/method/backlog/inbox/PROCESS_legacy-item.md'),
-      '# Legacy Item\n\nBody\n',
-      'utf8',
-    );
+    writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_legacy-item.md'), '# Legacy Item\n\nBody\n', 'utf8');
 
-    const moved = workspace.moveBacklogItem(
-      'docs/method/backlog/inbox/PROCESS_legacy-item.md',
-      'up-next',
-    );
+    const moved = workspace.moveBacklogItem('docs/method/backlog/inbox/PROCESS_legacy-item.md', 'up-next');
 
     expect(moved).toBe('docs/method/backlog/up-next/PROCESS_legacy-item.md');
     expect(workspace.readFrontmatter(moved)).toMatchObject({
@@ -872,11 +792,7 @@ describe('Method API', () => {
     const workspace = new Workspace(root);
 
     const path = 'docs/method/backlog/inbox/PROCESS_legacy-title.md';
-    writeFileSync(
-      join(root, path),
-      '# Legacy Title\n\nBody\n',
-      'utf8',
-    );
+    writeFileSync(join(root, path), '# Legacy Title\n\nBody\n', 'utf8');
 
     expect(workspace.readFrontmatter(path)).toMatchObject({
       title: 'Legacy Title',
@@ -897,23 +813,11 @@ describe('Method API', () => {
 
     writeFileSync(
       join(root, 'docs/method/backlog/up-next/PROCESS_same-lane-repair.md'),
-      [
-        '---',
-        'title: "Same Lane Repair"',
-        'lane: inbox',
-        '---',
-        '',
-        '# Same Lane Repair',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Same Lane Repair"', 'lane: inbox', '---', '', '# Same Lane Repair', '', 'Body'].join('\n'),
       'utf8',
     );
 
-    const moved = workspace.moveBacklogItem(
-      'docs/method/backlog/up-next/PROCESS_same-lane-repair.md',
-      'up-next',
-    );
+    const moved = workspace.moveBacklogItem('docs/method/backlog/up-next/PROCESS_same-lane-repair.md', 'up-next');
 
     expect(moved).toBe('docs/method/backlog/up-next/PROCESS_same-lane-repair.md');
     expect(workspace.readFrontmatter(moved)).toMatchObject({
@@ -927,16 +831,9 @@ describe('Method API', () => {
     initWorkspace(root);
     const workspace = new Workspace(root);
 
-    writeFileSync(
-      join(root, 'docs/method/backlog/inbox/PROCESS_release-scope.md'),
-      '# Release Scope\n\nBody\n',
-      'utf8',
-    );
+    writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_release-scope.md'), '# Release Scope\n\nBody\n', 'utf8');
 
-    const moved = workspace.moveBacklogItem(
-      'docs/method/backlog/inbox/PROCESS_release-scope.md',
-      'v1.1.0',
-    );
+    const moved = workspace.moveBacklogItem('docs/method/backlog/inbox/PROCESS_release-scope.md', 'v1.1.0');
 
     expect(moved).toBe('docs/method/backlog/v1.1.0/PROCESS_release-scope.md');
     expect(workspace.readFrontmatter(moved)).toMatchObject({
@@ -988,17 +885,7 @@ describe('Method API', () => {
 
     writeFileSync(
       join(root, 'docs/method/backlog/asap/PROCESS_frontmatter-pull.md'),
-      [
-        '---',
-        'title: "Frontmatter Pull"',
-        'legend: SYNTH',
-        'lane: asap',
-        '---',
-        '',
-        '# Frontmatter Pull',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Frontmatter Pull"', 'legend: SYNTH', 'lane: asap', '---', '', '# Frontmatter Pull', '', 'Body'].join('\n'),
       'utf8',
     );
 
@@ -1087,18 +974,7 @@ describe('Method API', () => {
     const designDoc = join(root, 'docs/design/PROCESS_frontmatter-design.md');
     writeFileSync(
       designDoc,
-      [
-        '---',
-        'title: "Frontmatter Design"',
-        'legend: PROCESS',
-        '---',
-        '',
-        '# Frontmatter Design',
-        '',
-        '## Hill',
-        '',
-        'TBD',
-      ].join('\n'),
+      ['---', 'title: "Frontmatter Design"', 'legend: PROCESS', '---', '', '# Frontmatter Design', '', '## Hill', '', 'TBD'].join('\n'),
       'utf8',
     );
 
@@ -1143,19 +1019,11 @@ describe('Method API', () => {
     const workspace = new Workspace(root);
 
     // Create a flat design doc
-    writeFileSync(
-      join(root, 'docs/design/PROCESS_flat-cycle.md'),
-      '# Flat Cycle\n\nLegend: PROCESS\n',
-      'utf8',
-    );
+    writeFileSync(join(root, 'docs/design/PROCESS_flat-cycle.md'), '# Flat Cycle\n\nLegend: PROCESS\n', 'utf8');
 
     // Create a legacy nested design doc
     mkdirSync(join(root, 'docs/design/0001-legacy-cycle'), { recursive: true });
-    writeFileSync(
-      join(root, 'docs/design/0001-legacy-cycle/legacy-cycle.md'),
-      '# Legacy Cycle\n\nLegend: PROCESS\n',
-      'utf8',
-    );
+    writeFileSync(join(root, 'docs/design/0001-legacy-cycle/legacy-cycle.md'), '# Legacy Cycle\n\nLegend: PROCESS\n', 'utf8');
 
     const status = workspace.status();
     const cycleNames = status.activeCycles.map((cycle) => cycle.name);

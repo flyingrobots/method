@@ -63,9 +63,7 @@ export function readTypedFrontmatter(path: string): TypedFrontmatter {
 
 export function readFrontmatter(path: string): Record<string, string> {
   const frontmatter = parseDoc(path).frontmatter;
-  return Object.fromEntries(
-    Object.entries(frontmatter).map(([key, value]) => [key, stringifyFrontmatterValue(value)]),
-  );
+  return Object.fromEntries(Object.entries(frontmatter).map(([key, value]) => [key, stringifyFrontmatterValue(value)]));
 }
 
 export function updateTypedFrontmatter(path: string, updates: TypedFrontmatter): void {
@@ -161,9 +159,7 @@ function assertNoTypeDowngrade(key: string, existing: unknown, incoming: unknown
   if (existingType === incomingType) {
     return;
   }
-  throw new Error(
-    `Cannot downgrade typed field '${key}': expected ${existingType}, attempted ${incomingType}`,
-  );
+  throw new Error(`Cannot downgrade typed field '${key}': expected ${existingType}, attempted ${incomingType}`);
 }
 
 function stringifyFrontmatterValue(value: unknown): string {

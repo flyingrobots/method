@@ -45,8 +45,8 @@ describe('Hybrid Signpost Generation', () => {
     ].join('\n');
 
     const generators = {
-      'alpha': () => 'new alpha\n',
-      'beta': () => 'new beta\n',
+      alpha: () => 'new alpha\n',
+      beta: () => 'new beta\n',
     };
 
     const result = replaceGeneratedSections(input, generators);
@@ -60,7 +60,7 @@ describe('Hybrid Signpost Generation', () => {
 
   it('leaves file unchanged when no markers exist', () => {
     const input = '# No markers\n\nJust prose.\n';
-    const generators = { 'unused': () => 'stuff' };
+    const generators = { unused: () => 'stuff' };
 
     const result = replaceGeneratedSections(input, generators);
 
@@ -68,11 +68,7 @@ describe('Hybrid Signpost Generation', () => {
   });
 
   it('leaves marker intact when no generator matches', () => {
-    const input = [
-      '<!-- generate:unknown -->',
-      'existing content',
-      '<!-- /generate -->',
-    ].join('\n');
+    const input = ['<!-- generate:unknown -->', 'existing content', '<!-- /generate -->'].join('\n');
 
     const result = replaceGeneratedSections(input, {});
 
@@ -80,27 +76,11 @@ describe('Hybrid Signpost Generation', () => {
   });
 
   it('preserves exact whitespace around markers', () => {
-    const input = [
-      'before',
-      '',
-      '<!-- generate:x -->',
-      'old',
-      '<!-- /generate -->',
-      '',
-      'after',
-    ].join('\n');
+    const input = ['before', '', '<!-- generate:x -->', 'old', '<!-- /generate -->', '', 'after'].join('\n');
 
-    const generators = { 'x': () => 'new\n' };
+    const generators = { x: () => 'new\n' };
     const result = replaceGeneratedSections(input, generators);
 
-    expect(result).toBe([
-      'before',
-      '',
-      '<!-- generate:x -->',
-      'new',
-      '<!-- /generate -->',
-      '',
-      'after',
-    ].join('\n'));
+    expect(result).toBe(['before', '', '<!-- generate:x -->', 'new', '<!-- /generate -->', '', 'after'].join('\n'));
   });
 });

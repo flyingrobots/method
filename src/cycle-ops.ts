@@ -1,11 +1,10 @@
-import { dirname, basename, relative, resolve } from 'node:path';
-import { existsSync, readFileSync } from 'node:fs';
+import { basename, dirname, relative, resolve } from 'node:path';
 import type { Cycle } from './domain.js';
 import { isReleaseLane } from './domain.js';
-import { readFrontmatter as fmReadFrontmatter } from './frontmatter.js';
 import { MethodError } from './errors.js';
-import { fileStem, normalizeOptionalString, normalizeRepoPath } from './workspace-utils.js';
+import { readFrontmatter as fmReadFrontmatter } from './frontmatter.js';
 import type { ResolvedPaths } from './index.js';
+import { fileStem, normalizeOptionalString, normalizeRepoPath } from './workspace-utils.js';
 
 export const CYCLE_NAME_PATTERN = /^(?:(?<legend>[A-Z][A-Z0-9]*)_)?(?<slug>[a-z0-9][a-z0-9-]*)$/;
 export const LEGACY_CYCLE_PATTERN = /^(?<number>\d{4})-(?<slug>[a-z0-9][a-z0-9-]*)$/;
@@ -29,11 +28,7 @@ export function resolveCyclePacketPaths(
   };
 }
 
-export function readCycleFromDoc(
-  root: string,
-  paths: ResolvedPaths,
-  file: string,
-): Cycle | undefined {
+export function readCycleFromDoc(root: string, paths: ResolvedPaths, file: string): Cycle | undefined {
   // Flat design doc: docs/design/<cycleName>.md
   if (isFlatDesignDocPath(paths, file)) {
     const stem = fileStem(file);

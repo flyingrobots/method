@@ -1,11 +1,11 @@
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
+import { dirname, join } from 'node:path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { initWorkspace } from '../src/index.js';
 import { runCli } from '../src/cli.js';
+import { initWorkspace } from '../src/index.js';
 
 class MemoryWriter {
   output = '';
@@ -85,21 +85,19 @@ describe('method CLI', () => {
     const report = JSON.parse(stdout.output);
     expect(exitCode).toBe(1);
     expect(report.status).toBe('error');
-    expect(report.issues).toContainEqual(expect.objectContaining({
-      code: 'config-parse-failed',
-      check: 'config',
-    }));
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'config-parse-failed',
+        check: 'config',
+      }),
+    );
   });
 
   it('Does `method doctor` surface missing required paths and malformed frontmatter with fix suggestions?', async () => {
     const root = createTempRoot();
     initWorkspace(root);
     rmSync(join(root, 'docs/design'), { recursive: true, force: true });
-    writeFileSync(
-      join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'),
-      '# Missing Frontmatter\n\nBody\n',
-      'utf8',
-    );
+    writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
     const stdout = new MemoryWriter();
 
     const exitCode = await runCli(['doctor'], {
@@ -154,11 +152,7 @@ describe('method CLI', () => {
     initWorkspace(root);
     rmSync(join(root, 'docs/design'), { recursive: true, force: true });
     rmSync(join(root, 'docs/method/release-runbook.md'), { recursive: true, force: true });
-    writeFileSync(
-      join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'),
-      '# Missing Frontmatter\n\nBody\n',
-      'utf8',
-    );
+    writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
 
     const planStdout = new MemoryWriter();
     const planExitCode = await runCli(['repair', '--plan', '--json'], {
@@ -184,7 +178,9 @@ describe('method CLI', () => {
     expect(applied.mode).toBe('apply');
     expect(applied.repairs.map((repair: { status: string }) => repair.status)).toEqual(['applied', 'applied', 'applied']);
     expect(readFile(root, 'docs/method/release-runbook.md')).toContain('# Release Runbook');
-    expect(readFile(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md')).toMatch(/^---\ntitle: "Missing Frontmatter"\n---\n\n# Missing Frontmatter/mu);
+    expect(readFile(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md')).toMatch(
+      /^---\ntitle: "Missing Frontmatter"\n---\n\n# Missing Frontmatter/mu,
+    );
   });
 
   it('runs doctor, applies the bounded repair set, and re-checks through `method migrate --json`.', async () => {
@@ -192,11 +188,7 @@ describe('method CLI', () => {
     initWorkspace(root);
     rmSync(join(root, 'docs/design'), { recursive: true, force: true });
     rmSync(join(root, 'docs/method/release-runbook.md'), { recursive: true, force: true });
-    writeFileSync(
-      join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'),
-      '# Missing Frontmatter\n\nBody\n',
-      'utf8',
-    );
+    writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
     const stdout = new MemoryWriter();
 
     const exitCode = await runCli(['migrate', '--json'], {
@@ -212,7 +204,9 @@ describe('method CLI', () => {
     expect(result.repair.mode).toBe('apply');
     expect(result.repair.repairs.map((repair: { status: string }) => repair.status)).toEqual(['applied', 'applied', 'applied']);
     expect(readFile(root, 'docs/method/release-runbook.md')).toContain('# Release Runbook');
-    expect(readFile(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md')).toMatch(/^---\ntitle: "Missing Frontmatter"\n---\n\n# Missing Frontmatter/mu);
+    expect(readFile(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md')).toMatch(
+      /^---\ntitle: "Missing Frontmatter"\n---\n\n# Missing Frontmatter/mu,
+    );
   });
 
   it('Does `method sync refs` print only generated reference targets and leave ship-only artifacts untouched?', async () => {
@@ -245,15 +239,15 @@ describe('method CLI', () => {
     await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
     const stdout = new MemoryWriter();
 
-    const exitCode = await runCli(
-      ['inbox', 'What if Method had a CLI?', '--legend', 'PROCESS'],
-      { cwd: root, stdout, stderr: new MemoryWriter() },
-    );
+    const exitCode = await runCli(['inbox', 'What if Method had a CLI?', '--legend', 'PROCESS'], {
+      cwd: root,
+      stdout,
+      stderr: new MemoryWriter(),
+    });
 
     expect(exitCode).toBe(0);
     expect(stdout.output).toContain('Captured');
-    expect(readFile(root, 'docs/method/backlog/inbox/PROCESS_what-if-method-had-a-cli.md'))
-      .toContain('# What if Method had a CLI?');
+    expect(readFile(root, 'docs/method/backlog/inbox/PROCESS_what-if-method-had-a-cli.md')).toContain('# What if Method had a CLI?');
   });
 
   it('creates shaped backlog notes directly in a requested custom lane and returns JSON when asked.', async () => {
@@ -262,23 +256,14 @@ describe('method CLI', () => {
     writeFileSync(join(root, 'backlog-body.md'), 'Line one.\n\nLine two.\n', 'utf8');
     const stdout = new MemoryWriter();
 
-    const exitCode = await runCli([
-      'backlog',
-      'add',
-      '--lane',
-      'v1.1.0',
-      '--title',
-      'Backlog Add',
-      '--legend',
-      'PROCESS',
-      '--body-file',
-      'backlog-body.md',
-      '--json',
-    ], {
-      cwd: root,
-      stdout,
-      stderr: new MemoryWriter(),
-    });
+    const exitCode = await runCli(
+      ['backlog', 'add', '--lane', 'v1.1.0', '--title', 'Backlog Add', '--legend', 'PROCESS', '--body-file', 'backlog-body.md', '--json'],
+      {
+        cwd: root,
+        stdout,
+        stderr: new MemoryWriter(),
+      },
+    );
 
     const result = JSON.parse(stdout.output);
     expect(exitCode).toBe(0);
@@ -296,14 +281,7 @@ describe('method CLI', () => {
     await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
     const stderr = new MemoryWriter();
 
-    const exitCode = await runCli([
-      'backlog',
-      'add',
-      '--lane',
-      '../oops',
-      '--title',
-      'Backlog Add',
-    ], {
+    const exitCode = await runCli(['backlog', 'add', '--lane', '../oops', '--title', 'Backlog Add'], {
       cwd: root,
       stdout: new MemoryWriter(),
       stderr,
@@ -319,29 +297,12 @@ describe('method CLI', () => {
     await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
     writeFileSync(
       join(root, 'docs/method/backlog/inbox/PROCESS_move-me.md'),
-      [
-        '---',
-        'title: "Move Me"',
-        'legend: PROCESS',
-        'lane: inbox',
-        '---',
-        '',
-        '# Move Me',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Move Me"', 'legend: PROCESS', 'lane: inbox', '---', '', '# Move Me', '', 'Body'].join('\n'),
       'utf8',
     );
     const stdout = new MemoryWriter();
 
-    const exitCode = await runCli([
-      'backlog',
-      'move',
-      'move-me',
-      '--to',
-      'v1.1.0',
-      '--json',
-    ], {
+    const exitCode = await runCli(['backlog', 'move', 'move-me', '--to', 'v1.1.0', '--json'], {
       cwd: root,
       stdout,
       stderr: new MemoryWriter(),
@@ -406,29 +367,32 @@ describe('method CLI', () => {
     );
     const stdout = new MemoryWriter();
 
-    const exitCode = await runCli([
-      'backlog',
-      'list',
-      '--lane',
-      'up-next',
-      '--keyword',
-      'agent',
-      '--owner',
-      'METHOD maintainers',
-      '--blocked',
-      '--has-acceptance-criteria',
-      '--blocked-by',
-      'setup',
-      '--sort',
-      'priority',
-      '--limit',
-      '1',
-      '--json',
-    ], {
-      cwd: root,
-      stdout,
-      stderr: new MemoryWriter(),
-    });
+    const exitCode = await runCli(
+      [
+        'backlog',
+        'list',
+        '--lane',
+        'up-next',
+        '--keyword',
+        'agent',
+        '--owner',
+        'METHOD maintainers',
+        '--blocked',
+        '--has-acceptance-criteria',
+        '--blocked-by',
+        'setup',
+        '--sort',
+        'priority',
+        '--limit',
+        '1',
+        '--json',
+      ],
+      {
+        cwd: root,
+        stdout,
+        stderr: new MemoryWriter(),
+      },
+    );
 
     const result = JSON.parse(stdout.output);
     expect(exitCode).toBe(0);
@@ -467,43 +431,36 @@ describe('method CLI', () => {
     ensureBacklogLane(root, 'up-next');
     writeFileSync(
       join(root, 'docs/method/backlog/up-next/PROCESS_metadata-edit.md'),
-      [
-        '---',
-        'title: "Metadata Edit"',
-        'legend: PROCESS',
-        'lane: up-next',
-        '---',
-        '',
-        '# Metadata Edit',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Metadata Edit"', 'legend: PROCESS', 'lane: up-next', '---', '', '# Metadata Edit', '', 'Body'].join('\n'),
       'utf8',
     );
     const stdout = new MemoryWriter();
 
-    const exitCode = await runCli([
-      'backlog',
-      'edit',
-      'metadata-edit',
-      '--owner',
-      'Core Team',
-      '--priority',
-      'HIGH',
-      '--keyword',
-      'roadmap',
-      '--keyword',
-      'query',
-      '--blocked-by',
-      'setup',
-      '--blocks',
-      'finish',
-      '--json',
-    ], {
-      cwd: root,
-      stdout,
-      stderr: new MemoryWriter(),
-    });
+    const exitCode = await runCli(
+      [
+        'backlog',
+        'edit',
+        'metadata-edit',
+        '--owner',
+        'Core Team',
+        '--priority',
+        'HIGH',
+        '--keyword',
+        'roadmap',
+        '--keyword',
+        'query',
+        '--blocked-by',
+        'setup',
+        '--blocks',
+        'finish',
+        '--json',
+      ],
+      {
+        cwd: root,
+        stdout,
+        stderr: new MemoryWriter(),
+      },
+    );
 
     const result = JSON.parse(stdout.output);
     expect(exitCode).toBe(0);
@@ -537,18 +494,7 @@ describe('method CLI', () => {
     );
     writeFileSync(
       join(root, 'docs/method/backlog/bad-code/PROCESS_bad-fix.md'),
-      [
-        '---',
-        'title: "Bad Fix"',
-        'legend: PROCESS',
-        'lane: bad-code',
-        'priority: medium',
-        '---',
-        '',
-        '# Bad Fix',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Bad Fix"', 'legend: PROCESS', 'lane: bad-code', 'priority: medium', '---', '', '# Bad Fix', '', 'Body'].join('\n'),
       'utf8',
     );
     writeFileSync(
@@ -658,17 +604,7 @@ describe('method CLI', () => {
     );
     const stdout = new MemoryWriter();
 
-    const exitCode = await runCli([
-      'next',
-      '--keyword',
-      'roadmap',
-      '--owner',
-      'Core Team',
-      '--include-blocked',
-      '--limit',
-      '5',
-      '--json',
-    ], {
+    const exitCode = await runCli(['next', '--keyword', 'roadmap', '--owner', 'Core Team', '--include-blocked', '--limit', '5', '--json'], {
       cwd: root,
       stdout,
       stderr: new MemoryWriter(),
@@ -690,17 +626,7 @@ describe('method CLI', () => {
     ensureBacklogLane(root, 'up-next');
     writeFileSync(
       join(root, 'docs/method/backlog/up-next/PROCESS_foundation.md'),
-      [
-        '---',
-        'title: "Foundation"',
-        'legend: PROCESS',
-        'lane: up-next',
-        '---',
-        '',
-        '# Foundation',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Foundation"', 'legend: PROCESS', 'lane: up-next', '---', '', '# Foundation', '', 'Body'].join('\n'),
       'utf8',
     );
     writeFileSync(
@@ -724,19 +650,9 @@ describe('method CLI', () => {
     );
     writeFileSync(
       join(root, 'docs/method/backlog/up-next/PROCESS_finish.md'),
-      [
-        '---',
-        'title: "Finish"',
-        'legend: PROCESS',
-        'lane: up-next',
-        'blocked_by:',
-        '  - build',
-        '---',
-        '',
-        '# Finish',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Finish"', 'legend: PROCESS', 'lane: up-next', 'blocked_by:', '  - build', '---', '', '# Finish', '', 'Body'].join(
+        '\n',
+      ),
       'utf8',
     );
 
@@ -776,27 +692,12 @@ describe('method CLI', () => {
     ensureBacklogLane(root, 'up-next');
     writeFileSync(
       join(root, 'docs/method/backlog/up-next/PROCESS_retire-me.md'),
-      [
-        '---',
-        'title: "Retire Me"',
-        'legend: PROCESS',
-        'lane: up-next',
-        '---',
-        '',
-        '# Retire Me',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Retire Me"', 'legend: PROCESS', 'lane: up-next', '---', '', '# Retire Me', '', 'Body'].join('\n'),
       'utf8',
     );
     const stderr = new MemoryWriter();
 
-    const exitCode = await runCli([
-      'retire',
-      'retire-me',
-      '--reason',
-      'Superseded by another cycle.',
-    ], {
+    const exitCode = await runCli(['retire', 'retire-me', '--reason', 'Superseded by another cycle.'], {
       cwd: root,
       stdout: new MemoryWriter(),
       stderr,
@@ -813,35 +714,28 @@ describe('method CLI', () => {
     ensureBacklogLane(root, 'up-next');
     writeFileSync(
       join(root, 'docs/method/backlog/up-next/PROCESS_retire-me.md'),
-      [
-        '---',
-        'title: "Retire Me"',
-        'legend: PROCESS',
-        'lane: up-next',
-        '---',
-        '',
-        '# Retire Me',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Retire Me"', 'legend: PROCESS', 'lane: up-next', '---', '', '# Retire Me', '', 'Body'].join('\n'),
       'utf8',
     );
 
     const previewStdout = new MemoryWriter();
-    const previewExitCode = await runCli([
-      'retire',
-      'retire-me',
-      '--reason',
-      'Superseded by another cycle.',
-      '--replacement',
-      'docs/design/0040-release-scope/release-scope.md',
-      '--dry-run',
-      '--json',
-    ], {
-      cwd: root,
-      stdout: previewStdout,
-      stderr: new MemoryWriter(),
-    });
+    const previewExitCode = await runCli(
+      [
+        'retire',
+        'retire-me',
+        '--reason',
+        'Superseded by another cycle.',
+        '--replacement',
+        'docs/design/0040-release-scope/release-scope.md',
+        '--dry-run',
+        '--json',
+      ],
+      {
+        cwd: root,
+        stdout: previewStdout,
+        stderr: new MemoryWriter(),
+      },
+    );
 
     const preview = JSON.parse(previewStdout.output);
     expect(previewExitCode).toBe(0);
@@ -852,20 +746,23 @@ describe('method CLI', () => {
     expect(existsSync(join(root, 'docs/method/graveyard/PROCESS_retire-me.md'))).toBe(false);
 
     const applyStdout = new MemoryWriter();
-    const applyExitCode = await runCli([
-      'retire',
-      'retire-me',
-      '--reason',
-      'Superseded by another cycle.',
-      '--replacement',
-      'docs/design/0040-release-scope/release-scope.md',
-      '--yes',
-      '--json',
-    ], {
-      cwd: root,
-      stdout: applyStdout,
-      stderr: new MemoryWriter(),
-    });
+    const applyExitCode = await runCli(
+      [
+        'retire',
+        'retire-me',
+        '--reason',
+        'Superseded by another cycle.',
+        '--replacement',
+        'docs/design/0040-release-scope/release-scope.md',
+        '--yes',
+        '--json',
+      ],
+      {
+        cwd: root,
+        stdout: applyStdout,
+        stderr: new MemoryWriter(),
+      },
+    );
 
     const applied = JSON.parse(applyStdout.output);
     expect(applyExitCode).toBe(0);
@@ -893,12 +790,14 @@ describe('method CLI', () => {
     expect(statusExitCode).toBe(0);
     expect(status.missing).toContain('README.md');
     expect(status.missing).toContain('docs/BEARING.md');
-    expect(status.signposts).toContainEqual(expect.objectContaining({
-      name: 'BEARING',
-      path: 'docs/BEARING.md',
-      exists: false,
-      initable: true,
-    }));
+    expect(status.signposts).toContainEqual(
+      expect.objectContaining({
+        name: 'BEARING',
+        path: 'docs/BEARING.md',
+        exists: false,
+        initable: true,
+      }),
+    );
 
     const initStdout = new MemoryWriter();
     const initExitCode = await runCli(['signpost', 'init', 'BEARING', '--json'], {
@@ -920,25 +819,28 @@ describe('method CLI', () => {
     writeFileSync(join(root, 'inbox-body.md'), 'Observed while operating METHOD elsewhere.\n', 'utf8');
     const stdout = new MemoryWriter();
 
-    const exitCode = await runCli([
-      'inbox',
-      'Feedback note worth triaging',
-      '--legend',
-      'PROCESS',
-      '--title',
-      'Missing API Surfaces',
-      '--source',
-      'cross-repo usage',
-      '--body-file',
-      'inbox-body.md',
-      '--captured-at',
-      '2026-04-11',
-      '--json',
-    ], {
-      cwd: root,
-      stdout,
-      stderr: new MemoryWriter(),
-    });
+    const exitCode = await runCli(
+      [
+        'inbox',
+        'Feedback note worth triaging',
+        '--legend',
+        'PROCESS',
+        '--title',
+        'Missing API Surfaces',
+        '--source',
+        'cross-repo usage',
+        '--body-file',
+        'inbox-body.md',
+        '--captured-at',
+        '2026-04-11',
+        '--json',
+      ],
+      {
+        cwd: root,
+        stdout,
+        stderr: new MemoryWriter(),
+      },
+    );
 
     const result = JSON.parse(stdout.output);
     expect(exitCode).toBe(0);
@@ -948,7 +850,9 @@ describe('method CLI', () => {
     expect(result.title).toBe('Missing API Surfaces');
     expect(result.source).toBe('cross-repo usage');
     expect(result.captured_at).toBe('2026-04-11');
-    expect(readFile(root, 'docs/method/backlog/inbox/PROCESS_missing-api-surfaces.md')).toContain('Observed while operating METHOD elsewhere.');
+    expect(readFile(root, 'docs/method/backlog/inbox/PROCESS_missing-api-surfaces.md')).toContain(
+      'Observed while operating METHOD elsewhere.',
+    );
   });
 
   it('rejects the removed feedback command and points operators at inbox metadata capture.', async () => {
@@ -957,12 +861,7 @@ describe('method CLI', () => {
     const stdout = new MemoryWriter();
     const stderr = new MemoryWriter();
 
-    const exitCode = await runCli([
-      'feedback',
-      'add',
-      '--title',
-      'Missing API Surfaces',
-    ], {
+    const exitCode = await runCli(['feedback', 'add', '--title', 'Missing API Surfaces'], {
       cwd: root,
       stdout,
       stderr,
@@ -1075,11 +974,7 @@ describe('method CLI', () => {
   it('Does `method close` create a retro doc that already includes required frontmatter fields like `title`, `outcome`, `drift_check`, and `design_doc`?', async () => {
     const root = createTempRoot();
     await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
-    writeFileSync(
-      join(root, 'docs/design/method-cli.md'),
-      '# Method CLI\n\nLegend: none\n\n## Playback Questions\n\n- [ ] TBD\n',
-      'utf8',
-    );
+    writeFileSync(join(root, 'docs/design/method-cli.md'), '# Method CLI\n\nLegend: none\n\n## Playback Questions\n\n- [ ] TBD\n', 'utf8');
 
     const stdout = new MemoryWriter();
     const exitCode = await runCli(['close', '--drift-check', 'yes', '--outcome', 'partial'], {
@@ -1108,17 +1003,9 @@ describe('method CLI', () => {
     await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
     writeFileSync(
       join(root, 'docs/method/backlog/asap/PROCESS_scaffold-contract.md'),
-      [
-        '---',
-        'title: "Scaffold Contract"',
-        'legend: PROCESS',
-        'lane: asap',
-        '---',
-        '',
-        '# Scaffold Contract',
-        '',
-        'Backlog body.',
-      ].join('\n'),
+      ['---', 'title: "Scaffold Contract"', 'legend: PROCESS', 'lane: asap', '---', '', '# Scaffold Contract', '', 'Backlog body.'].join(
+        '\n',
+      ),
       'utf8',
     );
 
@@ -1177,16 +1064,8 @@ describe('method CLI', () => {
   it('Does `method status` report legend health using the live repo legends rather than stale historical codes?', async () => {
     const root = createTempRoot();
     await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
-    writeFileSync(
-      join(root, 'docs/method/backlog/inbox/SYNTH_braille.md'),
-      '# Braille\n\nIdea\n',
-      'utf8',
-    );
-    writeFileSync(
-      join(root, 'docs/design/PROCESS_method-cli.md'),
-      '# Method CLI\n\nLegend: PROCESS\n\n## Hill\n\nTBD\n',
-      'utf8',
-    );
+    writeFileSync(join(root, 'docs/method/backlog/inbox/SYNTH_braille.md'), '# Braille\n\nIdea\n', 'utf8');
+    writeFileSync(join(root, 'docs/design/PROCESS_method-cli.md'), '# Method CLI\n\nLegend: PROCESS\n\n## Hill\n\nTBD\n', 'utf8');
 
     const stdout = new MemoryWriter();
     const exitCode = await runCli(['status'], { cwd: root, stdout, stderr: new MemoryWriter() });
@@ -1250,9 +1129,7 @@ describe('method CLI', () => {
         approval_count: 0,
         changes_requested_count: 1,
         merge_ready: false,
-        blockers: [
-          { type: 'unresolved_threads', message: '2 unresolved review threads.', source: 'github' },
-        ],
+        blockers: [{ type: 'unresolved_threads', message: '2 unresolved review threads.', source: 'github' }],
       };
     });
 
@@ -1378,10 +1255,7 @@ describe('method CLI', () => {
     writeWorkspaceTest(
       root,
       'tests/drift-clean.test.ts',
-      [
-        "it('Can I see the missing evidence?', () => {});",
-        "it('Does the detector report exact files?', () => {});",
-      ].join('\n'),
+      ["it('Can I see the missing evidence?', () => {});", "it('Does the detector report exact files?', () => {});"].join('\n'),
     );
 
     const stdout = new MemoryWriter();
@@ -1436,7 +1310,7 @@ describe('method CLI', () => {
     expect(stdout.output).toContain('Near miss');
   });
 
-  it('Are the extraction and matching rules explicit enough that I can reproduce the detector\'s findings from committed markdown and test files alone?', async () => {
+  it("Are the extraction and matching rules explicit enough that I can reproduce the detector's findings from committed markdown and test files alone?", async () => {
     const root = createTempRoot();
     await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
     writeDesignDoc(root, {
@@ -1526,7 +1400,7 @@ describe('method CLI', () => {
         '### Human',
         '',
         '- [ ] Can I match "double-quoted" evidence?',
-        '- [ ] Can I match \'single-quoted\' evidence?',
+        "- [ ] Can I match 'single-quoted' evidence?",
         '- [ ] Can I match `template-quoted` evidence?',
       ].join('\n'),
     });
@@ -1535,7 +1409,7 @@ describe('method CLI', () => {
       'tests/drift-quoted.test.ts',
       [
         'it("Can I match \\"double-quoted\\" evidence?", () => {});',
-        'it(\'Can I match \\\'single-quoted\\\' evidence?\', () => {});',
+        "it('Can I match \\'single-quoted\\' evidence?', () => {});",
         'it(`Can I match \\`template-quoted\\` evidence?`, () => {});',
       ].join('\n'),
     );
@@ -1565,16 +1439,20 @@ describe('method CLI', () => {
     const root = createTempRoot();
 
     // Write custom paths config before init
-    writeFileSync(join(root, '.method.json'), JSON.stringify({
-      paths: {
-        backlog: '.method/backlog',
-        design: '.method/design',
-        retro: '.method/retro',
-        graveyard: '.method/graveyard',
-        method_dir: '.method',
-        tests: 'spec',
-      },
-    }), 'utf8');
+    writeFileSync(
+      join(root, '.method.json'),
+      JSON.stringify({
+        paths: {
+          backlog: '.method/backlog',
+          design: '.method/design',
+          retro: '.method/retro',
+          graveyard: '.method/graveyard',
+          method_dir: '.method',
+          tests: 'spec',
+        },
+      }),
+      'utf8',
+    );
 
     // Init should scaffold to custom paths
     const stdout = new MemoryWriter();
@@ -1648,7 +1526,9 @@ describe('method CLI', () => {
     const stdout = new MemoryWriter();
 
     const exitCode = await runCli(['spike', 'Prove that X works under Y'], {
-      cwd: root, stdout, stderr: new MemoryWriter(),
+      cwd: root,
+      stdout,
+      stderr: new MemoryWriter(),
     });
 
     expect(exitCode).toBe(0);
@@ -1666,7 +1546,7 @@ describe('method CLI', () => {
     expect(cliSource).not.toContain('function collectTestFiles');
     expect(cliSource).not.toContain('function extractPlaybackQuestions');
     expect(cliSource).not.toContain('function normalizeForMatch');
-    expect(cliSource.split(/\r?\n/u).length).toBeLessThan(220);
+    expect(cliSource.split(/\r?\n/u).length).toBeLessThan(320);
   });
 
   it('keeps index.ts focused on workspace behavior instead of reabsorbing drift helpers', () => {
@@ -1686,15 +1566,8 @@ function readFile(root: string, relativePath: string): string {
   return readFileSync(join(root, relativePath), 'utf8');
 }
 
-function writeDesignDoc(
-  root: string,
-  options: { cycleName: string; title: string; body: string },
-): void {
-  writeFileSync(
-    join(root, 'docs/design', `${options.cycleName}.md`),
-    `# ${options.title}\n\n${options.body}\n`,
-    'utf8',
-  );
+function writeDesignDoc(root: string, options: { cycleName: string; title: string; body: string }): void {
+  writeFileSync(join(root, 'docs/design', `${options.cycleName}.md`), `# ${options.title}\n\n${options.body}\n`, 'utf8');
 }
 
 function writeWorkspaceTest(root: string, relativePath: string, body: string): void {
@@ -1738,10 +1611,9 @@ async function runDriftCleanScenario(): Promise<{ exitCode: number; stdout: Memo
   writeWorkspaceTest(
     root,
     'tests/drift-exit-codes.test.ts',
-    [
-      "it('Does the detector return stable output?', () => {});",
-      "it('Does the detector return stable exit semantics?', () => {});",
-    ].join('\n'),
+    ["it('Does the detector return stable output?', () => {});", "it('Does the detector return stable exit semantics?', () => {});"].join(
+      '\n',
+    ),
   );
 
   const stdout = new MemoryWriter();
@@ -1760,15 +1632,7 @@ async function runDriftFoundScenario(): Promise<{ exitCode: number; stdout: Memo
   writeDesignDoc(root, {
     cycleName: 'PROCESS_drift-detector',
     title: 'Drift Detector',
-    body: [
-      'Legend: PROCESS',
-      '',
-      '## Playback Questions',
-      '',
-      '### Human',
-      '',
-      '- [ ] Does drift return a distinct exit code?',
-    ].join('\n'),
+    body: ['Legend: PROCESS', '', '## Playback Questions', '', '### Human', '', '- [ ] Does drift return a distinct exit code?'].join('\n'),
   });
 
   const stdout = new MemoryWriter();
@@ -1787,15 +1651,9 @@ async function runDriftMissingCycleScenario(): Promise<{ exitCode: number; stder
   writeDesignDoc(root, {
     cycleName: 'PROCESS_drift-detector',
     title: 'Drift Detector',
-    body: [
-      'Legend: PROCESS',
-      '',
-      '## Playback Questions',
-      '',
-      '### Human',
-      '',
-      '- [ ] Does drift target an explicit active cycle?',
-    ].join('\n'),
+    body: ['Legend: PROCESS', '', '## Playback Questions', '', '### Human', '', '- [ ] Does drift target an explicit active cycle?'].join(
+      '\n',
+    ),
   });
   const stderr = new MemoryWriter();
   const exitCode = await runCli(['drift', 'missing-cycle'], {

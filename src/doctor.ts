@@ -3,24 +3,18 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, s
 import { basename, dirname, relative, resolve } from 'node:path';
 import { headerBox, separator } from '@flyingrobots/bijou';
 import { createNodeContext } from '@flyingrobots/bijou-node';
-import { ConfigSchema, DEFAULT_PATHS, PathsSchema, type PathsConfig } from './config.js';
+import { parse as parseYaml } from 'yaml';
+import { ConfigSchema, DEFAULT_PATHS, type PathsConfig, PathsSchema } from './config.js';
 import type { DoctorCheck, DoctorCheckId, DoctorIssue, DoctorRepairKind, DoctorReport, DoctorSeverity, DoctorStatus } from './domain.js';
 import { isLaneName } from './domain.js';
 import { workspaceScaffold } from './index.js';
-import { parse as parseYaml } from 'yaml';
 
 interface ConfigInspection {
   paths: PathsConfig | null;
   issues: DoctorIssue[];
 }
 
-const DOCTOR_CHECKS: readonly DoctorCheckId[] = [
-  'config',
-  'structure',
-  'frontmatter',
-  'git-hooks',
-  'backlog',
-] as const;
+const DOCTOR_CHECKS: readonly DoctorCheckId[] = ['config', 'structure', 'frontmatter', 'git-hooks', 'backlog'] as const;
 
 export type DoctorRepairMode = 'plan' | 'apply';
 
@@ -58,13 +52,7 @@ export function runDoctor(root: string): DoctorReport {
   const gitHookIssues = inspectGitHooks(root);
   const backlogIssues = configInspection.paths === null ? [] : inspectBacklog(root, configInspection.paths);
 
-  const issues = [
-    ...configInspection.issues,
-    ...structureIssues,
-    ...frontmatterIssues,
-    ...gitHookIssues,
-    ...backlogIssues,
-  ];
+  const issues = [...configInspection.issues, ...structureIssues, ...frontmatterIssues, ...gitHookIssues, ...backlogIssues];
 
   const checks = DOCTOR_CHECKS.map((id) => summarizeCheck(id, issues));
   const counts = {
@@ -83,17 +71,16 @@ export function runDoctor(root: string): DoctorReport {
 
 export function renderDoctorText(report: DoctorReport): string {
   const ctx = createNodeContext();
-  const checkLines = report.checks.map((check) =>
-    `${check.id.padEnd(12, ' ')} ${check.status.padEnd(5, ' ')} ${check.message}`,
-  );
+  const checkLines = report.checks.map((check) => `${check.id.padEnd(12, ' ')} ${check.status.padEnd(5, ' ')} ${check.message}`);
 
-  const issueLines = report.issues.length === 0
-    ? ['No issues found.']
-    : report.issues.flatMap((issue) => {
-      const header = `- [${issue.severity}] ${issue.code}: ${issue.message}`;
-      const pathLine = issue.path === undefined ? [] : [`  Path: ${issue.path}`];
-      return [header, ...pathLine, `  Fix: ${issue.fix}`];
-    });
+  const issueLines =
+    report.issues.length === 0
+      ? ['No issues found.']
+      : report.issues.flatMap((issue) => {
+          const header = `- [${issue.severity}] ${issue.code}: ${issue.message}`;
+          const pathLine = issue.path === undefined ? [] : [`  Path: ${issue.path}`];
+          return [header, ...pathLine, `  Fix: ${issue.fix}`];
+        });
 
   return [
     `${headerBox('METHOD Doctor', { detail: report.root, ctx })}`,
@@ -121,8 +108,8 @@ export function runDoctorRepair(root: string, mode: DoctorRepairMode): DoctorRep
       selectedIssues,
       repairs: selectedIssues.map((issue) => ({
         issueCode: issue.code,
-        kind: issue.repair!.kind,
-        targetPath: issue.repair!.targetPath,
+        kind: issue.repair?.kind,
+        targetPath: issue.repair?.targetPath,
         status: 'planned',
       })),
       touchedPaths: [],
@@ -164,14 +151,14 @@ export function runDoctorMigrate(root: string): DoctorMigrateResult {
   const repair = hasRepairableIssues
     ? runDoctorRepair(root, 'apply')
     : {
-      root,
-      mode: 'apply' as const,
-      ok: true,
-      selectedIssues: [],
-      repairs: [],
-      touchedPaths: [],
-      unresolvedIssues: initialReport.issues,
-    };
+        root,
+        mode: 'apply' as const,
+        ok: true,
+        selectedIssues: [],
+        repairs: [],
+        touchedPaths: [],
+        unresolvedIssues: initialReport.issues,
+      };
   const finalReport = runDoctor(root);
 
   return {
@@ -187,18 +174,20 @@ export function runDoctorMigrate(root: string): DoctorMigrateResult {
 export function renderDoctorRepairText(result: DoctorRepairResult): string {
   const title = result.mode === 'plan' ? 'METHOD Repair Plan' : 'METHOD Repair Apply';
   const ctx = createNodeContext();
-  const repairLines = result.repairs.length === 0
-    ? ['No repairable issues selected.']
-    : result.repairs.map((repair) => {
-      const suffix = repair.reason === undefined ? '' : ` (${repair.reason})`;
-      return `- [${repair.status}] ${repair.kind}: ${repair.targetPath}${suffix}`;
-    });
-  const unresolvedLines = result.unresolvedIssues.length === 0
-    ? ['No unresolved issues remain.']
-    : result.unresolvedIssues.map((issue) => {
-      const target = issue.path === undefined ? '' : ` (${issue.path})`;
-      return `- [${issue.severity}] ${issue.code}${target}`;
-    });
+  const repairLines =
+    result.repairs.length === 0
+      ? ['No repairable issues selected.']
+      : result.repairs.map((repair) => {
+          const suffix = repair.reason === undefined ? '' : ` (${repair.reason})`;
+          return `- [${repair.status}] ${repair.kind}: ${repair.targetPath}${suffix}`;
+        });
+  const unresolvedLines =
+    result.unresolvedIssues.length === 0
+      ? ['No unresolved issues remain.']
+      : result.unresolvedIssues.map((issue) => {
+          const target = issue.path === undefined ? '' : ` (${issue.path})`;
+          return `- [${issue.severity}] ${issue.code}${target}`;
+        });
   const touched = result.touchedPaths.length === 0 ? '-' : result.touchedPaths.join(', ');
 
   return [
@@ -220,18 +209,20 @@ export function renderDoctorRepairText(result: DoctorRepairResult): string {
 export function renderDoctorMigrateText(result: DoctorMigrateResult): string {
   const ctx = createNodeContext();
   const touched = result.repair.touchedPaths.length === 0 ? '-' : result.repair.touchedPaths.join(', ');
-  const repairLines = result.repair.repairs.length === 0
-    ? ['No bounded repairs were applied.']
-    : result.repair.repairs.map((repair) => {
-      const suffix = repair.reason === undefined ? '' : ` (${repair.reason})`;
-      return `- [${repair.status}] ${repair.kind}: ${repair.targetPath}${suffix}`;
-    });
-  const finalIssueLines = result.finalReport.issues.length === 0
-    ? ['No issues remain.']
-    : result.finalReport.issues.map((issue) => {
-      const target = issue.path === undefined ? '' : ` (${issue.path})`;
-      return `- [${issue.severity}] ${issue.code}${target}`;
-    });
+  const repairLines =
+    result.repair.repairs.length === 0
+      ? ['No bounded repairs were applied.']
+      : result.repair.repairs.map((repair) => {
+          const suffix = repair.reason === undefined ? '' : ` (${repair.reason})`;
+          return `- [${repair.status}] ${repair.kind}: ${repair.targetPath}${suffix}`;
+        });
+  const finalIssueLines =
+    result.finalReport.issues.length === 0
+      ? ['No issues remain.']
+      : result.finalReport.issues.map((issue) => {
+          const target = issue.path === undefined ? '' : ` (${issue.path})`;
+          return `- [${issue.severity}] ${issue.code}${target}`;
+        });
 
   return [
     `${headerBox('METHOD Migrate', { detail: result.root, ctx })}`,
@@ -283,9 +274,7 @@ function inspectConfig(root: string): ConfigInspection {
   }
 
   const parsedPaths = PathsSchema.safeParse(
-    rawConfig !== null && typeof rawConfig === 'object'
-      ? ('paths' in rawConfig ? (rawConfig as { paths?: unknown }).paths : {})
-      : {},
+    rawConfig !== null && typeof rawConfig === 'object' ? ('paths' in rawConfig ? (rawConfig as { paths?: unknown }).paths : {}) : {},
   );
 
   return {
@@ -329,25 +318,29 @@ function inspectStructure(root: string, paths: PathsConfig): DoctorIssue[] {
       continue;
     }
     if (existsSync(directory)) {
-      issues.push(createIssue(
-        'path-not-directory',
-        'structure',
-        'error',
-        'A required METHOD directory path exists, but it is not a directory.',
-        relative(root, directory),
-        `Replace \`${relative(root, directory)}\` with a directory before running METHOD workspace commands.`,
-      ));
+      issues.push(
+        createIssue(
+          'path-not-directory',
+          'structure',
+          'error',
+          'A required METHOD directory path exists, but it is not a directory.',
+          relative(root, directory),
+          `Replace \`${relative(root, directory)}\` with a directory before running METHOD workspace commands.`,
+        ),
+      );
       continue;
     }
-    issues.push(createIssue(
-      'missing-directory',
-      'structure',
-      'error',
-      'A required METHOD directory is missing.',
-      relative(root, directory),
-      `Run \`method init\` in \`${root}\` or recreate \`${relative(root, directory)}\`.`,
-      { kind: 'create-directory', targetPath: relative(root, directory) },
-    ));
+    issues.push(
+      createIssue(
+        'missing-directory',
+        'structure',
+        'error',
+        'A required METHOD directory is missing.',
+        relative(root, directory),
+        `Run \`method init\` in \`${root}\` or recreate \`${relative(root, directory)}\`.`,
+        { kind: 'create-directory', targetPath: relative(root, directory) },
+      ),
+    );
   }
 
   for (const file of requiredFiles) {
@@ -355,25 +348,29 @@ function inspectStructure(root: string, paths: PathsConfig): DoctorIssue[] {
       continue;
     }
     if (existsSync(file)) {
-      issues.push(createIssue(
-        'path-not-file',
-        'structure',
-        'error',
-        'A required METHOD file path exists, but it is not a file.',
-        relative(root, file),
-        `Replace \`${relative(root, file)}\` with a regular file before running METHOD workspace commands.`,
-      ));
+      issues.push(
+        createIssue(
+          'path-not-file',
+          'structure',
+          'error',
+          'A required METHOD file path exists, but it is not a file.',
+          relative(root, file),
+          `Replace \`${relative(root, file)}\` with a regular file before running METHOD workspace commands.`,
+        ),
+      );
       continue;
     }
-    issues.push(createIssue(
-      'missing-file',
-      'structure',
-      'error',
-      'A required METHOD file is missing.',
-      relative(root, file),
-      `Run \`method init\` in \`${root}\` or restore \`${relative(root, file)}\`.`,
-      { kind: 'restore-file', targetPath: relative(root, file) },
-    ));
+    issues.push(
+      createIssue(
+        'missing-file',
+        'structure',
+        'error',
+        'A required METHOD file is missing.',
+        relative(root, file),
+        `Run \`method init\` in \`${root}\` or restore \`${relative(root, file)}\`.`,
+        { kind: 'restore-file', targetPath: relative(root, file) },
+      ),
+    );
   }
 
   // Detect legacy nested design doc directories
@@ -387,15 +384,17 @@ function inspectStructure(root: string, paths: PathsConfig): DoctorIssue[] {
       const mdFiles = readdirSync(subdir).filter((name) => name.endsWith('.md'));
       if (mdFiles.length > 0) {
         const relDir = relative(root, subdir);
-        issues.push(createIssue(
-          'legacy-design-layout',
-          'structure',
-          'warning',
-          'Design doc lives in a subdirectory instead of as a flat file under the design root.',
-          relDir,
-          `Run \`method doctor --repair\` to flatten \`${relDir}/\` into \`${paths.design}/<name>.md\`.`,
-          { kind: 'flatten-design-doc', targetPath: relDir },
-        ));
+        issues.push(
+          createIssue(
+            'legacy-design-layout',
+            'structure',
+            'warning',
+            'Design doc lives in a subdirectory instead of as a flat file under the design root.',
+            relDir,
+            `Run \`method doctor --repair\` to flatten \`${relDir}/\` into \`${paths.design}/<name>.md\`.`,
+            { kind: 'flatten-design-doc', targetPath: relDir },
+          ),
+        );
       }
     }
   }
@@ -422,29 +421,33 @@ function inspectFrontmatter(root: string, paths: PathsConfig): DoctorIssue[] {
       const raw = readFileSync(file, 'utf8');
       const opening = /^\uFEFF?---\r?\n/u.exec(raw);
       if (opening === null) {
-        issues.push(createIssue(
-          'missing-frontmatter',
-          'frontmatter',
-          'error',
-          'METHOD packet markdown is missing a YAML frontmatter block.',
-          relativePath,
-          `Add a top-of-file \`---\` frontmatter block to \`${relativePath}\`.`,
-          { kind: 'frontmatter-stub', targetPath: relativePath },
-        ));
+        issues.push(
+          createIssue(
+            'missing-frontmatter',
+            'frontmatter',
+            'error',
+            'METHOD packet markdown is missing a YAML frontmatter block.',
+            relativePath,
+            `Add a top-of-file \`---\` frontmatter block to \`${relativePath}\`.`,
+            { kind: 'frontmatter-stub', targetPath: relativePath },
+          ),
+        );
         continue;
       }
 
       const rest = raw.slice(opening[0].length);
       const closing = /\r?\n---(?:\r?\n|$)/u.exec(rest);
       if (closing === null) {
-        issues.push(createIssue(
-          'unterminated-frontmatter',
-          'frontmatter',
-          'error',
-          'YAML frontmatter is missing the closing delimiter.',
-          relativePath,
-          `Close the frontmatter block in \`${relativePath}\` with a terminating \`---\` line.`,
-        ));
+        issues.push(
+          createIssue(
+            'unterminated-frontmatter',
+            'frontmatter',
+            'error',
+            'YAML frontmatter is missing the closing delimiter.',
+            relativePath,
+            `Close the frontmatter block in \`${relativePath}\` with a terminating \`---\` line.`,
+          ),
+        );
         continue;
       }
 
@@ -453,25 +456,29 @@ function inspectFrontmatter(root: string, paths: PathsConfig): DoctorIssue[] {
       try {
         const parsed = parseYaml(yamlBlock);
         if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-          issues.push(createIssue(
-            'frontmatter-not-mapping',
-            'frontmatter',
-            'error',
-            'Frontmatter must parse to a YAML mapping/object.',
-            relativePath,
-            `Rewrite the frontmatter in \`${relativePath}\` as key/value pairs.`,
-          ));
+          issues.push(
+            createIssue(
+              'frontmatter-not-mapping',
+              'frontmatter',
+              'error',
+              'Frontmatter must parse to a YAML mapping/object.',
+              relativePath,
+              `Rewrite the frontmatter in \`${relativePath}\` as key/value pairs.`,
+            ),
+          );
         }
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error);
-        issues.push(createIssue(
-          'frontmatter-parse-failed',
-          'frontmatter',
-          'error',
-          'YAML frontmatter does not parse cleanly.',
-          relativePath,
-          `Fix the YAML syntax in \`${relativePath}\`: ${message}`,
-        ));
+        issues.push(
+          createIssue(
+            'frontmatter-parse-failed',
+            'frontmatter',
+            'error',
+            'YAML frontmatter does not parse cleanly.',
+            relativePath,
+            `Fix the YAML syntax in \`${relativePath}\`: ${message}`,
+          ),
+        );
       }
     }
   }
@@ -585,14 +592,16 @@ function inspectBacklog(root: string, paths: PathsConfig): DoctorIssue[] {
     }
 
     const relativePath = relative(root, file);
-    issues.push(createIssue(
-      'orphaned-backlog-item',
-      'backlog',
-      'warning',
-      'Backlog markdown exists outside the recognized lane directories.',
-      relativePath,
-      `Move \`${relativePath}\` into \`${paths.backlog}/<lane>/\` or retire it into \`${paths.graveyard}\`.`,
-    ));
+    issues.push(
+      createIssue(
+        'orphaned-backlog-item',
+        'backlog',
+        'warning',
+        'Backlog markdown exists outside the recognized lane directories.',
+        relativePath,
+        `Move \`${relativePath}\` into \`${paths.backlog}/<lane>/\` or retire it into \`${paths.graveyard}\`.`,
+      ),
+    );
   }
 
   return issues;
@@ -656,10 +665,7 @@ function createIssue(
   };
 }
 
-function applyRepair(
-  root: string,
-  issue: DoctorIssue,
-): { status: 'applied' | 'skipped'; touchedPath?: string; reason?: string } {
+function applyRepair(root: string, issue: DoctorIssue): { status: 'applied' | 'skipped'; touchedPath?: string; reason?: string } {
   const repair = issue.repair;
   if (repair === undefined) {
     return { status: 'skipped', reason: 'no-repair-hint' };
@@ -734,10 +740,7 @@ function applyRepair(
     }
 
     // Update the cycle frontmatter field if present
-    const updated = raw.replace(
-      /^(cycle:\s*)"[^"]*"\s*$/mu,
-      `$1"${cycleName}"`,
-    );
+    const updated = raw.replace(/^(cycle:\s*)"[^"]*"\s*$/mu, `$1"${cycleName}"`);
     writeFileSync(flatPath, updated, 'utf8');
 
     // Remove the old directory (all files should be the single md)
@@ -868,8 +871,5 @@ function runGitOptional(args: readonly string[], root: string): string {
 }
 
 function isExpectedMissingValue(error: unknown): boolean {
-  return error instanceof Error
-    && 'status' in error
-    && typeof error.status === 'number'
-    && error.status === 1;
+  return error instanceof Error && 'status' in error && typeof error.status === 'number' && error.status === 1;
 }

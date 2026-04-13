@@ -1,4 +1,4 @@
-import { type Outcome } from './domain.js';
+import type { Outcome } from './domain.js';
 import { MethodError } from './errors.js';
 
 export type ParsedCommand =
@@ -6,17 +6,64 @@ export type ParsedCommand =
   | { command: 'init'; path: string }
   | { command: 'doctor'; json?: boolean }
   | { command: 'migrate'; json?: boolean }
-  | { command: 'inbox'; idea: string; legend?: string; title?: string; bodyFile?: string; source?: string; capturedAt?: string; json?: boolean }
+  | {
+      command: 'inbox';
+      idea: string;
+      legend?: string;
+      title?: string;
+      bodyFile?: string;
+      source?: string;
+      capturedAt?: string;
+      json?: boolean;
+    }
   | { command: 'backlog-add'; lane: string; title: string; legend?: string; bodyFile?: string; json?: boolean }
   | { command: 'backlog-move'; item: string; to: string; json?: boolean }
-  | { command: 'backlog-edit'; item: string; owner?: string; clearOwner?: boolean; priority?: string; clearPriority?: boolean; keywords?: string[]; clearKeywords?: boolean; blockedBy?: string[]; clearBlockedBy?: boolean; blocks?: string[]; clearBlocks?: boolean; json?: boolean }
-  | { command: 'backlog-list'; lane?: string; legend?: string; priority?: string; keyword?: string; owner?: string; ready?: boolean; hasAcceptanceCriteria?: boolean; blockedBy?: string; blocks?: string; sort?: string; limit: number; json?: boolean }
+  | {
+      command: 'backlog-edit';
+      item: string;
+      owner?: string;
+      clearOwner?: boolean;
+      priority?: string;
+      clearPriority?: boolean;
+      keywords?: string[];
+      clearKeywords?: boolean;
+      blockedBy?: string[];
+      clearBlockedBy?: boolean;
+      blocks?: string[];
+      clearBlocks?: boolean;
+      json?: boolean;
+    }
+  | {
+      command: 'backlog-list';
+      lane?: string;
+      legend?: string;
+      priority?: string;
+      keyword?: string;
+      owner?: string;
+      ready?: boolean;
+      hasAcceptanceCriteria?: boolean;
+      blockedBy?: string;
+      blocks?: string;
+      sort?: string;
+      limit: number;
+      json?: boolean;
+    }
   | { command: 'backlog-deps'; item?: string; readyOnly?: boolean; criticalPath?: boolean; json?: boolean }
   | { command: 'retire'; item: string; reason: string; replacement?: string; dryRun?: boolean; yes?: boolean; json?: boolean }
   | { command: 'signpost-status'; json?: boolean }
   | { command: 'signpost-init'; name: string; json?: boolean }
   | { command: 'repair'; mode: 'plan' | 'apply'; json?: boolean }
-  | { command: 'next'; lane?: string; legend?: string; priority?: string; keyword?: string; owner?: string; includeBlocked?: boolean; limit: number; json?: boolean }
+  | {
+      command: 'next';
+      lane?: string;
+      legend?: string;
+      priority?: string;
+      keyword?: string;
+      owner?: string;
+      includeBlocked?: boolean;
+      limit: number;
+      json?: boolean;
+    }
   | { command: 'pull'; item: string }
   | { command: 'close'; cycle?: string; driftCheck?: 'yes' | 'no'; outcome: Outcome }
   | { command: 'drift'; cycle?: string }
@@ -63,7 +110,9 @@ export function parseCliArgs(argv: readonly string[]): ParsedCommand {
     case 'spike':
       return parseSpikeArgs(rest);
     case 'feedback':
-      throw new MethodError('`feedback` was removed. Capture outside-in critique in `method inbox` with `--source`, `--captured-at`, and optional `--body-file`.');
+      throw new MethodError(
+        '`feedback` was removed. Capture outside-in critique in `method inbox` with `--source`, `--captured-at`, and optional `--body-file`.',
+      );
     case 'repair':
       return parseRepairArgs(rest);
     case 'next':
@@ -118,25 +167,39 @@ export function parseCliArgs(argv: readonly string[]): ParsedCommand {
   }
 }
 
-export const CLI_TOPICS = ['init', 'doctor', 'migrate', 'inbox', 'backlog-add', 'backlog-move', 'backlog-edit', 'backlog-list', 'backlog-deps', 'retire', 'signpost-status', 'signpost-init', 'repair', 'next', 'pull', 'close', 'status', 'drift', 'review-state', 'mcp', 'sync'] as const;
+export const CLI_TOPICS = [
+  'init',
+  'doctor',
+  'migrate',
+  'inbox',
+  'backlog-add',
+  'backlog-move',
+  'backlog-edit',
+  'backlog-list',
+  'backlog-deps',
+  'retire',
+  'signpost-status',
+  'signpost-init',
+  'repair',
+  'next',
+  'pull',
+  'close',
+  'status',
+  'drift',
+  'review-state',
+  'mcp',
+  'sync',
+] as const;
 
 export function usage(topic?: string): string {
   if (topic === 'init') {
     return 'Usage: method init [path]\n\nScaffold a METHOD workspace in the given directory.';
   }
   if (topic === 'doctor') {
-    return [
-      'Usage: method doctor [--json]',
-      '',
-      'Inspect METHOD workspace health without mutating it.',
-    ].join('\n');
+    return ['Usage: method doctor [--json]', '', 'Inspect METHOD workspace health without mutating it.'].join('\n');
   }
   if (topic === 'migrate') {
-    return [
-      'Usage: method migrate [--json]',
-      '',
-      'Run doctor, apply the bounded repair set, then re-check the workspace.',
-    ].join('\n');
+    return ['Usage: method migrate [--json]', '', 'Run doctor, apply the bounded repair set, then re-check the workspace.'].join('\n');
   }
   if (topic === 'inbox') {
     return 'Usage: method inbox <idea> [--legend CODE] [--title TITLE] [--body-file PATH] [--source TEXT] [--captured-at YYYY-MM-DD] [--json]\n\nCapture raw input in docs/method/backlog/inbox/.';
@@ -161,11 +224,7 @@ export function usage(topic?: string): string {
     ].join('\n');
   }
   if (topic === 'backlog-move') {
-    return [
-      'Usage: method backlog move <item> --to LANE [--json]',
-      '',
-      'Move a live backlog note into another backlog lane.',
-    ].join('\n');
+    return ['Usage: method backlog move <item> --to LANE [--json]', '', 'Move a live backlog note into another backlog lane.'].join('\n');
   }
   if (topic === 'backlog-edit') {
     return [
@@ -702,28 +761,32 @@ function parseBacklogListArgs(args: readonly string[]): ParsedCommand {
     }
     if (value === '--ready') {
       if (ready === false) {
-        throw new MethodError('Cannot combine `--ready` with `--blocked`.\n\n' + usage('backlog-list'));
+        throw new MethodError(`Cannot combine \`--ready\` with \`--blocked\`.\n\n${usage('backlog-list')}`);
       }
       ready = true;
       continue;
     }
     if (value === '--blocked') {
       if (ready === true) {
-        throw new MethodError('Cannot combine `--ready` with `--blocked`.\n\n' + usage('backlog-list'));
+        throw new MethodError(`Cannot combine \`--ready\` with \`--blocked\`.\n\n${usage('backlog-list')}`);
       }
       ready = false;
       continue;
     }
     if (value === '--has-acceptance-criteria') {
       if (hasAcceptanceCriteria === false) {
-        throw new MethodError('Cannot combine `--has-acceptance-criteria` with `--missing-acceptance-criteria`.\n\n' + usage('backlog-list'));
+        throw new MethodError(
+          `Cannot combine \`--has-acceptance-criteria\` with \`--missing-acceptance-criteria\`.\n\n${usage('backlog-list')}`,
+        );
       }
       hasAcceptanceCriteria = true;
       continue;
     }
     if (value === '--missing-acceptance-criteria') {
       if (hasAcceptanceCriteria === true) {
-        throw new MethodError('Cannot combine `--has-acceptance-criteria` with `--missing-acceptance-criteria`.\n\n' + usage('backlog-list'));
+        throw new MethodError(
+          `Cannot combine \`--has-acceptance-criteria\` with \`--missing-acceptance-criteria\`.\n\n${usage('backlog-list')}`,
+        );
       }
       hasAcceptanceCriteria = false;
       continue;
@@ -771,7 +834,21 @@ function parseBacklogListArgs(args: readonly string[]): ParsedCommand {
     throw new MethodError(`Unknown option: ${value}\n\n${usage('backlog-list')}`);
   }
 
-  return { command: 'backlog-list', lane, legend, priority, keyword, owner, ready, hasAcceptanceCriteria, blockedBy, blocks, sort, limit, json };
+  return {
+    command: 'backlog-list',
+    lane,
+    legend,
+    priority,
+    keyword,
+    owner,
+    ready,
+    hasAcceptanceCriteria,
+    blockedBy,
+    blocks,
+    sort,
+    limit,
+    json,
+  };
 }
 
 function parseBacklogDepsArgs(args: readonly string[]): ParsedCommand {
@@ -803,10 +880,10 @@ function parseBacklogDepsArgs(args: readonly string[]): ParsedCommand {
     throw new MethodError(usage('backlog-deps'));
   }
   if (readyOnly && (criticalPath || positionals.length > 0)) {
-    throw new MethodError('`method backlog deps --ready` does not accept an item or `--critical-path`.\n\n' + usage('backlog-deps'));
+    throw new MethodError(`\`method backlog deps --ready\` does not accept an item or \`--critical-path\`.\n\n${usage('backlog-deps')}`);
   }
   if (criticalPath && positionals.length !== 1) {
-    throw new MethodError('`--critical-path` requires exactly one backlog item.\n\n' + usage('backlog-deps'));
+    throw new MethodError(`\`--critical-path\` requires exactly one backlog item.\n\n${usage('backlog-deps')}`);
   }
 
   return {

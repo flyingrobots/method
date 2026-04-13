@@ -1,11 +1,18 @@
+import { relative } from 'node:path';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { relative } from 'node:path';
-import { Workspace } from './index.js';
 import { GitHubAdapter, type GitHubSyncResult } from './adapters/github.js';
-import { renderDoctorMigrateText, renderDoctorRepairText, renderDoctorText, runDoctor, runDoctorMigrate, runDoctorRepair } from './doctor.js';
+import {
+  renderDoctorMigrateText,
+  renderDoctorRepairText,
+  renderDoctorText,
+  runDoctor,
+  runDoctorMigrate,
+  runDoctorRepair,
+} from './doctor.js';
 import type { Cycle, Outcome, WorkspaceStatus } from './domain.js';
-import { queryReviewState, renderReviewStateText, type ReviewStateQueryOptions } from './review-state.js';
+import { Workspace } from './index.js';
+import { queryReviewState, type ReviewStateQueryOptions, renderReviewStateText } from './review-state.js';
 
 const workspaceProperty = { workspace: { type: 'string' as const, description: 'Absolute path to the METHOD workspace root directory' } };
 
@@ -30,7 +37,8 @@ export interface McpToolDef {
 export const MCP_TOOLS: McpToolDef[] = [
   {
     name: 'method_doctor',
-    description: 'Inspect METHOD workspace health and report concrete problems with suggested fixes, even when the workspace is partially broken.',
+    description:
+      'Inspect METHOD workspace health and report concrete problems with suggested fixes, even when the workspace is partially broken.',
     inputSchema: {
       type: 'object',
       properties: { ...workspaceProperty },
@@ -44,7 +52,11 @@ export const MCP_TOOLS: McpToolDef[] = [
       type: 'object',
       properties: {
         ...workspaceProperty,
-        mode: { type: 'string', enum: ['plan', 'apply'], description: 'Whether to return a repair plan or apply the same bounded repair set.' },
+        mode: {
+          type: 'string',
+          enum: ['plan', 'apply'],
+          description: 'Whether to return a repair plan or apply the same bounded repair set.',
+        },
       },
       required: ['workspace', 'mode'],
     },
@@ -60,7 +72,8 @@ export const MCP_TOOLS: McpToolDef[] = [
   },
   {
     name: 'method_review_state',
-    description: 'Get PR review / merge-readiness state for the current branch or an explicit PR. `pr` and `currentBranch` are mutually exclusive; when `pr` is omitted, current-branch resolution is the default behavior.',
+    description:
+      'Get PR review / merge-readiness state for the current branch or an explicit PR. `pr` and `currentBranch` are mutually exclusive; when `pr` is omitted, current-branch resolution is the default behavior.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -78,7 +91,10 @@ export const MCP_TOOLS: McpToolDef[] = [
       type: 'object',
       properties: {
         ...workspaceProperty,
-        summary: { type: 'boolean', description: 'Return a compact structured summary instead of the fully expanded workspace status (default: false)' },
+        summary: {
+          type: 'boolean',
+          description: 'Return a compact structured summary instead of the fully expanded workspace status (default: false)',
+        },
       },
       required: ['workspace'],
     },
@@ -152,7 +168,8 @@ export const MCP_TOOLS: McpToolDef[] = [
   },
   {
     name: 'method_backlog_query',
-    description: 'Enumerate live backlog items as structured data with explicit frontmatter metadata such as owner, priority, keywords, and declared dependency refs.',
+    description:
+      'Enumerate live backlog items as structured data with explicit frontmatter metadata such as owner, priority, keywords, and declared dependency refs.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -162,7 +179,10 @@ export const MCP_TOOLS: McpToolDef[] = [
         priority: { type: 'string', description: 'Optional priority filter such as `medium`.' },
         keyword: { type: 'string', description: 'Optional explicit frontmatter keyword filter.' },
         owner: { type: 'string', description: 'Optional explicit frontmatter owner filter.' },
-        ready: { type: 'boolean', description: 'Optional readiness filter. `true` returns items without declared `blocked_by` refs; `false` returns blocked items.' },
+        ready: {
+          type: 'boolean',
+          description: 'Optional readiness filter. `true` returns items without declared `blocked_by` refs; `false` returns blocked items.',
+        },
         hasAcceptanceCriteria: { type: 'boolean', description: 'Optional acceptance-criteria presence filter.' },
         blockedBy: { type: 'string', description: 'Optional declared `blocked_by` reference filter.' },
         blocks: { type: 'string', description: 'Optional declared `blocks` reference filter.' },
@@ -174,21 +194,26 @@ export const MCP_TOOLS: McpToolDef[] = [
   },
   {
     name: 'method_backlog_dependencies',
-    description: 'Return the live backlog dependency graph from `blocked_by` / `blocks` frontmatter, optionally focusing on one item, ready work, or the critical path.',
+    description:
+      'Return the live backlog dependency graph from `blocked_by` / `blocks` frontmatter, optionally focusing on one item, ready work, or the critical path.',
     inputSchema: {
       type: 'object',
       properties: {
         ...workspaceProperty,
         item: { type: 'string', description: 'Optional backlog path, stem, or slug to focus on.' },
         readyOnly: { type: 'boolean', description: 'When true, request the unblocked layer-0 backlog items.' },
-        criticalPath: { type: 'boolean', description: 'When true, include the longest blocker chain to the focused item. Requires `item`.' },
+        criticalPath: {
+          type: 'boolean',
+          description: 'When true, include the longest blocker chain to the focused item. Requires `item`.',
+        },
       },
       required: ['workspace'],
     },
   },
   {
     name: 'method_next_work',
-    description: 'Return a bounded advisory menu of sensible next backlog items using lane order, declared frontmatter, dependency readiness, current status, and literal BEARING mentions.',
+    description:
+      'Return a bounded advisory menu of sensible next backlog items using lane order, declared frontmatter, dependency readiness, current status, and literal BEARING mentions.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -256,7 +281,8 @@ export const MCP_TOOLS: McpToolDef[] = [
   },
   {
     name: 'method_pull',
-    description: 'Promote a backlog item into a new cycle packet, using release-scoped paths when the backlog item carries release metadata.',
+    description:
+      'Promote a backlog item into a new cycle packet, using release-scoped paths when the backlog item carries release metadata.',
     inputSchema: { type: 'object', properties: { ...workspaceProperty, item: { type: 'string' } }, required: ['workspace', 'item'] },
   },
   {
@@ -313,10 +339,7 @@ export interface CreateMcpServerOptions {
 }
 
 export function createMcpServer(options: CreateMcpServerOptions = {}) {
-  const server = new Server(
-    { name: 'method', version: '0.3.0' },
-    { capabilities: { tools: {} } }
-  );
+  const server = new Server({ name: 'method', version: '0.3.0' }, { capabilities: { tools: {} } });
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return { tools: MCP_TOOLS };
@@ -332,29 +355,17 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
 
       if (request.params.name === 'method_doctor') {
         const report = runDoctor(workspacePath);
-        return successResult(
-          'method_doctor',
-          renderDoctorText(report),
-          report,
-        );
+        return successResult('method_doctor', renderDoctorText(report), report);
       }
 
       if (request.params.name === 'method_repair') {
         const result = runDoctorRepair(workspacePath, validateRepairMode(args.mode));
-        return successResult(
-          'method_repair',
-          renderDoctorRepairText(result),
-          result,
-        );
+        return successResult('method_repair', renderDoctorRepairText(result), result);
       }
 
       if (request.params.name === 'method_migrate') {
         const result = runDoctorMigrate(workspacePath);
-        return successResult(
-          'method_migrate',
-          renderDoctorMigrateText(result),
-          result,
-        );
+        return successResult('method_migrate', renderDoctorMigrateText(result), result);
       }
 
       const workspace = new Workspace(workspacePath);
@@ -393,11 +404,7 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
           pr,
           currentBranch,
         });
-        return successResult(
-          'method_review_state',
-          renderReviewStateText(result),
-          result,
-        );
+        return successResult('method_review_state', renderReviewStateText(result), result);
       }
 
       if (request.params.name === 'method_status') {
@@ -405,17 +412,9 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
         const summary = validateOptionalBoolean(args.summary, 'summary') ?? false;
         if (summary) {
           const summaryResult = summarizeStatus(status, workspace.closedCycles());
-          return successResult(
-            'method_status',
-            renderStatusSummaryText(summaryResult),
-            { mode: 'summary', summary: summaryResult },
-          );
+          return successResult('method_status', renderStatusSummaryText(summaryResult), { mode: 'summary', summary: summaryResult });
         }
-        return successResult(
-          'method_status',
-          `Returned full workspace status for ${workspace.root}.`,
-          { mode: 'full', status },
-        );
+        return successResult('method_status', `Returned full workspace status for ${workspace.root}.`, { mode: 'full', status });
       }
 
       if (request.params.name === 'method_inbox') {
@@ -431,11 +430,7 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
         );
         const relativePath = relative(workspace.root, path);
         const persistedItem = workspace.describeBacklogPath(relativePath);
-        return successResult(
-          'method_inbox',
-          `Captured to ${relativePath}`,
-          persistedItem,
-        );
+        return successResult('method_inbox', `Captured to ${relativePath}`, persistedItem);
       }
 
       if (request.params.name === 'method_spike') {
@@ -445,11 +440,7 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
         const path = workspace.captureSpike(goal, title, constraints);
         const relativePath = relative(workspace.root, path);
         const persistedItem = workspace.describeBacklogPath(relativePath);
-        return successResult(
-          'method_spike',
-          `Captured spike to ${relativePath}`,
-          persistedItem,
-        );
+        return successResult('method_spike', `Captured spike to ${relativePath}`, persistedItem);
       }
 
       if (request.params.name === 'method_backlog_add') {
@@ -461,28 +452,17 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
         });
         const relativePath = relative(workspace.root, path);
         const persistedItem = workspace.describeBacklogPath(relativePath);
-        return successResult(
-          'method_backlog_add',
-          `Created ${relativePath}`,
-          persistedItem,
-        );
+        return successResult('method_backlog_add', `Created ${relativePath}`, persistedItem);
       }
 
       if (request.params.name === 'method_backlog_move') {
         const sourcePath = workspace.resolveBacklogPath(validateString(args.item, 'item'));
-        const destinationPath = workspace.moveBacklogItem(
-          sourcePath,
-          validateString(args.to, 'to'),
-        );
+        const destinationPath = workspace.moveBacklogItem(sourcePath, validateString(args.to, 'to'));
         const persistedItem = workspace.describeBacklogPath(destinationPath);
-        return successResult(
-          'method_backlog_move',
-          `Moved ${sourcePath} to ${destinationPath}`,
-          {
-            sourcePath,
-            ...persistedItem,
-          },
-        );
+        return successResult('method_backlog_move', `Moved ${sourcePath} to ${destinationPath}`, {
+          sourcePath,
+          ...persistedItem,
+        });
       }
 
       if (request.params.name === 'method_backlog_edit') {
@@ -498,11 +478,7 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
           blocks: validateOptionalStringArray(args.blocks, 'blocks'),
           clearBlocks: validateOptionalBoolean(args.clearBlocks, 'clearBlocks'),
         });
-        return successResult(
-          'method_backlog_edit',
-          summarizeBacklogEdit(result),
-          result,
-        );
+        return successResult('method_backlog_edit', summarizeBacklogEdit(result), result);
       }
 
       if (request.params.name === 'method_backlog_query') {
@@ -523,11 +499,7 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
           sort: validateOptionalString(args.sort, 'sort'),
           limit,
         });
-        return successResult(
-          'method_backlog_query',
-          summarizeBacklogQuery(result),
-          result,
-        );
+        return successResult('method_backlog_query', summarizeBacklogQuery(result), result);
       }
 
       if (request.params.name === 'method_backlog_dependencies') {
@@ -544,11 +516,7 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
           throw new Error('method_backlog_dependencies requires item when criticalPath is true.');
         }
         const result = workspace.backlogDependencies({ item, readyOnly, criticalPath });
-        return successResult(
-          'method_backlog_dependencies',
-          summarizeBacklogDependencies(result),
-          result,
-        );
+        return successResult('method_backlog_dependencies', summarizeBacklogDependencies(result), result);
       }
 
       if (request.params.name === 'method_next_work') {
@@ -565,11 +533,7 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
           includeBlocked: validateOptionalBoolean(args.includeBlocked, 'includeBlocked'),
           limit,
         });
-        return successResult(
-          'method_next_work',
-          summarizeNextWork(result),
-          result,
-        );
+        return successResult('method_next_work', summarizeNextWork(result), result);
       }
 
       if (request.params.name === 'method_retire') {
@@ -591,13 +555,9 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
       if (request.params.name === 'method_pull') {
         const item = validateString(args.item, 'item');
         const cycle = workspace.pullItem(item);
-        return successResult(
-          'method_pull',
-          `Pulled into ${cycle.name}`,
-          {
-            cycle: relativizeCycle(workspace, cycle),
-          },
-        );
+        return successResult('method_pull', `Pulled into ${cycle.name}`, {
+          cycle: relativizeCycle(workspace, cycle),
+        });
       }
 
       if (request.params.name === 'method_drift') {
@@ -618,43 +578,27 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
         const cycleName = validateOptionalString(args.cycle, 'cycle');
         const driftCheck = validateBoolean(args.driftCheck, 'driftCheck');
         const outcome = validateOutcome(args.outcome);
-        const cycle = await workspace.closeCycle(
-          cycleName,
-          driftCheck,
-          outcome,
-        );
-        return successResult(
-          'method_close',
-          `Closed ${cycle.name}`,
-          {
-            cycle: relativizeCycle(workspace, cycle),
-          },
-        );
+        const cycle = await workspace.closeCycle(cycleName, driftCheck, outcome);
+        return successResult('method_close', `Closed ${cycle.name}`, {
+          cycle: relativizeCycle(workspace, cycle),
+        });
       }
 
       if (request.params.name === 'method_sync_ship') {
         const result = await workspace.shipSync();
         const newShips = result.newShips.map((cycle) => relativizeCycle(workspace, cycle));
-        const text = result.newShips.length === 0
-          ? 'No new ships.'
-          : `Shipped ${result.newShips.map((cycle) => cycle.name).join(', ')}`;
-        return successResult(
-          'method_sync_ship',
-          text,
-          {
-            updated: result.updated,
-            newShips,
-          },
-        );
+        const text = result.newShips.length === 0 ? 'No new ships.' : `Shipped ${result.newShips.map((cycle) => cycle.name).join(', ')}`;
+        return successResult('method_sync_ship', text, {
+          updated: result.updated,
+          newShips,
+        });
       }
 
       if (request.params.name === 'method_sync_refs') {
         const result = workspace.syncRefs();
         return successResult(
           'method_sync_refs',
-          result.targets.length === 0
-            ? 'No generated reference targets.'
-            : `Refreshed ${result.targets.join(', ')}`,
+          result.targets.length === 0 ? 'No generated reference targets.' : `Refreshed ${result.targets.join(', ')}`,
           result,
         );
       }
@@ -685,7 +629,7 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
         if (!token) {
           throw new Error('GitHub token missing in .method.json or environment.');
         }
-        if (!repoFull || !repoFull.includes('/')) {
+        if (!repoFull?.includes('/')) {
           throw new Error('GitHub repo invalid; must be owner/repo in .method.json or environment.');
         }
 
@@ -728,11 +672,7 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
         const witnessTarget = validateOptionalString(args.cycle, 'cycle');
         const path = await workspace.captureWitness(witnessTarget);
         const relativePath = relative(workspace.root, path);
-        return successResult(
-          'method_capture_witness',
-          `Captured witness to ${relativePath}`,
-          { path: relativePath },
-        );
+        return successResult('method_capture_witness', `Captured witness to ${relativePath}`, { path: relativePath });
       }
 
       throw new Error(`Unknown tool: ${request.params.name}`);
@@ -746,9 +686,7 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
 }
 
 function summarizeStatus(status: WorkspaceStatus, closedCycles: Cycle[]): McpStatusSummary {
-  const laneCounts = Object.fromEntries(
-    Object.entries(status.backlog).map(([lane, items]) => [lane, items.length]),
-  );
+  const laneCounts = Object.fromEntries(Object.entries(status.backlog).map(([lane, items]) => [lane, items.length]));
 
   return {
     root: status.root,
@@ -763,14 +701,11 @@ function renderStatusSummaryText(summary: McpStatusSummary): string {
   const laneCounts = Object.entries(summary.laneCounts)
     .map(([lane, count]) => `${lane}=${count}`)
     .join(', ');
-  const activeCycles = summary.activeCycles.length === 0
-    ? '-'
-    : summary.activeCycles.map((cycle) => cycle.name).join(', ');
-  const legendHealth = summary.legendHealth.length === 0
-    ? '-'
-    : summary.legendHealth
-      .map(({ legend, backlog, active }) => `${legend} backlog=${backlog} active=${active}`)
-      .join('; ');
+  const activeCycles = summary.activeCycles.length === 0 ? '-' : summary.activeCycles.map((cycle) => cycle.name).join(', ');
+  const legendHealth =
+    summary.legendHealth.length === 0
+      ? '-'
+      : summary.legendHealth.map(({ legend, backlog, active }) => `${legend} backlog=${backlog} active=${active}`).join('; ');
   return [
     `Status summary for ${summary.root}.`,
     `Lane counts: ${laneCounts}`,
@@ -801,7 +736,18 @@ function summarizeBacklogQuery(result: {
   returnedCount: number;
   totalCount: number;
   truncated: boolean;
-  filters: { lane?: string; legend?: string; priority?: string; keyword?: string; owner?: string; ready?: boolean; hasAcceptanceCriteria?: boolean; blockedBy?: string; blocks?: string; sort: string };
+  filters: {
+    lane?: string;
+    legend?: string;
+    priority?: string;
+    keyword?: string;
+    owner?: string;
+    ready?: boolean;
+    hasAcceptanceCriteria?: boolean;
+    blockedBy?: string;
+    blocks?: string;
+    sort: string;
+  };
 }): string {
   const filters = [
     result.filters.lane === undefined ? undefined : `lane=${result.filters.lane}`,
@@ -819,10 +765,7 @@ function summarizeBacklogQuery(result: {
   return `${prefix}: returned ${result.returnedCount} of ${result.totalCount} item(s)${result.truncated ? ' (truncated)' : ''}.`;
 }
 
-function summarizeBacklogEdit(result: {
-  stem: string;
-  updatedFields: string[];
-}): string {
+function summarizeBacklogEdit(result: { stem: string; updatedFields: string[] }): string {
   return `Updated backlog metadata on ${result.stem}: ${result.updatedFields.join(', ')}.`;
 }
 
@@ -833,9 +776,7 @@ function summarizeNextWork(result: {
   if (result.recommendations.length === 0) {
     return 'No next-work recommendations are currently available.';
   }
-  const summary = result.recommendations
-    .map((item) => `${item.title} (${item.lane}, ${item.scoreBand})`)
-    .join('; ');
+  const summary = result.recommendations.map((item) => `${item.title} (${item.lane}, ${item.scoreBand})`).join('; ');
   return `Next-work menu: ${summary}${result.selection_notes.length > 0 ? `. Notes: ${result.selection_notes[0]}` : ''}`;
 }
 
@@ -854,7 +795,10 @@ function summarizeBacklogDependencies(result: {
   }
   if (result.focus !== undefined) {
     if (result.query.criticalPath) {
-      return result.focus.criticalPathReason ?? `Critical path to ${result.focus.item.stem}: ${result.focus.criticalPath.map((item) => item.stem).join(' -> ')}`;
+      return (
+        result.focus.criticalPathReason ??
+        `Critical path to ${result.focus.item.stem}: ${result.focus.criticalPath.map((item) => item.stem).join(' -> ')}`
+      );
     }
     return `Dependency view for ${result.focus.item.stem}.`;
   }

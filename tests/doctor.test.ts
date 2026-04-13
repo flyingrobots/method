@@ -3,8 +3,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { initWorkspace } from '../src/index.js';
 import { runDoctor, runDoctorMigrate, runDoctorRepair } from '../src/doctor.js';
+import { initWorkspace } from '../src/index.js';
 
 const tempRoots: string[] = [];
 
@@ -28,17 +28,7 @@ describe('doctor engine', () => {
     writeFileSync(join(root, '.method.json'), JSON.stringify({ forge: 'invalid' }), 'utf8');
     writeFileSync(
       join(root, 'docs/method/backlog/PROCESS_orphan.md'),
-      [
-        '---',
-        'title: "Orphan"',
-        'legend: PROCESS',
-        'lane: inbox',
-        '---',
-        '',
-        '# Orphan',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Orphan"', 'legend: PROCESS', 'lane: inbox', '---', '', '# Orphan', '', 'Body'].join('\n'),
       'utf8',
     );
 
@@ -77,29 +67,31 @@ describe('doctor engine', () => {
     initWorkspace(root);
     rmSync(join(root, 'docs/design'), { recursive: true, force: true });
     rmSync(join(root, 'docs/method/release-runbook.md'), { recursive: true, force: true });
-    writeFileSync(
-      join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'),
-      '# Missing Frontmatter\n\nBody\n',
-      'utf8',
-    );
+    writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
 
     const report = runDoctor(root);
 
-    expect(report.issues).toContainEqual(expect.objectContaining({
-      code: 'missing-directory',
-      path: 'docs/design',
-      repair: { kind: 'create-directory', targetPath: 'docs/design' },
-    }));
-    expect(report.issues).toContainEqual(expect.objectContaining({
-      code: 'missing-file',
-      path: 'docs/method/release-runbook.md',
-      repair: { kind: 'restore-file', targetPath: 'docs/method/release-runbook.md' },
-    }));
-    expect(report.issues).toContainEqual(expect.objectContaining({
-      code: 'missing-frontmatter',
-      path: 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md',
-      repair: { kind: 'frontmatter-stub', targetPath: 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md' },
-    }));
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'missing-directory',
+        path: 'docs/design',
+        repair: { kind: 'create-directory', targetPath: 'docs/design' },
+      }),
+    );
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'missing-file',
+        path: 'docs/method/release-runbook.md',
+        repair: { kind: 'restore-file', targetPath: 'docs/method/release-runbook.md' },
+      }),
+    );
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'missing-frontmatter',
+        path: 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md',
+        repair: { kind: 'frontmatter-stub', targetPath: 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md' },
+      }),
+    );
   });
 
   it('skips path-based checks when malformed JSON makes the configured workspace paths unknowable.', () => {
@@ -108,10 +100,12 @@ describe('doctor engine', () => {
 
     const report = runDoctor(root);
 
-    expect(report.issues).toContainEqual(expect.objectContaining({
-      code: 'config-parse-failed',
-      check: 'config',
-    }));
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'config-parse-failed',
+        check: 'config',
+      }),
+    );
     expect(report.issues.some((issue) => issue.check === 'structure')).toBe(false);
     expect(report.issues.some((issue) => issue.check === 'frontmatter')).toBe(false);
     expect(report.issues.some((issue) => issue.check === 'backlog')).toBe(false);
@@ -128,14 +122,18 @@ describe('doctor engine', () => {
 
     const report = runDoctor(root);
 
-    expect(report.issues).not.toContainEqual(expect.objectContaining({
-      code: 'missing-frontmatter',
-      path: 'docs/method/backlog/inbox/PROCESS_windows-frontmatter.md',
-    }));
-    expect(report.issues).not.toContainEqual(expect.objectContaining({
-      code: 'unterminated-frontmatter',
-      path: 'docs/method/backlog/inbox/PROCESS_windows-frontmatter.md',
-    }));
+    expect(report.issues).not.toContainEqual(
+      expect.objectContaining({
+        code: 'missing-frontmatter',
+        path: 'docs/method/backlog/inbox/PROCESS_windows-frontmatter.md',
+      }),
+    );
+    expect(report.issues).not.toContainEqual(
+      expect.objectContaining({
+        code: 'unterminated-frontmatter',
+        path: 'docs/method/backlog/inbox/PROCESS_windows-frontmatter.md',
+      }),
+    );
   });
 
   it('reports required path type mismatches instead of accepting any existing path as healthy.', () => {
@@ -148,14 +146,18 @@ describe('doctor engine', () => {
 
     const report = runDoctor(root);
 
-    expect(report.issues).toContainEqual(expect.objectContaining({
-      code: 'path-not-directory',
-      path: 'docs/design',
-    }));
-    expect(report.issues).toContainEqual(expect.objectContaining({
-      code: 'path-not-file',
-      path: 'CHANGELOG.md',
-    }));
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'path-not-directory',
+        path: 'docs/design',
+      }),
+    );
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'path-not-file',
+        path: 'CHANGELOG.md',
+      }),
+    );
   });
 
   it('treats absent empty backlog lane directories as acceptable and falls back to default git hook inspection.', () => {
@@ -167,17 +169,23 @@ describe('doctor engine', () => {
     const report = runDoctor(root);
 
     expect(report.status).toBe('warn');
-    expect(report.issues).not.toContainEqual(expect.objectContaining({
-      code: 'missing-directory',
-      path: 'docs/method/backlog/asap',
-    }));
-    expect(report.issues).toContainEqual(expect.objectContaining({
-      code: 'git-hooks-not-configured',
-      check: 'git-hooks',
-    }));
-    expect(report.issues).not.toContainEqual(expect.objectContaining({
-      code: 'git-hooks-unavailable',
-    }));
+    expect(report.issues).not.toContainEqual(
+      expect.objectContaining({
+        code: 'missing-directory',
+        path: 'docs/method/backlog/asap',
+      }),
+    );
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'git-hooks-not-configured',
+        check: 'git-hooks',
+      }),
+    );
+    expect(report.issues).not.toContainEqual(
+      expect.objectContaining({
+        code: 'git-hooks-unavailable',
+      }),
+    );
   });
 
   it('treats repo-defined backlog lanes such as `v1.1.0` as recognized lane directories.', () => {
@@ -186,26 +194,18 @@ describe('doctor engine', () => {
     mkdirSync(join(root, 'docs/method/backlog/v1.1.0'), { recursive: true });
     writeFileSync(
       join(root, 'docs/method/backlog/v1.1.0/PROCESS_release-scope.md'),
-      [
-        '---',
-        'title: "Release Scope"',
-        'legend: PROCESS',
-        'lane: v1.1.0',
-        '---',
-        '',
-        '# Release Scope',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Release Scope"', 'legend: PROCESS', 'lane: v1.1.0', '---', '', '# Release Scope', '', 'Body'].join('\n'),
       'utf8',
     );
 
     const report = runDoctor(root);
 
-    expect(report.issues).not.toContainEqual(expect.objectContaining({
-      code: 'orphaned-backlog-item',
-      path: 'docs/method/backlog/v1.1.0/PROCESS_release-scope.md',
-    }));
+    expect(report.issues).not.toContainEqual(
+      expect.objectContaining({
+        code: 'orphaned-backlog-item',
+        path: 'docs/method/backlog/v1.1.0/PROCESS_release-scope.md',
+      }),
+    );
   });
 
   it('reports a configured hooks path that exists as a file without collapsing to git-hooks-unavailable.', () => {
@@ -217,13 +217,17 @@ describe('doctor engine', () => {
 
     const report = runDoctor(root);
 
-    expect(report.issues).toContainEqual(expect.objectContaining({
-      code: 'git-hooks-not-directory',
-      path: 'hooks-file',
-    }));
-    expect(report.issues).not.toContainEqual(expect.objectContaining({
-      code: 'git-hooks-unavailable',
-    }));
+    expect(report.issues).toContainEqual(
+      expect.objectContaining({
+        code: 'git-hooks-not-directory',
+        path: 'hooks-file',
+      }),
+    );
+    expect(report.issues).not.toContainEqual(
+      expect.objectContaining({
+        code: 'git-hooks-unavailable',
+      }),
+    );
   });
 
   it('plans and applies the bounded doctor repair set without inventing new mutations outside the repair hints.', () => {
@@ -231,19 +235,11 @@ describe('doctor engine', () => {
     initWorkspace(root);
     rmSync(join(root, 'docs/design'), { recursive: true, force: true });
     rmSync(join(root, 'docs/method/release-runbook.md'), { recursive: true, force: true });
-    writeFileSync(
-      join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'),
-      '# Missing Frontmatter\n\nBody\n',
-      'utf8',
-    );
+    writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
 
     const plan = runDoctorRepair(root, 'plan');
     expect(plan.ok).toBe(true);
-    expect(plan.selectedIssues.map((issue) => issue.code)).toEqual([
-      'missing-directory',
-      'missing-file',
-      'missing-frontmatter',
-    ]);
+    expect(plan.selectedIssues.map((issue) => issue.code)).toEqual(['missing-directory', 'missing-file', 'missing-frontmatter']);
     expect(plan.repairs.map((repair) => repair.status)).toEqual(['planned', 'planned', 'planned']);
 
     const applied = runDoctorRepair(root, 'apply');
@@ -255,10 +251,16 @@ describe('doctor engine', () => {
       'docs/method/release-runbook.md',
     ]);
     expect(readFileSync(join(root, 'docs/method/release-runbook.md'), 'utf8')).toContain('# Release Runbook');
-    expect(readFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), 'utf8')).toMatch(/^---\ntitle: "Missing Frontmatter"\n---\n\n# Missing Frontmatter/mu);
+    expect(readFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), 'utf8')).toMatch(
+      /^---\ntitle: "Missing Frontmatter"\n---\n\n# Missing Frontmatter/mu,
+    );
     expect(applied.unresolvedIssues).not.toContainEqual(expect.objectContaining({ code: 'missing-directory', path: 'docs/design' }));
-    expect(applied.unresolvedIssues).not.toContainEqual(expect.objectContaining({ code: 'missing-file', path: 'docs/method/release-runbook.md' }));
-    expect(applied.unresolvedIssues).not.toContainEqual(expect.objectContaining({ code: 'missing-frontmatter', path: 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md' }));
+    expect(applied.unresolvedIssues).not.toContainEqual(
+      expect.objectContaining({ code: 'missing-file', path: 'docs/method/release-runbook.md' }),
+    );
+    expect(applied.unresolvedIssues).not.toContainEqual(
+      expect.objectContaining({ code: 'missing-frontmatter', path: 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md' }),
+    );
   });
 
   it('Does `method doctor` detect legacy nested design doc directories and offer to flatten them?', () => {
@@ -306,15 +308,7 @@ describe('doctor engine', () => {
     mkdirSync(join(root, 'docs/design/0001-method-cli'), { recursive: true });
     writeFileSync(
       join(root, 'docs/design/0001-method-cli/method-cli.md'),
-      [
-        '---',
-        'title: "Method CLI"',
-        'legend: "PROCESS"',
-        'cycle: "0001-method-cli"',
-        '---',
-        '',
-        '# Method CLI',
-      ].join('\n'),
+      ['---', 'title: "Method CLI"', 'legend: "PROCESS"', 'cycle: "0001-method-cli"', '---', '', '# Method CLI'].join('\n'),
       'utf8',
     );
 
@@ -332,15 +326,7 @@ describe('doctor engine', () => {
     mkdirSync(join(root, 'docs/design/0001-method-cli'), { recursive: true });
     writeFileSync(
       join(root, 'docs/design/0001-method-cli/method-cli.md'),
-      [
-        '---',
-        'title: "Method CLI"',
-        'legend: "PROCESS"',
-        'cycle: "0001-method-cli"',
-        '---',
-        '',
-        '# Method CLI',
-      ].join('\n'),
+      ['---', 'title: "Method CLI"', 'legend: "PROCESS"', 'cycle: "0001-method-cli"', '---', '', '# Method CLI'].join('\n'),
       'utf8',
     );
 
@@ -360,11 +346,7 @@ describe('doctor engine', () => {
     initWorkspace(root);
     rmSync(join(root, 'docs/design'), { recursive: true, force: true });
     rmSync(join(root, 'docs/method/release-runbook.md'), { recursive: true, force: true });
-    writeFileSync(
-      join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'),
-      '# Missing Frontmatter\n\nBody\n',
-      'utf8',
-    );
+    writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
 
     const result = runDoctorMigrate(root);
 
@@ -374,7 +356,11 @@ describe('doctor engine', () => {
     expect(result.repair.mode).toBe('apply');
     expect(result.repair.repairs.map((repair) => repair.status)).toEqual(['applied', 'applied', 'applied']);
     expect(result.finalReport.issues).not.toContainEqual(expect.objectContaining({ code: 'missing-directory', path: 'docs/design' }));
-    expect(result.finalReport.issues).not.toContainEqual(expect.objectContaining({ code: 'missing-file', path: 'docs/method/release-runbook.md' }));
-    expect(result.finalReport.issues).not.toContainEqual(expect.objectContaining({ code: 'missing-frontmatter', path: 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md' }));
+    expect(result.finalReport.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'missing-file', path: 'docs/method/release-runbook.md' }),
+    );
+    expect(result.finalReport.issues).not.toContainEqual(
+      expect.objectContaining({ code: 'missing-frontmatter', path: 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md' }),
+    );
   });
 });

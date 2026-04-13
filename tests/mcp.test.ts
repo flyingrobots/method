@@ -1,13 +1,13 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GitHubAdapter } from '../src/adapters/github.js';
 import { runCli } from '../src/cli.js';
-import { createMcpServer } from '../src/mcp.js';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { initWorkspace, Workspace } from '../src/index.js';
+import { createMcpServer } from '../src/mcp.js';
 import type { ReviewStateResult } from '../src/review-state.js';
 
 const tempRoots: string[] = [];
@@ -40,9 +40,7 @@ class MemoryWriter {
 }
 
 function createCallToolHarness(
-  options: {
-    reviewStateQuery?: (options: { cwd: string; pr?: number; currentBranch?: boolean }) => Promise<ReviewStateResult>;
-  } = {},
+  options: { reviewStateQuery?: (options: { cwd: string; pr?: number; currentBranch?: boolean }) => Promise<ReviewStateResult> } = {},
 ) {
   let callToolHandler: any;
   const mockServer = {
@@ -198,17 +196,7 @@ describe('MCP Server', () => {
     ensureBacklogLane(root, 'up-next');
     writeFileSync(
       join(root, 'docs/method/backlog/up-next/PROCESS_foundation.md'),
-      [
-        '---',
-        'title: "Foundation"',
-        'legend: PROCESS',
-        'lane: up-next',
-        '---',
-        '',
-        '# Foundation',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Foundation"', 'legend: PROCESS', 'lane: up-next', '---', '', '# Foundation', '', 'Body'].join('\n'),
       'utf8',
     );
     writeFileSync(
@@ -232,19 +220,9 @@ describe('MCP Server', () => {
     );
     writeFileSync(
       join(root, 'docs/method/backlog/up-next/PROCESS_finish.md'),
-      [
-        '---',
-        'title: "Finish"',
-        'legend: PROCESS',
-        'lane: up-next',
-        'blocked_by:',
-        '  - build',
-        '---',
-        '',
-        '# Finish',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Finish"', 'legend: PROCESS', 'lane: up-next', 'blocked_by:', '  - build', '---', '', '# Finish', '', 'Body'].join(
+        '\n',
+      ),
       'utf8',
     );
 
@@ -326,29 +304,32 @@ describe('MCP Server', () => {
     const callToolHandler = createCallToolHarness();
     const stdout = new MemoryWriter();
 
-    const cliExitCode = await runCli([
-      'backlog',
-      'list',
-      '--lane',
-      'up-next',
-      '--keyword',
-      'agent',
-      '--owner',
-      'METHOD maintainers',
-      '--blocked',
-      '--has-acceptance-criteria',
-      '--blocked-by',
-      'setup',
-      '--sort',
-      'priority',
-      '--limit',
-      '1',
-      '--json',
-    ], {
-      cwd: root,
-      stdout,
-      stderr: new MemoryWriter(),
-    });
+    const cliExitCode = await runCli(
+      [
+        'backlog',
+        'list',
+        '--lane',
+        'up-next',
+        '--keyword',
+        'agent',
+        '--owner',
+        'METHOD maintainers',
+        '--blocked',
+        '--has-acceptance-criteria',
+        '--blocked-by',
+        'setup',
+        '--sort',
+        'priority',
+        '--limit',
+        '1',
+        '--json',
+      ],
+      {
+        cwd: root,
+        stdout,
+        stderr: new MemoryWriter(),
+      },
+    );
     const mcpResult = await callToolHandler({
       params: {
         name: 'method_backlog_query',
@@ -380,45 +361,38 @@ describe('MCP Server', () => {
     ensureBacklogLane(root, 'up-next');
     writeFileSync(
       join(root, 'docs/method/backlog/up-next/PROCESS_metadata-edit.md'),
-      [
-        '---',
-        'title: "Metadata Edit"',
-        'legend: PROCESS',
-        'lane: up-next',
-        '---',
-        '',
-        '# Metadata Edit',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Metadata Edit"', 'legend: PROCESS', 'lane: up-next', '---', '', '# Metadata Edit', '', 'Body'].join('\n'),
       'utf8',
     );
 
     const callToolHandler = createCallToolHarness();
     const stdout = new MemoryWriter();
 
-    const cliExitCode = await runCli([
-      'backlog',
-      'edit',
-      'metadata-edit',
-      '--owner',
-      'Core Team',
-      '--priority',
-      'HIGH',
-      '--keyword',
-      'roadmap',
-      '--keyword',
-      'query',
-      '--blocked-by',
-      'setup',
-      '--blocks',
-      'finish',
-      '--json',
-    ], {
-      cwd: root,
-      stdout,
-      stderr: new MemoryWriter(),
-    });
+    const cliExitCode = await runCli(
+      [
+        'backlog',
+        'edit',
+        'metadata-edit',
+        '--owner',
+        'Core Team',
+        '--priority',
+        'HIGH',
+        '--keyword',
+        'roadmap',
+        '--keyword',
+        'query',
+        '--blocked-by',
+        'setup',
+        '--blocks',
+        'finish',
+        '--json',
+      ],
+      {
+        cwd: root,
+        stdout,
+        stderr: new MemoryWriter(),
+      },
+    );
     const mcpResult = await callToolHandler({
       params: {
         name: 'method_backlog_edit',
@@ -492,11 +466,14 @@ describe('MCP Server', () => {
       const callToolHandler = createCallToolHarness();
       const stdout = new MemoryWriter();
 
-      const cliExitCode = await runCli(['next', '--keyword', 'roadmap', '--owner', 'Core Team', '--include-blocked', '--limit', '3', '--json'], {
-        cwd: root,
-        stdout,
-        stderr: new MemoryWriter(),
-      });
+      const cliExitCode = await runCli(
+        ['next', '--keyword', 'roadmap', '--owner', 'Core Team', '--include-blocked', '--limit', '3', '--json'],
+        {
+          cwd: root,
+          stdout,
+          stderr: new MemoryWriter(),
+        },
+      );
       const mcpResult = await callToolHandler({
         params: {
           name: 'method_next_work',
@@ -526,11 +503,7 @@ describe('MCP Server', () => {
     initWorkspace(root);
     rmSync(join(root, 'docs/design'), { recursive: true, force: true });
     rmSync(join(root, 'docs/method/release-runbook.md'), { recursive: true, force: true });
-    writeFileSync(
-      join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'),
-      '# Missing Frontmatter\n\nBody\n',
-      'utf8',
-    );
+    writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
     const callToolHandler = createCallToolHarness();
 
     const plan = await callToolHandler({
@@ -546,7 +519,11 @@ describe('MCP Server', () => {
     expect(plan.isError).toBe(false);
     expect(plan.structuredContent.tool).toBe('method_repair');
     expect(plan.structuredContent.result.mode).toBe('plan');
-    expect(plan.structuredContent.result.repairs.map((repair: { status: string }) => repair.status)).toEqual(['planned', 'planned', 'planned']);
+    expect(plan.structuredContent.result.repairs.map((repair: { status: string }) => repair.status)).toEqual([
+      'planned',
+      'planned',
+      'planned',
+    ]);
 
     const applied = await callToolHandler({
       params: {
@@ -561,9 +538,15 @@ describe('MCP Server', () => {
     expect(applied.isError).toBe(false);
     expect(applied.structuredContent.tool).toBe('method_repair');
     expect(applied.structuredContent.result.mode).toBe('apply');
-    expect(applied.structuredContent.result.repairs.map((repair: { status: string }) => repair.status)).toEqual(['applied', 'applied', 'applied']);
+    expect(applied.structuredContent.result.repairs.map((repair: { status: string }) => repair.status)).toEqual([
+      'applied',
+      'applied',
+      'applied',
+    ]);
     expect(readFileSync(join(root, 'docs/method/release-runbook.md'), 'utf8')).toContain('# Release Runbook');
-    expect(readFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), 'utf8')).toMatch(/^---\ntitle: "Missing Frontmatter"\n---\n\n# Missing Frontmatter/mu);
+    expect(readFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), 'utf8')).toMatch(
+      /^---\ntitle: "Missing Frontmatter"\n---\n\n# Missing Frontmatter/mu,
+    );
   });
 
   it('Does `method_migrate` apply the bounded repair set and return both before/after doctor reports?', async () => {
@@ -571,11 +554,7 @@ describe('MCP Server', () => {
     initWorkspace(root);
     rmSync(join(root, 'docs/design'), { recursive: true, force: true });
     rmSync(join(root, 'docs/method/release-runbook.md'), { recursive: true, force: true });
-    writeFileSync(
-      join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'),
-      '# Missing Frontmatter\n\nBody\n',
-      'utf8',
-    );
+    writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
     const callToolHandler = createCallToolHarness();
 
     const result = await callToolHandler({
@@ -592,7 +571,11 @@ describe('MCP Server', () => {
     expect(result.structuredContent.result.changed).toBe(true);
     expect(result.structuredContent.result.initialReport.status).toBe('error');
     expect(result.structuredContent.result.repair.mode).toBe('apply');
-    expect(result.structuredContent.result.repair.repairs.map((repair: { status: string }) => repair.status)).toEqual(['applied', 'applied', 'applied']);
+    expect(result.structuredContent.result.repair.repairs.map((repair: { status: string }) => repair.status)).toEqual([
+      'applied',
+      'applied',
+      'applied',
+    ]);
     expect(readFileSync(join(root, 'docs/method/release-runbook.md'), 'utf8')).toContain('# Release Runbook');
   });
 
@@ -615,12 +598,7 @@ describe('MCP Server', () => {
 
     expect(result.isError).toBe(false);
     expect(result.structuredContent.tool).toBe('method_sync_refs');
-    expect(result.structuredContent.result.targets).toEqual([
-      'ARCHITECTURE.md',
-      'docs/CLI.md',
-      'docs/MCP.md',
-      'docs/GUIDE.md',
-    ]);
+    expect(result.structuredContent.result.targets).toEqual(['ARCHITECTURE.md', 'docs/CLI.md', 'docs/MCP.md', 'docs/GUIDE.md']);
     expect(result.content[0].text).toContain('Refreshed ARCHITECTURE.md, docs/CLI.md, docs/MCP.md, docs/GUIDE.md');
     expect(readFileSync(join(root, 'CHANGELOG.md'), 'utf8')).toBe(changelogBefore);
     expect(existsSync(bearingPath)).toBe(false);
@@ -848,18 +826,14 @@ describe('MCP Server', () => {
       expect(pullResult.isError).toBeFalsy();
       expect(pullResult.structuredContent.tool).toBe('method_pull');
       expect(pullResult.structuredContent.result.cycle.name).toBe('PROCESS_test-idea-from-mcp');
-      expect(pullResult.structuredContent.result.cycle.designDoc).toBe(
-        'docs/design/PROCESS_test-idea-from-mcp.md',
-      );
+      expect(pullResult.structuredContent.result.cycle.designDoc).toBe('docs/design/PROCESS_test-idea-from-mcp.md');
 
       const captureResult = await callToolHandler({
         params: { name: 'method_capture_witness', arguments: { workspace: root, cycle: 'PROCESS_test-idea-from-mcp' } },
       });
       expect(captureResult.isError).toBeFalsy();
       expect(captureResult.structuredContent.tool).toBe('method_capture_witness');
-      expect(captureResult.structuredContent.result.path).toBe(
-        'docs/method/retro/PROCESS_test-idea-from-mcp/witness/verification.md',
-      );
+      expect(captureResult.structuredContent.result.path).toBe('docs/method/retro/PROCESS_test-idea-from-mcp/witness/verification.md');
 
       const closeResult = await callToolHandler({
         params: {
@@ -943,17 +917,7 @@ describe('MCP Server', () => {
     initWorkspace(root);
     writeFileSync(
       join(root, 'docs/method/backlog/inbox/PROCESS_move-me.md'),
-      [
-        '---',
-        'title: "Move Me"',
-        'legend: PROCESS',
-        'lane: inbox',
-        '---',
-        '',
-        '# Move Me',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Move Me"', 'legend: PROCESS', 'lane: inbox', '---', '', '# Move Me', '', 'Body'].join('\n'),
       'utf8',
     );
     const callToolHandler = createCallToolHarness();
@@ -1005,17 +969,7 @@ describe('MCP Server', () => {
     ensureBacklogLane(root, 'up-next');
     writeFileSync(
       join(root, 'docs/method/backlog/up-next/PROCESS_retire-me.md'),
-      [
-        '---',
-        'title: "Retire Me"',
-        'legend: PROCESS',
-        'lane: up-next',
-        '---',
-        '',
-        '# Retire Me',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Retire Me"', 'legend: PROCESS', 'lane: up-next', '---', '', '# Retire Me', '', 'Body'].join('\n'),
       'utf8',
     );
     const callToolHandler = createCallToolHarness();
@@ -1058,7 +1012,9 @@ describe('MCP Server', () => {
     expect(applied.structuredContent.result.sourcePath).toBe('docs/method/backlog/up-next/PROCESS_retire-me.md');
     expect(applied.structuredContent.result.graveyardPath).toBe('docs/method/graveyard/PROCESS_retire-me.md');
     expect(readFileSync(join(root, 'docs/method/graveyard/PROCESS_retire-me.md'), 'utf8')).toContain('## Disposition');
-    expect(readFileSync(join(root, 'docs/method/graveyard/PROCESS_retire-me.md'), 'utf8')).toContain('Replacement: `docs/design/0040-release-scope/release-scope.md`');
+    expect(readFileSync(join(root, 'docs/method/graveyard/PROCESS_retire-me.md'), 'utf8')).toContain(
+      'Replacement: `docs/design/0040-release-scope/release-scope.md`',
+    );
   });
 
   it('Do signpost MCP tools report expected signposts and initialize supported missing signposts?', async () => {
@@ -1078,12 +1034,14 @@ describe('MCP Server', () => {
     expect(status.isError).toBe(false);
     expect(status.structuredContent.tool).toBe('method_signpost_status');
     expect(status.structuredContent.result.missing).toContain('docs/BEARING.md');
-    expect(status.structuredContent.result.signposts).toContainEqual(expect.objectContaining({
-      name: 'BEARING',
-      path: 'docs/BEARING.md',
-      exists: false,
-      initable: true,
-    }));
+    expect(status.structuredContent.result.signposts).toContainEqual(
+      expect.objectContaining({
+        name: 'BEARING',
+        path: 'docs/BEARING.md',
+        exists: false,
+        initable: true,
+      }),
+    );
 
     const initialized = await callToolHandler({
       params: {
@@ -1129,7 +1087,9 @@ describe('MCP Server', () => {
     expect(result.structuredContent.result.title).toBe('Missing API Surfaces');
     expect(result.structuredContent.result.source).toBe('cross-repo usage');
     expect(result.structuredContent.result.captured_at).toBe('2026-04-11');
-    expect(readFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-api-surfaces.md'), 'utf8')).toContain('Observed while operating METHOD elsewhere.');
+    expect(readFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-api-surfaces.md'), 'utf8')).toContain(
+      'Observed while operating METHOD elsewhere.',
+    );
   });
 
   it('Does `method_pull` use release-scoped cycle packet paths when the backlog item carries release metadata?', async () => {
@@ -1156,9 +1116,7 @@ describe('MCP Server', () => {
 
     expect(result.isError).toBe(false);
     expect(result.structuredContent.tool).toBe('method_pull');
-    expect(result.structuredContent.result.cycle.designDoc).toBe(
-      'docs/releases/v2.4.5/design/PROCESS_release-scope.md',
-    );
+    expect(result.structuredContent.result.cycle.designDoc).toBe('docs/releases/v2.4.5/design/PROCESS_release-scope.md');
     expect(readFileSync(join(root, 'docs/releases/v2.4.5/design/PROCESS_release-scope.md'), 'utf8')).toContain('release: "v2.4.5"');
   });
 
@@ -1168,16 +1126,7 @@ describe('MCP Server', () => {
     const persistedPath = join(root, 'docs/method/backlog/inbox/PROCESS_tampered-legend.md');
     writeFileSync(
       persistedPath,
-      [
-        '---',
-        'title: Tampered Legend',
-        'lane: inbox',
-        'legend: foo-bar',
-        '---',
-        '',
-        'Body',
-        '',
-      ].join('\n'),
+      ['---', 'title: Tampered Legend', 'lane: inbox', 'legend: foo-bar', '---', '', 'Body', ''].join('\n'),
       'utf8',
     );
 
@@ -1284,11 +1233,7 @@ describe('MCP Server', () => {
   it('Does `method_sync_github` respect explicit false flags instead of treating them as omitted defaults?', async () => {
     const root = createTempRoot();
     initWorkspace(root);
-    writeFileSync(
-      join(root, '.method.json'),
-      JSON.stringify({ github_token: 'test-token', github_repo: 'owner/repo' }),
-      'utf8',
-    );
+    writeFileSync(join(root, '.method.json'), JSON.stringify({ github_token: 'test-token', github_repo: 'owner/repo' }), 'utf8');
 
     const pushBacklog = vi.spyOn(GitHubAdapter.prototype, 'pushBacklog').mockResolvedValue([]);
     const pullBacklog = vi.spyOn(GitHubAdapter.prototype, 'pullBacklog').mockResolvedValue([]);
@@ -1345,11 +1290,7 @@ describe('MCP Server', () => {
   it('Does `method_sync_github` reject non-boolean push and pull flags before touching GitHub?', async () => {
     const root = createTempRoot();
     initWorkspace(root);
-    writeFileSync(
-      join(root, '.method.json'),
-      JSON.stringify({ github_token: 'test-token', github_repo: 'owner/repo' }),
-      'utf8',
-    );
+    writeFileSync(join(root, '.method.json'), JSON.stringify({ github_token: 'test-token', github_repo: 'owner/repo' }), 'utf8');
 
     const pushBacklog = vi.spyOn(GitHubAdapter.prototype, 'pushBacklog').mockResolvedValue([]);
     const pullBacklog = vi.spyOn(GitHubAdapter.prototype, 'pullBacklog').mockResolvedValue([]);

@@ -48,10 +48,10 @@ describe('Automated Witness Capture', () => {
     workspace.captureIdea('Witness Test', 'PROCESS', 'Witness Test');
     const cycle = workspace.pullItem('PROCESS_witness-test');
     const expectedDrift = workspace.detectDrift(cycle.name).output.trim();
-    
+
     // No need to spy manually now, index.ts handles it via METHOD_TEST
     const witnessPath = await workspace.captureWitness(cycle.name);
-    
+
     expect(witnessPath).toContain('docs/method/retro/PROCESS_witness-test/witness/verification.md');
 
     const content = readFileSync(witnessPath, 'utf8');
@@ -114,7 +114,7 @@ describe('Automated Witness Capture', () => {
       driftResult: '\t drift output\n',
     });
 
-    expect(content).toMatch(/## Test Results\n\n```text\n  indented output\n\n```/u);
+    expect(content).toMatch(/## Test Results\n\n```text\n {2}indented output\n\n```/u);
     expect(content).toMatch(/## Drift Results\n\n```text\n\t drift output\n\n```/u);
   });
 

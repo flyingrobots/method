@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -101,7 +101,9 @@ describe('METHOD docs', () => {
     expect(readme).toContain('It is updated during ship sync after merge.');
     expect(readme).toContain('-> PR/review -> main');
     expect(process).toContain('METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loop.');
-    expect(process).toMatch(/6\.\s+Close the cycle packet with a retro in either[\s\S]*`docs\/method\/retro\/<cycle>\/<cycle>\.md`[\s\S]*`docs\/releases\/<version>\/retros\/<cycle>\/<cycle>\.md`[\s\S]*cycle carries release scope\./u);
+    expect(process).toMatch(
+      /6\.\s+Close the cycle packet with a retro in either[\s\S]*`docs\/method\/retro\/<cycle>\/<cycle>\.md`[\s\S]*`docs\/releases\/<version>\/retros\/<cycle>\/<cycle>\.md`[\s\S]*cycle carries release scope\./u,
+    );
     expect(process).toContain('7. Review the complete cycle packet on a branch or PR.');
     expect(process).toContain('8. After merge, update repo-level ship surfaces on `main` such as');
     expect(process).toContain('reflect merged `main` state, not branch-local closeout state.');
@@ -151,21 +153,29 @@ describe('METHOD docs', () => {
       if (!content.includes('## Sponsors')) continue;
 
       const sponsorsMatch = /## Sponsors\n\n- Human: (?<human>[\s\S]*?)\n- Agent: (?<agent>[\s\S]*?)(?=\n\n##|$)/u.exec(content);
-      
-      expect(sponsorsMatch, `${designPath} has a ## Sponsors heading but does not match the expected format:
+
+      expect(
+        sponsorsMatch,
+        `${designPath} has a ## Sponsors heading but does not match the expected format:
 - Human: Role
-- Agent: Role`).not.toBeNull();
+- Agent: Role`,
+      ).not.toBeNull();
 
       if (sponsorsMatch?.groups !== undefined) {
         const human = (sponsorsMatch.groups.human ?? '').trim();
         const agent = (sponsorsMatch.groups.agent ?? '').trim();
-        
-        for (const [label, name] of [['human', human], ['agent', agent]]) {
+
+        for (const [label, name] of [
+          ['human', human],
+          ['agent', agent],
+        ]) {
           expect(name, `${designPath} ${label} sponsor should not be TBD`).not.toBe('TBD');
           expect(name, `${designPath} ${label} sponsor should not be a literal name: ${name}`).not.toMatch(literalNames);
-          
+
           if (!name.includes(' ') && !name.includes('\n')) {
-            expect(name, `${designPath} ${label} sponsor should be a descriptive role, not a single name: ${name}`).not.toMatch(singleCapitalizedWord);
+            expect(name, `${designPath} ${label} sponsor should be a descriptive role, not a single name: ${name}`).not.toMatch(
+              singleCapitalizedWord,
+            );
           }
         }
       }
@@ -234,18 +244,11 @@ describe('METHOD docs', () => {
   });
 
   it('sanitizes personal absolute paths from committed verification witnesses', () => {
-    const witnesses = walkMarkdownFiles('docs/method/retro')
-      .filter((relativePath) => relativePath.includes('/witness/verification.md'));
+    const witnesses = walkMarkdownFiles('docs/method/retro').filter((relativePath) => relativePath.includes('/witness/verification.md'));
 
     expect(witnesses.length, 'expected at least one verification witness').toBeGreaterThan(0);
 
-    const personalPathPatterns = [
-      '/Users/',
-      '/home/',
-      '/root/',
-      '/mnt/',
-      'C:\\Users\\',
-    ];
+    const personalPathPatterns = ['/Users/', '/home/', '/root/', '/mnt/', 'C:\\Users\\'];
 
     for (const witnessPath of witnesses) {
       const content = readRepoFile(witnessPath);
@@ -530,7 +533,7 @@ describe('METHOD docs', () => {
     expect(vision).toContain('title: "METHOD - Executive Summary"');
     expect(vision).toMatch(/^provenance_level:\s+artifact_history$/mu);
     expect(vision).toMatch(/^source_files:\s*$/mu);
-    expect(vision).toMatch(/^  - \S+$/mu);
+    expect(vision).toMatch(/^ {2}- \S+$/mu);
   });
 
   it('The `generator` field identifies this cycle `0009`.', () => {
@@ -788,7 +791,9 @@ describe('METHOD docs', () => {
     expect(mcp).toMatch(/### `method_status`[\s\S]*- `summary` \(optional\) `boolean`/u);
     expect(mcp).toMatch(/Machine-readable callers should consume `structuredContent`\./u);
     expect(mcp).toMatch(/On success, `structuredContent` includes:[\s\S]*- `tool`[\s\S]*- `ok: true`[\s\S]*- `result`/u);
-    expect(mcp).toMatch(/On failure, tools set `isError: true` and `structuredContent` includes:[\s\S]*- `tool`[\s\S]*- `ok: false`[\s\S]*- `error\.message`/u);
+    expect(mcp).toMatch(
+      /On failure, tools set `isError: true` and `structuredContent` includes:[\s\S]*- `tool`[\s\S]*- `ok: false`[\s\S]*- `error\.message`/u,
+    );
 
     // README references both docs
     expect(readme).toContain('docs/CLI.md');

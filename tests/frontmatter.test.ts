@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -28,14 +28,14 @@ function writeDoc(root: string, name: string, frontmatter: string, body: string)
 describe('Typed frontmatter access', () => {
   it('Does `readTypedFrontmatter` preserve arrays, booleans, and numbers instead of collapsing them to strings?', () => {
     const root = createTempRoot();
-    const path = writeDoc(root, 'typed.md', [
-      'title: "Typed Test"',
-      'acceptance_criteria:',
-      '  - "First criterion"',
-      '  - "Second criterion"',
-      'ready: true',
-      'priority: 3',
-    ].join('\n'), '# Typed Test');
+    const path = writeDoc(
+      root,
+      'typed.md',
+      ['title: "Typed Test"', 'acceptance_criteria:', '  - "First criterion"', '  - "Second criterion"', 'ready: true', 'priority: 3'].join(
+        '\n',
+      ),
+      '# Typed Test',
+    );
 
     const fm = readTypedFrontmatter(path);
 
@@ -48,12 +48,12 @@ describe('Typed frontmatter access', () => {
 
   it('Does `updateTypedFrontmatter` reject type downgrades from array to string?', () => {
     const root = createTempRoot();
-    const path = writeDoc(root, 'downgrade.md', [
-      'title: "Downgrade Test"',
-      'acceptance_criteria:',
-      '  - "First"',
-      '  - "Second"',
-    ].join('\n'), '# Downgrade Test');
+    const path = writeDoc(
+      root,
+      'downgrade.md',
+      ['title: "Downgrade Test"', 'acceptance_criteria:', '  - "First"', '  - "Second"'].join('\n'),
+      '# Downgrade Test',
+    );
 
     expect(() => {
       updateTypedFrontmatter(path, { acceptance_criteria: 'collapsed string' });
@@ -62,10 +62,7 @@ describe('Typed frontmatter access', () => {
 
   it('Does `updateTypedFrontmatter` reject type downgrades from boolean to string?', () => {
     const root = createTempRoot();
-    const path = writeDoc(root, 'bool-downgrade.md', [
-      'title: "Bool Test"',
-      'ready: true',
-    ].join('\n'), '# Bool Test');
+    const path = writeDoc(root, 'bool-downgrade.md', ['title: "Bool Test"', 'ready: true'].join('\n'), '# Bool Test');
 
     expect(() => {
       updateTypedFrontmatter(path, { ready: 'yes' });
@@ -74,12 +71,12 @@ describe('Typed frontmatter access', () => {
 
   it('Does `updateTypedFrontmatter` allow same-type updates without error?', () => {
     const root = createTempRoot();
-    const path = writeDoc(root, 'same-type.md', [
-      'title: "Same Type"',
-      'acceptance_criteria:',
-      '  - "Old"',
-      'ready: false',
-    ].join('\n'), '# Same Type');
+    const path = writeDoc(
+      root,
+      'same-type.md',
+      ['title: "Same Type"', 'acceptance_criteria:', '  - "Old"', 'ready: false'].join('\n'),
+      '# Same Type',
+    );
 
     updateTypedFrontmatter(path, {
       acceptance_criteria: ['New', 'Criteria'],

@@ -1,9 +1,9 @@
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { detectWorkspaceDrift } from '../src/drift.js';
 import type { Cycle } from '../src/domain.js';
+import { detectWorkspaceDrift } from '../src/drift.js';
 
 const tempRoots: string[] = [];
 
@@ -69,12 +69,8 @@ describe('Drift Detection', () => {
 
   it('When a playback question has no exact match but a test description is close, the drift output shows the near-miss candidate.', () => {
     const root = createTempRoot();
-    const cycle = setupCycleWithQuestions(root, [
-      'The drift detector catches renamed test descriptions in the workspace test directory.',
-    ]);
-    setupTestFile(root, [
-      'The drift detector catches renamed test descriptions in the project test folder.',
-    ]);
+    const cycle = setupCycleWithQuestions(root, ['The drift detector catches renamed test descriptions in the workspace test directory.']);
+    setupTestFile(root, ['The drift detector catches renamed test descriptions in the project test folder.']);
 
     const report = detectWorkspaceDrift(root, [cycle]);
 
@@ -85,12 +81,8 @@ describe('Drift Detection', () => {
 
   it('Near-miss hints never change the pass/fail exit code. Drift with hints still exits 2.', () => {
     const root = createTempRoot();
-    const cycle = setupCycleWithQuestions(root, [
-      'The async executor handles timeouts gracefully.',
-    ]);
-    setupTestFile(root, [
-      'The async executor handles timeouts.',
-    ]);
+    const cycle = setupCycleWithQuestions(root, ['The async executor handles timeouts gracefully.']);
+    setupTestFile(root, ['The async executor handles timeouts.']);
 
     const report = detectWorkspaceDrift(root, [cycle]);
 
@@ -101,13 +93,8 @@ describe('Drift Detection', () => {
 
   it('When no test description is remotely close, no hint is shown.', () => {
     const root = createTempRoot();
-    const cycle = setupCycleWithQuestions(root, [
-      'The authentication module validates JWT tokens.',
-    ]);
-    setupTestFile(root, [
-      'renders a button with correct label',
-      'fetches data from the API endpoint',
-    ]);
+    const cycle = setupCycleWithQuestions(root, ['The authentication module validates JWT tokens.']);
+    setupTestFile(root, ['renders a button with correct label', 'fetches data from the API endpoint']);
 
     const report = detectWorkspaceDrift(root, [cycle]);
 
@@ -118,12 +105,8 @@ describe('Drift Detection', () => {
 
   it('detectWorkspaceDrift includes near-miss hints in the output for unmatched questions.', () => {
     const root = createTempRoot();
-    const cycle = setupCycleWithQuestions(root, [
-      'The backlog query returns items filtered by lane and sorted by priority rank.',
-    ]);
-    setupTestFile(root, [
-      'The backlog query returns items sorted by priority rank.',
-    ]);
+    const cycle = setupCycleWithQuestions(root, ['The backlog query returns items filtered by lane and sorted by priority rank.']);
+    setupTestFile(root, ['The backlog query returns items sorted by priority rank.']);
 
     const report = detectWorkspaceDrift(root, [cycle]);
 
@@ -134,12 +117,8 @@ describe('Drift Detection', () => {
   it('The similarity function is deterministic, requires no external dependencies, and uses normalized token overlap.', () => {
     const root = createTempRoot();
     // Run twice with same input — must produce identical output
-    const cycle = setupCycleWithQuestions(root, [
-      'The drift detector catches renamed tests.',
-    ]);
-    setupTestFile(root, [
-      'The drift detector catches renamed test descriptions.',
-    ]);
+    const cycle = setupCycleWithQuestions(root, ['The drift detector catches renamed tests.']);
+    setupTestFile(root, ['The drift detector catches renamed test descriptions.']);
 
     const report1 = detectWorkspaceDrift(root, [cycle]);
     const report2 = detectWorkspaceDrift(root, [cycle]);
@@ -158,12 +137,8 @@ describe('Drift Detection', () => {
 
   it('Does the drift detector respect configurable thresholds from `.method.json` instead of using hardcoded values?', () => {
     const root = createTempRoot();
-    const cycle = setupCycleWithQuestions(root, [
-      'The widget renders correctly on mobile.',
-    ]);
-    setupTestFile(root, [
-      'The widget renders correctly on desktop.',
-    ]);
+    const cycle = setupCycleWithQuestions(root, ['The widget renders correctly on mobile.']);
+    setupTestFile(root, ['The widget renders correctly on desktop.']);
 
     // With default thresholds, this is a near-miss (not a match)
     const defaultReport = detectWorkspaceDrift(root, [cycle]);
@@ -179,12 +154,8 @@ describe('Drift Detection', () => {
 
   it('Does the drift detector show the similarity score alongside near-miss hints?', () => {
     const root = createTempRoot();
-    const cycle = setupCycleWithQuestions(root, [
-      'The drift detector catches renamed test descriptions in the workspace test directory.',
-    ]);
-    setupTestFile(root, [
-      'The drift detector catches renamed test descriptions in the project test folder.',
-    ]);
+    const cycle = setupCycleWithQuestions(root, ['The drift detector catches renamed test descriptions in the workspace test directory.']);
+    setupTestFile(root, ['The drift detector catches renamed test descriptions in the project test folder.']);
 
     const report = detectWorkspaceDrift(root, [cycle]);
     expect(report.exitCode).toBe(2);
@@ -193,12 +164,8 @@ describe('Drift Detection', () => {
 
   it('Does the drift detector match question-form playback questions against statement-form test descriptions?', () => {
     const root = createTempRoot();
-    const cycle = setupCycleWithQuestions(root, [
-      'Does `method pull` create a flat design doc?',
-    ]);
-    setupTestFile(root, [
-      'method pull creates a flat design doc',
-    ]);
+    const cycle = setupCycleWithQuestions(root, ['Does `method pull` create a flat design doc?']);
+    setupTestFile(root, ['method pull creates a flat design doc']);
 
     const report = detectWorkspaceDrift(root, [cycle]);
     expect(report.exitCode).toBe(0);
@@ -206,12 +173,8 @@ describe('Drift Detection', () => {
 
   it('Does the drift detector match despite backtick differences between questions and test descriptions?', () => {
     const root = createTempRoot();
-    const cycle = setupCycleWithQuestions(root, [
-      'Does `readCycleFromDoc()` discover both flat and legacy nested design docs?',
-    ]);
-    setupTestFile(root, [
-      'Does readCycleFromDoc() discover both flat and legacy nested design docs?',
-    ]);
+    const cycle = setupCycleWithQuestions(root, ['Does `readCycleFromDoc()` discover both flat and legacy nested design docs?']);
+    setupTestFile(root, ['Does readCycleFromDoc() discover both flat and legacy nested design docs?']);
 
     const report = detectWorkspaceDrift(root, [cycle]);
     expect(report.exitCode).toBe(0);
@@ -222,9 +185,7 @@ describe('Drift Detection', () => {
     const cycle = setupCycleWithQuestions(root, [
       'Does `method doctor` detect legacy nested design doc directories and offer to flatten them?',
     ]);
-    setupTestFile(root, [
-      'Does method doctor detect legacy nested design doc directories and offer to flatten them',
-    ]);
+    setupTestFile(root, ['Does method doctor detect legacy nested design doc directories and offer to flatten them']);
 
     const report = detectWorkspaceDrift(root, [cycle]);
     // Only difference is backticks and trailing punctuation — should match semantically

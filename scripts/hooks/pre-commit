@@ -1,0 +1,3 @@
+#!/bin/sh
+# Pre-commit hook: lint must pass cleanly.
+npm run lint

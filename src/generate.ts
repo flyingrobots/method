@@ -17,20 +17,33 @@ export interface SignpostSpec {
 
 export const SIGNPOST_SPECS: readonly SignpostSpec[] = [
   { name: 'README', path: 'README.md', kind: 'Hand-authored', description: 'Core doctrine and filesystem shape.' },
-  { name: 'ARCHITECTURE', path: 'ARCHITECTURE.md', kind: 'Hybrid', description: 'How the source code is organized.', initStrategy: 'reference-doc' },
-  { name: 'BEARING', path: 'docs/BEARING.md', kind: 'Generated', description: 'Current direction and recent ships.', initStrategy: 'bearing' },
+  {
+    name: 'ARCHITECTURE',
+    path: 'ARCHITECTURE.md',
+    kind: 'Hybrid',
+    description: 'How the source code is organized.',
+    initStrategy: 'reference-doc',
+  },
+  {
+    name: 'BEARING',
+    path: 'docs/BEARING.md',
+    kind: 'Generated',
+    description: 'Current direction and recent ships.',
+    initStrategy: 'bearing',
+  },
   { name: 'VISION', path: 'docs/VISION.md', kind: 'Generated', description: 'Bounded executive synthesis.' },
   { name: 'CLI', path: 'docs/CLI.md', kind: 'Hybrid', description: 'CLI command reference.', initStrategy: 'reference-doc' },
   { name: 'MCP', path: 'docs/MCP.md', kind: 'Hybrid', description: 'MCP tool reference.', initStrategy: 'reference-doc' },
-  { name: 'GUIDE', path: 'docs/GUIDE.md', kind: 'Hybrid', description: 'Operator advice with generated sections.', initStrategy: 'reference-doc' },
+  {
+    name: 'GUIDE',
+    path: 'docs/GUIDE.md',
+    kind: 'Hybrid',
+    description: 'Operator advice with generated sections.',
+    initStrategy: 'reference-doc',
+  },
 ] as const;
 
-export const REFERENCE_DOC_TARGETS = [
-  'ARCHITECTURE.md',
-  'docs/CLI.md',
-  'docs/MCP.md',
-  'docs/GUIDE.md',
-] as const;
+export const REFERENCE_DOC_TARGETS = ['ARCHITECTURE.md', 'docs/CLI.md', 'docs/MCP.md', 'docs/GUIDE.md'] as const;
 
 const REFERENCE_DOC_TEMPLATES: Record<(typeof REFERENCE_DOC_TARGETS)[number], string> = {
   'ARCHITECTURE.md': [
@@ -142,10 +155,7 @@ const REFERENCE_DOC_TEMPLATES: Record<(typeof REFERENCE_DOC_TARGETS)[number], st
 
 const MARKER_PATTERN = /<!-- generate:(\S+) -->\n[\s\S]*?<!-- \/generate -->/gu;
 
-export function replaceGeneratedSections(
-  content: string,
-  generators: GeneratorRegistry,
-): string {
+export function replaceGeneratedSections(content: string, generators: GeneratorRegistry): string {
   return content.replace(MARKER_PATTERN, (match, name: string) => {
     const generator = generators[name];
     if (generator === undefined) {
@@ -163,7 +173,7 @@ export function createGenerators(root: string): GeneratorRegistry {
     'signpost-inventory': signpostInventoryGenerator,
     'source-layout': () => sourceLayoutGenerator(root),
     'test-summary': () => testSummaryGenerator(root),
-    'dependencies': () => dependenciesGenerator(root),
+    dependencies: () => dependenciesGenerator(root),
   };
 }
 
@@ -191,7 +201,10 @@ export function generateReferenceDocs(root: string): { targets: string[]; update
   return { targets, updated };
 }
 
-export function initializeReferenceDoc(root: string, target: (typeof REFERENCE_DOC_TARGETS)[number]): { path: string; initialized: boolean } {
+export function initializeReferenceDoc(
+  root: string,
+  target: (typeof REFERENCE_DOC_TARGETS)[number],
+): { path: string; initialized: boolean } {
   const signpostPath = resolve(root, target);
   if (existsSync(signpostPath)) {
     return { path: target, initialized: false };
@@ -210,11 +223,12 @@ export function resolveSignpostSpec(query: string): SignpostSpec | undefined {
   }
 
   const upper = normalized.toUpperCase();
-  return SIGNPOST_SPECS.find((spec) =>
-    spec.name === upper
-    || spec.path === normalized
-    || spec.path.toUpperCase() === upper
-    || spec.path.split('/').at(-1)?.toUpperCase() === upper
+  return SIGNPOST_SPECS.find(
+    (spec) =>
+      spec.name === upper ||
+      spec.path === normalized ||
+      spec.path.toUpperCase() === upper ||
+      spec.path.split('/').at(-1)?.toUpperCase() === upper,
   );
 }
 
@@ -223,7 +237,10 @@ export function cliCommandsGenerator(): string {
   for (const topic of CLI_TOPICS) {
     const text = usage(topic);
     const usageLine = text.split('\n')[0] ?? '';
-    const description = text.split('\n').slice(1).filter((l) => l.trim().length > 0);
+    const description = text
+      .split('\n')
+      .slice(1)
+      .filter((l) => l.trim().length > 0);
     lines.push(`### \`${usageLine.replace(/^Usage: /u, '')}\``);
     lines.push('');
     for (const line of description) {
@@ -252,8 +269,7 @@ export function mcpToolsGenerator(): string {
     lines.push(tool.description);
     lines.push('');
 
-    const params = Object.entries(tool.inputSchema.properties)
-      .filter(([key]) => key !== 'workspace');
+    const params = Object.entries(tool.inputSchema.properties).filter(([key]) => key !== 'workspace');
     const required = new Set(tool.inputSchema.required.filter((k) => k !== 'workspace'));
 
     if (params.length > 0) {
@@ -261,8 +277,8 @@ export function mcpToolsGenerator(): string {
       lines.push('');
       for (const [key, schema] of params) {
         const req = required.has(key) ? '(required)' : '(optional)';
-        const desc = ('description' in schema && schema.description) ? ` — ${schema.description}` : '';
-        const enumValues = ('enum' in schema && schema.enum) ? ` (${schema.enum.join(', ')})` : '';
+        const desc = 'description' in schema && schema.description ? ` — ${schema.description}` : '';
+        const enumValues = 'enum' in schema && schema.enum ? ` (${schema.enum.join(', ')})` : '';
         lines.push(`- \`${key}\` ${req} \`${schema.type}\`${enumValues}${desc}`);
       }
       lines.push('');

@@ -1,39 +1,31 @@
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  renameSync,
-  unlinkSync,
-  writeFileSync,
-} from 'node:fs';
 import { execFile } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { basename, dirname, isAbsolute, relative, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import GitPlumbing from '@git-stunts/plumbing';
-import { basename, dirname, isAbsolute, relative, resolve } from 'node:path';
+import { type Config, DEFAULT_PATHS, loadConfig, type PathsConfig } from './config.js';
+import { readCycleFromDoc, readCycleRelease, resolveCyclePacketPaths } from './cycle-ops.js';
 import {
-  type BacklogLane,
   type BacklogItem,
+  type BacklogLane,
   type BacklogQueryItem,
   type BacklogQueryResult,
   type BacklogQuerySort,
   type Cycle,
-  type Lane,
+  isLaneName,
+  isReleaseLane,
   LANES,
-  SCAFFOLD_LANES,
-  type NextWorkRecommendation,
+  type Lane,
+  type LegendHealth,
   type NextWorkResult,
   type NextWorkScoreBand,
   type NextWorkSignal,
-  orderedBacklogLaneNames,
-  isReleaseLane,
-  isLaneName,
-  type LegendHealth,
   type Outcome,
+  orderedBacklogLaneNames,
+  SCAFFOLD_LANES,
   type WorkspaceStatus,
 } from './domain.js';
-import { DEFAULT_PATHS, loadConfig, type Config, type PathsConfig } from './config.js';
-import { detectWorkspaceDrift, type DriftReport } from './drift.js';
+import { type DriftReport, detectWorkspaceDrift } from './drift.js';
 import { MethodError } from './errors.js';
 import {
   readBody as fmReadBody,
@@ -46,21 +38,7 @@ import {
 } from './frontmatter.js';
 import { generateReferenceDocs, initializeReferenceDoc, resolveSignpostSpec, SIGNPOST_SPECS } from './generate.js';
 import { renderBearing, renderDesignDoc, renderRetroDoc, renderWitnessDoc, titleCase } from './renderers.js';
-import {
-  CYCLE_NAME_PATTERN,
-  LEGACY_CYCLE_PATTERN,
-  readCycleFromDoc,
-  readCycleRelease,
-  resolveCyclePacketPaths,
-} from './cycle-ops.js';
-import {
-  assertWorkspacePath,
-  collectMarkdownFiles,
-  fileStem,
-  normalizeOptionalString,
-  normalizeRepoPath,
-  slugify,
-} from './workspace-utils.js';
+import { assertWorkspacePath, collectMarkdownFiles, fileStem, normalizeOptionalString, slugify } from './workspace-utils.js';
 
 export interface ResolvedPaths {
   backlog: string;
@@ -152,7 +130,10 @@ const LEGEND_PATTERN = /^(?<legend>[A-Z][A-Z0-9]*)_(?<slug>.+)$/;
 // CYCLE_NAME_PATTERN and LEGACY_CYCLE_PATTERN imported from ./cycle-ops.js
 const FEEDBACK_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
 
-export function workspaceScaffold(root: string, pathsConfig: PathsConfig = DEFAULT_PATHS): { directories: string[]; files: Map<string, string> } {
+export function workspaceScaffold(
+  root: string,
+  pathsConfig: PathsConfig = DEFAULT_PATHS,
+): { directories: string[]; files: Map<string, string> } {
   const p = resolvePaths(root, pathsConfig);
   return {
     directories: [
@@ -168,7 +149,10 @@ export function workspaceScaffold(root: string, pathsConfig: PathsConfig = DEFAU
       [resolve(root, 'CHANGELOG.md'), '# Changelog\n\n## Unreleased\n\n- No externally meaningful changes recorded yet.\n'],
       [resolve(p.methodDir, 'process.md'), '# Process\n\nDescribe how cycles run in this repository.\n'],
       [resolve(p.methodDir, 'release.md'), '# Release\n\nDescribe when and how externally meaningful releases ship.\n'],
-      [resolve(p.methodDir, 'release-runbook.md'), '# Release Runbook\n\nDescribe the sequential release pre-flight for this repository.\n'],
+      [
+        resolve(p.methodDir, 'release-runbook.md'),
+        '# Release Runbook\n\nDescribe the sequential release pre-flight for this repository.\n',
+      ],
       [resolve(p.methodDir, 'releases/README.md'), '# Release Packets\n\nStore internal release design and verification artifacts here.\n'],
       [resolve(root, 'docs/releases/README.md'), '# Releases\n\nStore user-facing release notes and migration guides here.\n'],
     ]),
@@ -273,9 +257,7 @@ export class Workspace {
     fmLines.push(`lane: ${lane}`, '---');
 
     const body = options.body?.trimEnd() ?? '';
-    const content = body.length === 0
-      ? `${fmLines.join('\n')}\n\n# ${heading}\n`
-      : `${fmLines.join('\n')}\n\n# ${heading}\n\n${body}\n`;
+    const content = body.length === 0 ? `${fmLines.join('\n')}\n\n# ${heading}\n` : `${fmLines.join('\n')}\n\n# ${heading}\n\n${body}\n`;
 
     writeFileSync(path, content, 'utf8');
     return path;
@@ -285,11 +267,16 @@ export class Workspace {
     return this.captureIdeaWithMetadata(idea, legend, title);
   }
 
-  captureIdeaWithMetadata(idea: string, legend?: string, title?: string, metadata?: {
-    source?: string;
-    capturedAt?: string;
-    body?: string;
-  }): string {
+  captureIdeaWithMetadata(
+    idea: string,
+    legend?: string,
+    title?: string,
+    metadata?: {
+      source?: string;
+      capturedAt?: string;
+      body?: string;
+    },
+  ): string {
     const cleanIdea = idea.trim();
     if (cleanIdea.length === 0) {
       throw new MethodError('Idea cannot be empty.');
@@ -412,14 +399,16 @@ export class Workspace {
   }
 
   signpostStatus() {
-    const signposts = SIGNPOST_SPECS.map((spec): SignpostStatusEntry => ({
-      name: spec.name,
-      path: spec.path,
-      kind: spec.kind,
-      description: spec.description,
-      exists: existsSync(resolve(this.root, spec.path)),
-      initable: spec.initStrategy !== undefined,
-    }));
+    const signposts = SIGNPOST_SPECS.map(
+      (spec): SignpostStatusEntry => ({
+        name: spec.name,
+        path: spec.path,
+        kind: spec.kind,
+        description: spec.description,
+        exists: existsSync(resolve(this.root, spec.path)),
+        initable: spec.initStrategy !== undefined,
+      }),
+    );
 
     return {
       root: this.root,
@@ -432,10 +421,18 @@ export class Workspace {
   async initSignpost(name: string) {
     const spec = resolveSignpostSpec(name);
     if (spec === undefined) {
-      throw new MethodError(`Unknown signpost ${JSON.stringify(name)}. Use one of: ${SIGNPOST_SPECS.map((entry) => entry.name).join(', ')}`);
+      throw new MethodError(
+        `Unknown signpost ${JSON.stringify(name)}. Use one of: ${SIGNPOST_SPECS.map((entry) => entry.name).join(', ')}`,
+      );
     }
     if (spec.initStrategy === undefined) {
-      throw new MethodError(`Signpost ${spec.name} is not initable. Current helpers support: ${SIGNPOST_SPECS.filter((entry) => entry.initStrategy !== undefined).map((entry) => entry.name).join(', ')}`);
+      throw new MethodError(
+        `Signpost ${spec.name} is not initable. Current helpers support: ${SIGNPOST_SPECS.filter(
+          (entry) => entry.initStrategy !== undefined,
+        )
+          .map((entry) => entry.name)
+          .join(', ')}`,
+      );
     }
     if (existsSync(resolve(this.root, spec.path))) {
       return {
@@ -549,19 +546,21 @@ export class Workspace {
     };
   }
 
-  backlogQuery(options: {
-    lane?: string;
-    legend?: string;
-    priority?: string;
-    keyword?: string;
-    owner?: string;
-    ready?: boolean;
-    hasAcceptanceCriteria?: boolean;
-    blockedBy?: string;
-    blocks?: string;
-    sort?: string;
-    limit?: number;
-  } = {}): BacklogQueryResult {
+  backlogQuery(
+    options: {
+      lane?: string;
+      legend?: string;
+      priority?: string;
+      keyword?: string;
+      owner?: string;
+      ready?: boolean;
+      hasAcceptanceCriteria?: boolean;
+      blockedBy?: string;
+      blocks?: string;
+      sort?: string;
+      limit?: number;
+    } = {},
+  ): BacklogQueryResult {
     const laneFilter = normalizeBacklogQueryLane(options.lane);
     const legendFilter = normalizeBacklogQueryLegend(options.legend);
     const priorityFilter = normalizeBacklogPriority(options.priority);
@@ -584,8 +583,7 @@ export class Workspace {
       hasAcceptanceCriteria: hasAcceptanceCriteriaFilter,
       blockedBy: blockedByFilter,
       blocks: blocksFilter,
-    })
-      .sort((left, right) => compareBacklogQueryItems(left, right, sortMode));
+    }).sort((left, right) => compareBacklogQueryItems(left, right, sortMode));
 
     const items = filtered.slice(0, limit);
     return {
@@ -610,15 +608,17 @@ export class Workspace {
     };
   }
 
-  nextWork(options: {
-    lane?: string;
-    legend?: string;
-    priority?: string;
-    keyword?: string;
-    owner?: string;
-    includeBlocked?: boolean;
-    limit?: number;
-  } = {}): NextWorkResult {
+  nextWork(
+    options: {
+      lane?: string;
+      legend?: string;
+      priority?: string;
+      keyword?: string;
+      owner?: string;
+      includeBlocked?: boolean;
+      limit?: number;
+    } = {},
+  ): NextWorkResult {
     const limit = normalizeNextWorkLimit(options.limit);
     const status = this.status();
     const laneFilter = normalizeBacklogQueryLane(options.lane);
@@ -641,9 +641,7 @@ export class Workspace {
     const baselineRanked = candidateItems
       .map((item) => rankNextWorkItem(item, status, { exists: false, priority: undefined, concerns: [], sections: [] }))
       .sort(compareRankedNextWorkItems);
-    const ranked = candidateItems
-      .map((item) => rankNextWorkItem(item, status, bearing))
-      .sort(compareRankedNextWorkItems);
+    const ranked = candidateItems.map((item) => rankNextWorkItem(item, status, bearing)).sort(compareRankedNextWorkItems);
     const top = ranked.slice(0, limit);
     const recommendations = top.map((entry, index, array) => ({
       path: entry.item.path,
@@ -656,7 +654,9 @@ export class Workspace {
     }));
     const selectionNotes: string[] = [];
     if (status.activeCycles.length > 0) {
-      selectionNotes.push(`An active cycle is already open (${status.activeCycles.map((cycle) => cycle.name).join(', ')}), so this menu is advisory rather than a pull directive.`);
+      selectionNotes.push(
+        `An active cycle is already open (${status.activeCycles.map((cycle) => cycle.name).join(', ')}), so this menu is advisory rather than a pull directive.`,
+      );
     }
     if (skippedBlockedCount > 0 && readyItems.length > 0) {
       selectionNotes.push(`Skipped ${skippedBlockedCount} blocked backlog item(s) because unblocked work is available.`);
@@ -695,11 +695,7 @@ export class Workspace {
     };
   }
 
-  backlogDependencies(options: {
-    item?: string;
-    readyOnly?: boolean;
-    criticalPath?: boolean;
-  } = {}): BacklogDependencyReport {
+  backlogDependencies(options: { item?: string; readyOnly?: boolean; criticalPath?: boolean } = {}): BacklogDependencyReport {
     const allBacklogItems = this.collectBacklogItems();
     const dependencyItems = allBacklogItems.map((item) => {
       const frontmatter = fmReadTypedFrontmatter(resolve(this.root, item.path));
@@ -744,17 +740,19 @@ export class Workspace {
       itemsByPath.get(edge.blocked)?.blockedBySet.add(edge.blocker);
     }
 
-    const finalizedItems = dependencyItems
-      .map((item) => finalizeDependencyItem(item))
-      .sort(compareBacklogPaths);
+    const finalizedItems = dependencyItems.map((item) => finalizeDependencyItem(item)).sort(compareBacklogPaths);
     const finalizedByPath = new Map(finalizedItems.map((item) => [item.path, item]));
-    const finalizedEdges = [...edgeMap.values()].sort((left, right) =>
-      left.blocker.localeCompare(right.blocker) || left.blocked.localeCompare(right.blocked));
+    const finalizedEdges = [...edgeMap.values()].sort(
+      (left, right) => left.blocker.localeCompare(right.blocker) || left.blocked.localeCompare(right.blocked),
+    );
     const adjacency = new Map<string, Set<string>>();
     for (const item of finalizedItems) {
       adjacency.set(item.path, new Set(item.blocks));
     }
-    const cycles = findDependencyCycles(finalizedItems.map((item) => item.path), adjacency);
+    const cycles = findDependencyCycles(
+      finalizedItems.map((item) => item.path),
+      adjacency,
+    );
     const ready = finalizedItems.filter((item) => item.ready);
     const report: BacklogDependencyReport = {
       root: this.root,
@@ -835,15 +833,13 @@ export class Workspace {
     const frontmatter = fmReadFrontmatter(fullPath);
     const stem = fileStem(fullPath);
     const filenameMetadata = splitLegend(stem);
-    const hasExplicitLegend = Object.prototype.hasOwnProperty.call(frontmatter, 'legend');
+    const hasExplicitLegend = Object.hasOwn(frontmatter, 'legend');
 
     return {
       stem,
       lane: normalizeBacklogLane(frontmatter.lane) ?? inferBacklogLane(this.paths.backlog, fullPath),
       path: relative(this.root, fullPath),
-      legend: hasExplicitLegend
-        ? normalizeLegend(frontmatter.legend) ?? filenameMetadata.legend
-        : filenameMetadata.legend,
+      legend: hasExplicitLegend ? (normalizeLegend(frontmatter.legend) ?? filenameMetadata.legend) : filenameMetadata.legend,
       slug: filenameMetadata.slug,
       title: frontmatter.title,
       release: normalizeOptionalString(frontmatter.release),
@@ -865,9 +861,7 @@ export class Workspace {
 
     const metadata = this.readBacklogItem(fullPath, inferBacklogLane(this.paths.backlog, fullPath));
     const fileName = basename(fullPath);
-    const normalizedTargetLane = targetLane === 'graveyard'
-      ? targetLane
-      : normalizeBacklogLane(targetLane);
+    const normalizedTargetLane = targetLane === 'graveyard' ? targetLane : normalizeBacklogLane(targetLane);
     if (normalizedTargetLane === undefined) {
       throw new MethodError(`Invalid backlog lane: ${targetLane}`);
     }
@@ -879,7 +873,7 @@ export class Workspace {
     } else {
       targetDir = resolve(this.paths.backlog, normalizedTargetLane);
     }
-    
+
     mkdirSync(targetDir, { recursive: true });
     const targetPath = resolve(targetDir, fileName);
 
@@ -937,18 +931,21 @@ export class Workspace {
     return { ...result, graveyardPath: movedPath, updatedFiles: [sourcePath, movedPath] };
   }
 
-  editBacklogMetadata(item: string, updates: {
-    owner?: string;
-    clearOwner?: boolean;
-    priority?: string;
-    clearPriority?: boolean;
-    keywords?: readonly string[];
-    clearKeywords?: boolean;
-    blockedBy?: readonly string[];
-    clearBlockedBy?: boolean;
-    blocks?: readonly string[];
-    clearBlocks?: boolean;
-  }): BacklogMetadataEditResult {
+  editBacklogMetadata(
+    item: string,
+    updates: {
+      owner?: string;
+      clearOwner?: boolean;
+      priority?: string;
+      clearPriority?: boolean;
+      keywords?: readonly string[];
+      clearKeywords?: boolean;
+      blockedBy?: readonly string[];
+      clearBlockedBy?: boolean;
+      blocks?: readonly string[];
+      clearBlocks?: boolean;
+    },
+  ): BacklogMetadataEditResult {
     const fullPath = this.resolveBacklogItem(item);
     const typedUpdates: Record<string, unknown> = {};
     const updatedFields: string[] = [];
@@ -1019,10 +1016,7 @@ export class Workspace {
       return closedCycles;
     }
     const content = readFileSync(changelogPath, 'utf8');
-    return closedCycles.filter((cycle) => (
-      !content.includes(`- ${cycle.name}:`)
-      && !content.includes(`(${cycle.name})`)
-    ));
+    return closedCycles.filter((cycle) => !content.includes(`- ${cycle.name}:`) && !content.includes(`(${cycle.name})`));
   }
 
   private updateChangelog(path: string, newShips: Cycle[]): void {
@@ -1062,7 +1056,9 @@ export class Workspace {
       return exactMatches[0];
     }
     if (exactMatches.length > 1) {
-      throw new MethodError(`Ambiguous backlog item ${JSON.stringify(item)}: ${exactMatches.map((file) => relative(this.root, file)).join(', ')}`);
+      throw new MethodError(
+        `Ambiguous backlog item ${JSON.stringify(item)}: ${exactMatches.map((file) => relative(this.root, file)).join(', ')}`,
+      );
     }
 
     const lowerItem = item.toLowerCase();
@@ -1116,8 +1112,7 @@ export class Workspace {
       return activeCycles[0];
     }
 
-    const matches = activeCycles.filter((cycle) =>
-      cycle.name === cycleName || cycle.slug === cycleName || cycle.name.endsWith(cycleName));
+    const matches = activeCycles.filter((cycle) => cycle.name === cycleName || cycle.slug === cycleName || cycle.name.endsWith(cycleName));
     if (matches.length === 1) {
       return matches[0];
     }
@@ -1132,13 +1127,11 @@ export class Workspace {
       return [];
     }
 
-    return collectMarkdownFiles(this.paths.backlog).map((file) =>
-      this.readBacklogItem(file, inferBacklogLane(this.paths.backlog, file)));
+    return collectMarkdownFiles(this.paths.backlog).map((file) => this.readBacklogItem(file, inferBacklogLane(this.paths.backlog, file)));
   }
 
   private collectBacklogQueryItems(): BacklogQueryItem[] {
-    return this.collectBacklogItems().map((item) =>
-      this.readBacklogQueryItem(resolve(this.root, item.path), item.lane));
+    return this.collectBacklogItems().map((item) => this.readBacklogQueryItem(resolve(this.root, item.path), item.lane));
   }
 
   private readBacklogQueryItem(path: string, fallbackLane: BacklogLane): BacklogQueryItem {
@@ -1152,7 +1145,7 @@ export class Workspace {
       keywords: normalizeBacklogKeywords(frontmatter.keywords),
       blockedBy: normalizeDependencyRefs(frontmatter.blocked_by),
       blocks: normalizeDependencyRefs(frontmatter.blocks),
-      hasAcceptanceCriteria: Object.prototype.hasOwnProperty.call(frontmatter, 'acceptance_criteria'),
+      hasAcceptanceCriteria: Object.hasOwn(frontmatter, 'acceptance_criteria'),
     };
   }
 
@@ -1160,15 +1153,13 @@ export class Workspace {
     const stem = fileStem(path);
     const filenameMetadata = splitLegend(stem);
     const frontmatter = fmReadFrontmatter(path);
-    const hasExplicitLegend = Object.prototype.hasOwnProperty.call(frontmatter, 'legend');
+    const hasExplicitLegend = Object.hasOwn(frontmatter, 'legend');
 
     return {
       stem,
       lane: normalizeBacklogLane(frontmatter.lane) ?? fallbackLane,
       path: relative(this.root, path),
-      legend: hasExplicitLegend
-        ? normalizeLegend(frontmatter.legend)
-        : filenameMetadata.legend,
+      legend: hasExplicitLegend ? normalizeLegend(frontmatter.legend) : filenameMetadata.legend,
       slug: filenameMetadata.slug,
     };
   }
@@ -1193,7 +1184,7 @@ export class Workspace {
       .sort(([left], [right]) => left.localeCompare(right))
       .map(([legend, counts]) => ({
         legend,
-        ...counts
+        ...counts,
       }));
   }
 
@@ -1235,7 +1226,7 @@ export const readBody = fmReadBody;
 
 function readDesignLegend(path: string): string | undefined {
   const frontmatter = fmReadFrontmatter(path);
-  if (Object.prototype.hasOwnProperty.call(frontmatter, 'legend')) {
+  if (Object.hasOwn(frontmatter, 'legend')) {
     return normalizeLegend(frontmatter.legend);
   }
 
@@ -1299,19 +1290,11 @@ function extractBearingConcerns(content: string): string[] {
   return collapsed === undefined ? [] : [collapsed];
 }
 
-function rankNextWorkItem(
-  item: BacklogQueryItem,
-  status: WorkspaceStatus,
-  bearing: BearingSignals,
-): RankedNextWorkItem {
+function rankNextWorkItem(item: BacklogQueryItem, status: WorkspaceStatus, bearing: BearingSignals): RankedNextWorkItem {
   const laneRank = nextWorkLaneRank(item.lane);
-  let score = 1000 - (laneRank * 100);
-  const signals: NextWorkSignal[] = [
-    { type: 'lane', value: item.lane, source: 'frontmatter.lane' },
-  ];
-  const whyNow: string[] = [
-    `Lane \`${item.lane}\` is near the front of the current queue.`,
-  ];
+  let score = 1000 - laneRank * 100;
+  const signals: NextWorkSignal[] = [{ type: 'lane', value: item.lane, source: 'frontmatter.lane' }];
+  const whyNow: string[] = [`Lane \`${item.lane}\` is near the front of the current queue.`];
 
   if (item.priority !== undefined) {
     score += nextWorkPriorityScore(item.priority);
@@ -1388,9 +1371,7 @@ function nextWorkPriorityScore(priority: string): number {
 }
 
 function compareRankedNextWorkItems(left: RankedNextWorkItem, right: RankedNextWorkItem): number {
-  return right.score - left.score
-    || left.laneRank - right.laneRank
-    || compareBacklogPaths(left.item, right.item);
+  return right.score - left.score || left.laneRank - right.laneRank || compareBacklogPaths(left.item, right.item);
 }
 
 function buildNextWorkWhyNow(entry: RankedNextWorkItem): string[] {
@@ -1417,11 +1398,7 @@ function normalizeNextWorkLimit(value: number | undefined): number {
   return limit;
 }
 
-function deriveNextWorkOverrideNotes(
-  baseline: RankedNextWorkItem[],
-  ranked: RankedNextWorkItem[],
-  limit: number,
-): string[] {
+function deriveNextWorkOverrideNotes(baseline: RankedNextWorkItem[], ranked: RankedNextWorkItem[], limit: number): string[] {
   const baselinePositions = new Map(baseline.map((entry, index) => [entry.item.path, index]));
   const finalPositions = new Map(ranked.map((entry, index) => [entry.item.path, index]));
   const notes: string[] = [];
@@ -1437,10 +1414,11 @@ function deriveNextWorkOverrideNotes(
     }
 
     const movedIntoTopThree = baselinePosition >= 3 && finalPosition < 3;
-    const jumpedLaneOrder = baseline.some((other) =>
-      nextWorkLaneRank(other.item.lane) < nextWorkLaneRank(entry.item.lane)
-      && (baselinePositions.get(other.item.path) ?? Number.POSITIVE_INFINITY) < baselinePosition
-      && (finalPositions.get(other.item.path) ?? Number.POSITIVE_INFINITY) > finalPosition,
+    const jumpedLaneOrder = baseline.some(
+      (other) =>
+        nextWorkLaneRank(other.item.lane) < nextWorkLaneRank(entry.item.lane) &&
+        (baselinePositions.get(other.item.path) ?? Number.POSITIVE_INFINITY) < baselinePosition &&
+        (finalPositions.get(other.item.path) ?? Number.POSITIVE_INFINITY) > finalPosition,
     );
     if (!movedIntoTopThree && !jumpedLaneOrder) {
       continue;
@@ -1521,17 +1499,13 @@ function applyMetadataEditField<T>(options: {
     return;
   }
 
-  options.target[options.field] = options.clearValue
-    ? undefined
-    : options.normalize(options.setValue as T);
+  options.target[options.field] = options.clearValue ? undefined : options.normalize(options.setValue as T);
   options.updatedFields.push(options.field);
 }
 
 function normalizeDependencyRefs(value: unknown): string[] {
   if (Array.isArray(value)) {
-    return value
-      .map((entry) => String(entry).trim())
-      .filter((entry) => entry.length > 0);
+    return value.map((entry) => String(entry).trim()).filter((entry) => entry.length > 0);
   }
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
     const normalized = String(value).trim();
@@ -1540,20 +1514,15 @@ function normalizeDependencyRefs(value: unknown): string[] {
   return [];
 }
 
-function resolveDependencyItemRef(
-  ref: string,
-  items: ReadonlyArray<{ path: string; stem: string; slug: string }>,
-): string | undefined {
+function resolveDependencyItemRef(ref: string, items: ReadonlyArray<{ path: string; stem: string; slug: string }>): string | undefined {
   const normalized = ref.trim();
   if (normalized.length === 0) {
     return undefined;
   }
 
-  const exactMatches = items.filter((item) =>
-    item.path === normalized
-    || basename(item.path) === normalized
-    || item.stem === normalized
-    || item.slug === normalized);
+  const exactMatches = items.filter(
+    (item) => item.path === normalized || basename(item.path) === normalized || item.stem === normalized || item.slug === normalized,
+  );
   if (exactMatches.length === 1) {
     return exactMatches[0].path;
   }
@@ -1562,11 +1531,13 @@ function resolveDependencyItemRef(
   }
 
   const lower = normalized.toLowerCase();
-  const fuzzyMatches = items.filter((item) =>
-    item.path.toLowerCase() === lower
-    || basename(item.path).toLowerCase() === lower
-    || item.stem.toLowerCase() === lower
-    || item.slug.toLowerCase() === lower);
+  const fuzzyMatches = items.filter(
+    (item) =>
+      item.path.toLowerCase() === lower ||
+      basename(item.path).toLowerCase() === lower ||
+      item.stem.toLowerCase() === lower ||
+      item.slug.toLowerCase() === lower,
+  );
   return fuzzyMatches.length === 1 ? fuzzyMatches[0].path : undefined;
 }
 
@@ -1601,18 +1572,11 @@ function finalizeDependencyItem(item: {
   };
 }
 
-function compareBacklogPaths(
-  left: { path: string },
-  right: { path: string },
-): number {
+function compareBacklogPaths(left: { path: string }, right: { path: string }): number {
   return left.path.localeCompare(right.path);
 }
 
-function compareBacklogQueryItems(
-  left: BacklogQueryItem,
-  right: BacklogQueryItem,
-  sort: BacklogQuerySort,
-): number {
+function compareBacklogQueryItems(left: BacklogQueryItem, right: BacklogQueryItem, sort: BacklogQuerySort): number {
   if (sort === 'path') {
     return compareBacklogPaths(left, right);
   }
@@ -1631,10 +1595,7 @@ function compareBacklogQueryItems(
   return compareBacklogPaths(left, right);
 }
 
-function compareBacklogQueryPriority(
-  left: string | undefined,
-  right: string | undefined,
-): number {
+function compareBacklogQueryPriority(left: string | undefined, right: string | undefined): number {
   return backlogQueryPriorityRank(right) - backlogQueryPriorityRank(left);
 }
 
@@ -1765,10 +1726,7 @@ function normalizeBacklogQueryLimit(value: number | undefined): number {
   return limit;
 }
 
-function findDependencyCycles(
-  nodes: readonly string[],
-  adjacency: ReadonlyMap<string, ReadonlySet<string>>,
-): string[][] {
+function findDependencyCycles(nodes: readonly string[], adjacency: ReadonlyMap<string, ReadonlySet<string>>): string[][] {
   let index = 0;
   const indexByNode = new Map<string, number>();
   const lowlinkByNode = new Map<string, number>();
@@ -1818,13 +1776,10 @@ function findDependencyCycles(
     }
   }
 
-  return components.sort((left, right) => left[0]!.localeCompare(right[0]!));
+  return components.sort((left, right) => left[0]?.localeCompare(right[0]!));
 }
 
-function longestDependencyPathTo(
-  targetPath: string,
-  itemsByPath: ReadonlyMap<string, BacklogDependencyItem>,
-): string[] {
+function longestDependencyPathTo(targetPath: string, itemsByPath: ReadonlyMap<string, BacklogDependencyItem>): string[] {
   const memo = new Map<string, string[]>();
 
   const visit = (path: string): string[] => {
@@ -1843,10 +1798,7 @@ function longestDependencyPathTo(
     let best = [path];
     for (const blocker of current.blockedBy) {
       const candidate = [...visit(blocker), path];
-      if (
-        candidate.length > best.length
-        || (candidate.length === best.length && candidate.join('>').localeCompare(best.join('>')) < 0)
-      ) {
+      if (candidate.length > best.length || (candidate.length === best.length && candidate.join('>').localeCompare(best.join('>')) < 0)) {
         best = candidate;
       }
     }
@@ -1858,14 +1810,11 @@ function longestDependencyPathTo(
   return visit(targetPath);
 }
 
-function readBacklogPullContext(
-  path: string,
-  fallbackLane: BacklogLane,
-): { legend?: string; slug: string; release?: string } {
+function readBacklogPullContext(path: string, fallbackLane: BacklogLane): { legend?: string; slug: string; release?: string } {
   const stem = fileStem(path);
   const filenameMetadata = splitLegend(stem);
   const frontmatter = fmReadFrontmatter(path);
-  const hasExplicitLegend = Object.prototype.hasOwnProperty.call(frontmatter, 'legend');
+  const hasExplicitLegend = Object.hasOwn(frontmatter, 'legend');
   const lane = normalizeBacklogLane(frontmatter.lane) ?? fallbackLane;
   return {
     legend: hasExplicitLegend ? normalizeLegend(frontmatter.legend) : filenameMetadata.legend,
@@ -1874,10 +1823,7 @@ function readBacklogPullContext(
   };
 }
 
-function inferBacklogRelease(
-  lane: string,
-  explicitRelease: unknown,
-): string | undefined {
+function inferBacklogRelease(lane: string, explicitRelease: unknown): string | undefined {
   const normalized = normalizeOptionalString(explicitRelease);
   if (normalized !== undefined) {
     if (!isReleaseLane(normalized)) {
@@ -1895,15 +1841,11 @@ function inferBacklogRelease(
 // normalizeRepoPath, slugify, fileStem imported from ./workspace-utils.js
 
 function createBacklogBuckets(): WorkspaceStatus['backlog'] {
-  return Object.fromEntries(
-    [...LANES, 'root'].map((lane) => [lane, [] as BacklogItem[]]),
-  ) as WorkspaceStatus['backlog'];
+  return Object.fromEntries([...LANES, 'root'].map((lane) => [lane, [] as BacklogItem[]])) as WorkspaceStatus['backlog'];
 }
 
 function orderBacklogBuckets(backlog: WorkspaceStatus['backlog']): WorkspaceStatus['backlog'] {
-  return Object.fromEntries(
-    orderedBacklogLaneNames(Object.keys(backlog)).map((lane) => [lane, backlog[lane] ?? []]),
-  );
+  return Object.fromEntries(orderedBacklogLaneNames(Object.keys(backlog)).map((lane) => [lane, backlog[lane] ?? []]));
 }
 
 function inferBacklogLane(backlogRoot: string, path: string): BacklogLane {
@@ -1915,9 +1857,7 @@ function inferBacklogLane(backlogRoot: string, path: string): BacklogLane {
   }
 
   const inferredLane = normalizeBacklogLane(segments[0]);
-  return inferredLane === undefined || inferredLane === 'root'
-    ? 'root'
-    : inferredLane;
+  return inferredLane === undefined || inferredLane === 'root' ? 'root' : inferredLane;
 }
 
 function normalizeBacklogLane(value: string | undefined): BacklogLane | undefined {
@@ -1963,10 +1903,7 @@ function normalizeCapturedAt(value: string | undefined): string {
 
 function normalizeLegend(value: string | undefined): string | undefined {
   const normalized = value?.trim().toUpperCase();
-  return normalized === undefined
-    || normalized.length === 0
-    || normalized === 'NONE'
-    || !LEGEND_CODE_PATTERN.test(normalized)
+  return normalized === undefined || normalized.length === 0 || normalized === 'NONE' || !LEGEND_CODE_PATTERN.test(normalized)
     ? undefined
     : normalized;
 }
@@ -1981,15 +1918,7 @@ function isLiveBacklogFile(backlogRoot: string, file: string): boolean {
 
 function renderRetiredBody(reason: string, originalProposal: string, replacement?: string): string {
   const replacementLine = replacement === undefined ? '' : `\n\nReplacement: \`${replacement}\``;
-  return [
-    '## Disposition',
-    '',
-    `${reason}${replacementLine}`,
-    '',
-    '## Original Proposal',
-    '',
-    originalProposal.trim(),
-  ].join('\n');
+  return ['## Disposition', '', `${reason}${replacementLine}`, '', '## Original Proposal', '', originalProposal.trim()].join('\n');
 }
 
 function sanitizeWitnessOutput(value: string, root: string): string {

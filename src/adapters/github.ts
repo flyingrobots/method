@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { z } from 'zod';
+import type { WorkspaceStatus } from '../domain.js';
 import { readBody, readHeading, type Workspace } from '../index.js';
-import { type WorkspaceStatus } from '../domain.js';
 
 const GitHubIssueResponseSchema = z.object({
   id: z.number(),
@@ -11,11 +11,13 @@ const GitHubIssueResponseSchema = z.object({
   labels: z.array(z.object({ name: z.string() })),
 });
 
-const GitHubCommentResponseSchema = z.array(z.object({
-  id: z.number(),
-  user: z.object({ login: z.string() }),
-  body: z.string(),
-}));
+const GitHubCommentResponseSchema = z.array(
+  z.object({
+    id: z.number(),
+    user: z.object({ login: z.string() }),
+    body: z.string(),
+  }),
+);
 
 export interface GitHubIssue {
   id: number;
@@ -132,7 +134,10 @@ export class GitHubAdapter {
       // Track synced comment IDs to detect new vs already-synced comments
       const syncedIdsRaw = frontmatter.github_synced_comment_ids ?? '';
       const syncedIds = new Set(
-        syncedIdsRaw.split(',').map((id: string) => id.trim()).filter((id: string) => id.length > 0),
+        syncedIdsRaw
+          .split(',')
+          .map((id: string) => id.trim())
+          .filter((id: string) => id.length > 0),
       );
       const newComments = remoteComments.filter((c) => !syncedIds.has(String(c.id)));
       const allSyncedIds = remoteComments.map((c) => String(c.id)).join(',');

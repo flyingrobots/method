@@ -27,7 +27,7 @@ describe('Ship Sync', () => {
     const workspace = new Workspace(root);
 
     // Create and close a cycle
-    const itemPath = workspace.captureIdea('Feature X', 'PROCESS', 'New Feature');
+    const _itemPath = workspace.captureIdea('Feature X', 'PROCESS', 'New Feature');
     const cycle = workspace.pullItem('PROCESS_new-feature');
     await workspace.closeCycle(cycle.name, true, 'hill-met');
 
@@ -52,7 +52,7 @@ describe('Ship Sync', () => {
     workspace.captureIdea('Next priority', 'PROCESS', 'ASAP Priority');
     workspace.moveBacklogItem('docs/method/backlog/inbox/PROCESS_asap-priority.md', 'asap');
 
-    const itemPath = workspace.captureIdea('Feature Z', 'PROCESS', 'Just Shipped');
+    const _itemPath = workspace.captureIdea('Feature Z', 'PROCESS', 'Just Shipped');
     const cycle = workspace.pullItem('PROCESS_just-shipped');
     await workspace.closeCycle(cycle.name, true, 'hill-met');
 
@@ -178,32 +178,12 @@ describe('Ship Sync', () => {
     workspace.captureIdea('Inbox pressure', 'PROCESS', 'Inbox Pressure');
     writeFileSync(
       join(root, 'docs/method/backlog/asap/PROCESS_asap-pressure.md'),
-      [
-        '---',
-        'title: "ASAP Pressure"',
-        'legend: PROCESS',
-        'lane: asap',
-        '---',
-        '',
-        '# ASAP Pressure',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "ASAP Pressure"', 'legend: PROCESS', 'lane: asap', '---', '', '# ASAP Pressure', '', 'Body'].join('\n'),
       'utf8',
     );
     writeFileSync(
       join(root, 'docs/method/backlog/bad-code/PROCESS_bad-code-pressure.md'),
-      [
-        '---',
-        'title: "Bad Code Pressure"',
-        'legend: PROCESS',
-        'lane: bad-code',
-        '---',
-        '',
-        '# Bad Code Pressure',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "Bad Code Pressure"', 'legend: PROCESS', 'lane: bad-code', '---', '', '# Bad Code Pressure', '', 'Body'].join('\n'),
       'utf8',
     );
 
@@ -224,17 +204,7 @@ describe('Ship Sync', () => {
     workspace.captureIdea('Inbox pressure', 'PROCESS', 'Inbox Pressure');
     writeFileSync(
       join(root, 'docs/method/backlog/asap/PROCESS_asap-pressure.md'),
-      [
-        '---',
-        'title: "ASAP Pressure"',
-        'legend: PROCESS',
-        'lane: asap',
-        '---',
-        '',
-        '# ASAP Pressure',
-        '',
-        'Body',
-      ].join('\n'),
+      ['---', 'title: "ASAP Pressure"', 'legend: PROCESS', 'lane: asap', '---', '', '# ASAP Pressure', '', 'Body'].join('\n'),
       'utf8',
     );
 

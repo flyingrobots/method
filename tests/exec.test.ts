@@ -87,9 +87,7 @@ describe('Async Exec', () => {
       const workspace = new Workspace(root);
 
       // A command that would hang should be killed by the timeout
-      await expect(
-        workspace.execCommand('sleep', ['30'], { timeoutMs: 200 }),
-      ).rejects.toThrow(/timed out|killed|abort/iu);
+      await expect(workspace.execCommand('sleep', ['30'], { timeoutMs: 200 })).rejects.toThrow(/timed out|killed|abort/iu);
     } finally {
       if (originalEnv !== undefined) {
         process.env.METHOD_TEST = originalEnv;

@@ -49,11 +49,10 @@ describe('METHOD repo discipline', () => {
 
   it('Do repo tests lock the self-discipline rule so README/process/release docs and local tool ignore posture cannot silently drift again?', () => {
     const gitignore = readRepoFile('.gitignore');
-    const tracked = execFileSync(
-      'git',
-      ['ls-files', '.mcp.json', '.claude/settings.local.json', 'backfill_frontmatter.cjs'],
-      { cwd: REPO_ROOT, encoding: 'utf8' },
-    ).trim();
+    const tracked = execFileSync('git', ['ls-files', '.mcp.json', '.claude/settings.local.json', 'backfill_frontmatter.cjs'], {
+      cwd: REPO_ROOT,
+      encoding: 'utf8',
+    }).trim();
 
     expect(gitignore).toContain('.mcp.json');
     expect(gitignore).toContain('.claude/');
@@ -67,17 +66,11 @@ describe('METHOD repo discipline', () => {
     const workspace = new Workspace(root);
     const path = 'docs/method/backlog/inbox/PROCESS_legacy-title.md';
 
-    writeFileSync(
-      join(root, path),
-      '# Legacy Title\n\nBody\n',
-      'utf8',
-    );
+    writeFileSync(join(root, path), '# Legacy Title\n\nBody\n', 'utf8');
 
     expect(workspace.readFrontmatter(path)).toMatchObject({
       title: 'Legacy Title',
     });
-    expect(
-      execFileSync('git', ['ls-files', 'backfill_frontmatter.cjs'], { cwd: REPO_ROOT, encoding: 'utf8' }).trim(),
-    ).toBe('');
+    expect(execFileSync('git', ['ls-files', 'backfill_frontmatter.cjs'], { cwd: REPO_ROOT, encoding: 'utf8' }).trim()).toBe('');
   });
 });

@@ -1,5 +1,5 @@
+import { readdirSync, statSync } from 'node:fs';
 import { basename, isAbsolute, relative } from 'node:path';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { MethodError } from './errors.js';
 
 export function normalizeRepoPath(value: string): string {

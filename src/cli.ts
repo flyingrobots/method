@@ -2,19 +2,43 @@
 import { realpathSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { alert, confirm } from '@flyingrobots/bijou';
 import { createNodeContext } from '@flyingrobots/bijou-node';
-import { parseCliArgs, usage } from './cli-args.js';
-import { renderBacklogDependencies, renderBacklogQuery, renderNextWork, renderSignpostInit, renderSignpostStatus, renderStatus } from './cli-renderer.js';
-import { initWorkspace, Workspace } from './index.js';
-import { loadConfig } from './config.js';
-import { createMcpServer } from './mcp.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { GitHubAdapter } from './adapters/github.js';
-import { renderDoctorMigrateText, renderDoctorRepairText, renderDoctorText, runDoctor, runDoctorMigrate, runDoctorRepair } from './doctor.js';
-import { createBacklogFromCli, createInboxFromCli, describeBacklogDependenciesFromCli, editBacklogMetadataFromCli, moveBacklogFromCli, queryBacklogFromCli, retireBacklogFromCli } from './feedback-surface.js';
-import { queryReviewState, renderReviewStateText, type ReviewStateQueryOptions, type ReviewStateResult } from './review-state.js';
-type Writer = Pick<NodeJS.WritableStream, 'write'>; type ConfirmPrompt = (options: { title: string; defaultValue: boolean }) => Promise<boolean>;
+import { parseCliArgs, usage } from './cli-args.js';
+import {
+  renderBacklogDependencies,
+  renderBacklogQuery,
+  renderNextWork,
+  renderSignpostInit,
+  renderSignpostStatus,
+  renderStatus,
+} from './cli-renderer.js';
+import { loadConfig } from './config.js';
+import {
+  renderDoctorMigrateText,
+  renderDoctorRepairText,
+  renderDoctorText,
+  runDoctor,
+  runDoctorMigrate,
+  runDoctorRepair,
+} from './doctor.js';
+import {
+  createBacklogFromCli,
+  createInboxFromCli,
+  describeBacklogDependenciesFromCli,
+  editBacklogMetadataFromCli,
+  moveBacklogFromCli,
+  queryBacklogFromCli,
+  retireBacklogFromCli,
+} from './feedback-surface.js';
+import { initWorkspace, Workspace } from './index.js';
+import { createMcpServer } from './mcp.js';
+import { queryReviewState, type ReviewStateQueryOptions, type ReviewStateResult, renderReviewStateText } from './review-state.js';
+
+type Writer = Pick<NodeJS.WritableStream, 'write'>;
+type ConfirmPrompt = (options: { title: string; defaultValue: boolean }) => Promise<boolean>;
 export interface RunCliOptions {
   cwd?: string;
   stdout?: Writer;
@@ -22,19 +46,19 @@ export interface RunCliOptions {
   confirmPrompt?: ConfirmPrompt;
   reviewStateQuery?: (options: ReviewStateQueryOptions) => Promise<ReviewStateResult>;
 }
-export async function runCli(
-  argv: readonly string[],
-  options: RunCliOptions = {},
-): Promise<number> {
+export async function runCli(argv: readonly string[], options: RunCliOptions = {}): Promise<number> {
   const root = resolve(options.cwd ?? process.cwd());
   const stdout = options.stdout ?? process.stdout;
   const stderr = options.stderr ?? process.stderr;
   const ctx = createNodeContext();
-  const promptConfirm = options.confirmPrompt
-    ?? ((promptOptions) => confirm({ title: promptOptions.title, defaultValue: promptOptions.defaultValue, ctx }));
+  const promptConfirm =
+    options.confirmPrompt ?? ((promptOptions) => confirm({ title: promptOptions.title, defaultValue: promptOptions.defaultValue, ctx }));
   try {
     const parsed = parseCliArgs(argv);
-    if (parsed.command === 'help') { stdout.write(`${usage(parsed.topic)}\n`); return 0; }
+    if (parsed.command === 'help') {
+      stdout.write(`${usage(parsed.topic)}\n`);
+      return 0;
+    }
     if (parsed.command === 'init') {
       const target = resolve(root, parsed.path);
       const config = loadConfig(target);
@@ -71,22 +95,86 @@ export async function runCli(
     workspace.ensureInitialized();
     if (parsed.command === 'inbox') {
       const created = createInboxFromCli(root, workspace, parsed);
-      stdout.write(parsed.json ? `${JSON.stringify(created, null, 2)}\n` : `${alert(`Captured ${created.path}`, { variant: 'success', ctx })}\n`);
+      stdout.write(
+        parsed.json ? `${JSON.stringify(created, null, 2)}\n` : `${alert(`Captured ${created.path}`, { variant: 'success', ctx })}\n`,
+      );
       return 0;
     }
-    if (parsed.command === 'backlog-add') { const result = createBacklogFromCli(root, workspace, parsed); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : `${alert(`Created ${result.path}`, { variant: 'success', ctx })}\n`); return 0; }
-    if (parsed.command === 'backlog-move') { const result = moveBacklogFromCli(workspace, parsed); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : `${alert(`Moved ${result.sourcePath} to ${result.path}`, { variant: 'success', ctx })}\n`); return 0; }
-    if (parsed.command === 'backlog-edit') { const result = editBacklogMetadataFromCli(workspace, parsed); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : `${alert(`Updated metadata on ${result.path} (${result.updatedFields.join(', ')})`, { variant: 'success', ctx })}\n`); return 0; }
-    if (parsed.command === 'backlog-list') { const result = queryBacklogFromCli(workspace, parsed); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderBacklogQuery(result)); return 0; }
-    if (parsed.command === 'backlog-deps') { const result = describeBacklogDependenciesFromCli(workspace, parsed); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderBacklogDependencies(result)); return 0; }
-    if (parsed.command === 'retire') { const result = retireBacklogFromCli(workspace, parsed); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : `${alert(result.dryRun ? `Planned retirement of ${result.sourcePath} to ${result.graveyardPath}` : `Retired ${result.sourcePath} to ${result.graveyardPath}`, { variant: 'success', ctx })}\n`); return 0; }
-    if (parsed.command === 'signpost-status') { const result = workspace.signpostStatus(); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderSignpostStatus(result)); return 0; }
-    if (parsed.command === 'signpost-init') { const result = await workspace.initSignpost(parsed.name); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderSignpostInit(result)); return 0; }
-    if (parsed.command === 'next') { const result = workspace.nextWork({ lane: parsed.lane, legend: parsed.legend, priority: parsed.priority, keyword: parsed.keyword, owner: parsed.owner, includeBlocked: parsed.includeBlocked, limit: parsed.limit }); stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderNextWork(result)); return 0; }
+    if (parsed.command === 'backlog-add') {
+      const result = createBacklogFromCli(root, workspace, parsed);
+      stdout.write(
+        parsed.json ? `${JSON.stringify(result, null, 2)}\n` : `${alert(`Created ${result.path}`, { variant: 'success', ctx })}\n`,
+      );
+      return 0;
+    }
+    if (parsed.command === 'backlog-move') {
+      const result = moveBacklogFromCli(workspace, parsed);
+      stdout.write(
+        parsed.json
+          ? `${JSON.stringify(result, null, 2)}\n`
+          : `${alert(`Moved ${result.sourcePath} to ${result.path}`, { variant: 'success', ctx })}\n`,
+      );
+      return 0;
+    }
+    if (parsed.command === 'backlog-edit') {
+      const result = editBacklogMetadataFromCli(workspace, parsed);
+      stdout.write(
+        parsed.json
+          ? `${JSON.stringify(result, null, 2)}\n`
+          : `${alert(`Updated metadata on ${result.path} (${result.updatedFields.join(', ')})`, { variant: 'success', ctx })}\n`,
+      );
+      return 0;
+    }
+    if (parsed.command === 'backlog-list') {
+      const result = queryBacklogFromCli(workspace, parsed);
+      stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderBacklogQuery(result));
+      return 0;
+    }
+    if (parsed.command === 'backlog-deps') {
+      const result = describeBacklogDependenciesFromCli(workspace, parsed);
+      stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderBacklogDependencies(result));
+      return 0;
+    }
+    if (parsed.command === 'retire') {
+      const result = retireBacklogFromCli(workspace, parsed);
+      stdout.write(
+        parsed.json
+          ? `${JSON.stringify(result, null, 2)}\n`
+          : `${alert(result.dryRun ? `Planned retirement of ${result.sourcePath} to ${result.graveyardPath}` : `Retired ${result.sourcePath} to ${result.graveyardPath}`, { variant: 'success', ctx })}\n`,
+      );
+      return 0;
+    }
+    if (parsed.command === 'signpost-status') {
+      const result = workspace.signpostStatus();
+      stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderSignpostStatus(result));
+      return 0;
+    }
+    if (parsed.command === 'signpost-init') {
+      const result = await workspace.initSignpost(parsed.name);
+      stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderSignpostInit(result));
+      return 0;
+    }
+    if (parsed.command === 'next') {
+      const result = workspace.nextWork({
+        lane: parsed.lane,
+        legend: parsed.legend,
+        priority: parsed.priority,
+        keyword: parsed.keyword,
+        owner: parsed.owner,
+        includeBlocked: parsed.includeBlocked,
+        limit: parsed.limit,
+      });
+      stdout.write(parsed.json ? `${JSON.stringify(result, null, 2)}\n` : renderNextWork(result));
+      return 0;
+    }
     if (parsed.command === 'spike') {
       const path = workspace.captureSpike(parsed.goal, parsed.title, parsed.constraints);
       const described = workspace.describeBacklogPath(workspace.resolveRepoPath(path));
-      stdout.write(parsed.json ? `${JSON.stringify(described, null, 2)}\n` : `${alert(`Captured spike ${described.path}`, { variant: 'success', ctx })}\n`);
+      stdout.write(
+        parsed.json
+          ? `${JSON.stringify(described, null, 2)}\n`
+          : `${alert(`Captured spike ${described.path}`, { variant: 'success', ctx })}\n`,
+      );
       return 0;
     }
     if (parsed.command === 'pull') {
@@ -96,9 +184,10 @@ export async function runCli(
       return 0;
     }
     if (parsed.command === 'close') {
-      const completedDriftCheck = parsed.driftCheck === undefined
-        ? await promptConfirm({ title: 'Drift check complete?', defaultValue: false })
-        : parsed.driftCheck === 'yes';
+      const completedDriftCheck =
+        parsed.driftCheck === undefined
+          ? await promptConfirm({ title: 'Drift check complete?', defaultValue: false })
+          : parsed.driftCheck === 'yes';
       if (!completedDriftCheck) {
         throw new Error('Cannot close a cycle without completing the drift check.');
       }
@@ -125,7 +214,7 @@ export async function runCli(
         if (!token) {
           throw new Error('GitHub token is required for sync. Provide it via GITHUB_TOKEN or .method.json.');
         }
-        if (!repoFull || !repoFull.includes('/')) {
+        if (!repoFull?.includes('/')) {
           throw new Error('GitHub repo (owner/repo) is required for sync. Provide it via GITHUB_REPO or .method.json.');
         }
 
@@ -161,7 +250,9 @@ export async function runCli(
               stderr.write(`${alert(`Error pulling ${result.path}: ${result.error}`, { variant: 'error', ctx })}\n`);
             } else if (result.action === 'pull') {
               const issueLabel = result.issue?.number ?? '<unknown>';
-              stdout.write(`${alert(`Pulled remote changes from GitHub Issue #${issueLabel} into ${result.path}`, { variant: 'success', ctx })}\n`);
+              stdout.write(
+                `${alert(`Pulled remote changes from GitHub Issue #${issueLabel} into ${result.path}`, { variant: 'success', ctx })}\n`,
+              );
             }
           }
         }
@@ -199,5 +290,12 @@ export async function runCli(
     stderr.write(`${alert(message, { variant: 'error', ctx })}\n`);
     return 1;
   }
-} export async function main(argv: readonly string[] = process.argv.slice(2)): Promise<number> { return runCli(argv); }
-if (process.argv[1] !== undefined && fileURLToPath(import.meta.url) === realpathSync(resolve(process.argv[1]))) { main().then((code) => { process.exitCode = code; }); }
+}
+export async function main(argv: readonly string[] = process.argv.slice(2)): Promise<number> {
+  return runCli(argv);
+}
+if (process.argv[1] !== undefined && fileURLToPath(import.meta.url) === realpathSync(resolve(process.argv[1]))) {
+  main().then((code) => {
+    process.exitCode = code;
+  });
+}

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const LANES = ['inbox', 'asap', 'bad-code', 'cool-ideas'] as const;
-export type CanonicalLane = typeof LANES[number];
+export type CanonicalLane = (typeof LANES)[number];
 const CANONICAL_LANE_SET = new Set<string>(LANES);
 
 /**
@@ -42,9 +42,7 @@ export function orderedBacklogLaneNames(lanes: Iterable<string>): string[] {
   const unique = new Set(lanes);
   const leadingCanonical = ['inbox', 'asap'].filter((lane): lane is CanonicalLane => unique.has(lane));
   const legacyUpNext = unique.has('up-next') ? ['up-next'] : [];
-  const releaseLanes = [...unique]
-    .filter((lane) => isReleaseLane(lane))
-    .sort(compareReleaseLaneNames);
+  const releaseLanes = [...unique].filter((lane) => isReleaseLane(lane)).sort(compareReleaseLaneNames);
   const trailingCanonical = ['bad-code', 'cool-ideas'].filter((lane): lane is CanonicalLane => unique.has(lane));
   const custom = [...unique]
     .filter((lane) => lane !== 'root' && !isCanonicalLane(lane) && lane !== 'up-next' && !isReleaseLane(lane))
@@ -78,7 +76,6 @@ function compareReleaseLaneNames(left: string, right: string): number {
   }
   return left.localeCompare(right);
 }
-
 
 export const OutcomeSchema = z.enum(['hill-met', 'partial', 'not-met']);
 export type Outcome = z.infer<typeof OutcomeSchema>;
@@ -197,13 +194,7 @@ export type DoctorStatus = z.infer<typeof DoctorStatusSchema>;
 export const DoctorSeveritySchema = z.enum(['warning', 'error']);
 export type DoctorSeverity = z.infer<typeof DoctorSeveritySchema>;
 
-export const DoctorCheckIdSchema = z.enum([
-  'config',
-  'structure',
-  'frontmatter',
-  'git-hooks',
-  'backlog',
-]);
+export const DoctorCheckIdSchema = z.enum(['config', 'structure', 'frontmatter', 'git-hooks', 'backlog']);
 export type DoctorCheckId = z.infer<typeof DoctorCheckIdSchema>;
 
 export const DoctorCheckSchema = z.object({
@@ -213,12 +204,7 @@ export const DoctorCheckSchema = z.object({
 });
 export type DoctorCheck = z.infer<typeof DoctorCheckSchema>;
 
-export const DoctorRepairKindSchema = z.enum([
-  'create-directory',
-  'restore-file',
-  'frontmatter-stub',
-  'flatten-design-doc',
-]);
+export const DoctorRepairKindSchema = z.enum(['create-directory', 'restore-file', 'frontmatter-stub', 'flatten-design-doc']);
 export type DoctorRepairKind = z.infer<typeof DoctorRepairKindSchema>;
 
 export const DoctorRepairHintSchema = z.object({
