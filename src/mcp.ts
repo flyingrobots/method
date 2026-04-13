@@ -561,7 +561,8 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
       }
 
       if (request.params.name === 'method_pull') {
-        const cycle = workspace.pullItem(args.item as string);
+        const item = validateString(args.item, 'item');
+        const cycle = workspace.pullItem(item);
         return successResult(
           'method_pull',
           `Pulled into ${cycle.name}`,
@@ -696,7 +697,8 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
       }
 
       if (request.params.name === 'method_capture_witness') {
-        const path = await workspace.captureWitness(args.cycle as string | undefined);
+        const witnessTarget = validateOptionalString(args.cycle, 'cycle');
+        const path = await workspace.captureWitness(witnessTarget);
         const relativePath = relative(workspace.root, path);
         return successResult(
           'method_capture_witness',

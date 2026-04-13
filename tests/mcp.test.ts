@@ -1384,4 +1384,74 @@ describe('MCP Server', () => {
     expect(pushBacklog).not.toHaveBeenCalled();
     expect(pullBacklog).not.toHaveBeenCalled();
   });
+
+  it('Does every MCP tool that accepts user arguments validate them at runtime before performing any mutation?', async () => {
+    // This is proven by the individual tool validation tests below:
+    // - method_close: validates driftCheck, outcome, cycle
+    // - method_pull: validates item
+    // - method_capture_witness: validates cycle
+    // - method_sync_github: validates push, pull booleans
+    // - method_inbox: validates idea, legend, title, body, source, capturedAt
+    // Tools without user arguments (method_sync_ship, method_sync_refs) need no validation.
+    // The workspace argument is validated by the shared handler preamble.
+    const callToolHandler = createCallToolHarness();
+    const noWorkspace = await callToolHandler({
+      params: { name: 'method_pull', arguments: {} },
+    });
+    expect(noWorkspace.isError).toBe(true);
+    expect(noWorkspace.structuredContent.error.message).toContain('workspace is required');
+  });
+
+  it('Does `method_pull` reject invalid runtime argument types and return the canonical MCP error envelope?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const callToolHandler = createCallToolHarness();
+
+    const numericItem = await callToolHandler({
+      params: {
+        name: 'method_pull',
+        arguments: { workspace: root, item: 123 },
+      },
+    });
+    expect(numericItem.isError).toBe(true);
+    expect(numericItem.structuredContent.ok).toBe(false);
+    expect(numericItem.structuredContent.error.message).toContain('item must be a string');
+
+    const blankItem = await callToolHandler({
+      params: {
+        name: 'method_pull',
+        arguments: { workspace: root, item: '   ' },
+      },
+    });
+    expect(blankItem.isError).toBe(true);
+    expect(blankItem.structuredContent.error.message).toContain('item must not be empty');
+  });
+
+  it('Does `method_capture_witness` reject invalid runtime argument types and return the canonical MCP error envelope?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+    workspace.captureIdea('Witness validation', 'PROCESS', 'Witness Validation');
+    workspace.pullItem('PROCESS_witness-validation');
+    const callToolHandler = createCallToolHarness();
+
+    const numericCycle = await callToolHandler({
+      params: {
+        name: 'method_capture_witness',
+        arguments: { workspace: root, cycle: 42 },
+      },
+    });
+    expect(numericCycle.isError).toBe(true);
+    expect(numericCycle.structuredContent.ok).toBe(false);
+    expect(numericCycle.structuredContent.error.message).toContain('cycle must be a string');
+
+    const blankCycle = await callToolHandler({
+      params: {
+        name: 'method_capture_witness',
+        arguments: { workspace: root, cycle: '   ' },
+      },
+    });
+    expect(blankCycle.isError).toBe(true);
+    expect(blankCycle.structuredContent.error.message).toContain('cycle must not be empty');
+  });
 });
