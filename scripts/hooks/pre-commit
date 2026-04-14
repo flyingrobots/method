@@ -1,3 +1,10 @@
 #!/bin/sh
-# Pre-commit hook: lint must pass cleanly.
-npm run lint
+# Pre-commit hook: lint must pass cleanly, generated docs must be current.
+npm run lint || exit 1
+
+# Regenerate reference docs and stage any changes
+npx tsx src/cli.ts sync refs >/dev/null 2>&1
+git diff --quiet ARCHITECTURE.md docs/CLI.md docs/MCP.md docs/GUIDE.md || {
+  git add ARCHITECTURE.md docs/CLI.md docs/MCP.md docs/GUIDE.md
+  echo "[pre-commit] Regenerated and staged reference docs."
+}

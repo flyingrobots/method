@@ -74,7 +74,7 @@ Return a bounded advisory menu of sensible next backlog items using lane order, 
 
 ### `method pull <item>`
 
-Promote a backlog item into the next numbered cycle packet. Release-tagged work scaffolds under docs/releases/<version>/.
+Promote a backlog item into a new cycle packet. Release-tagged work scaffolds under docs/releases/<version>/.
 
 ### `method close [cycle] [--drift-check yes|no] --outcome hill-met|partial|not-met`
 

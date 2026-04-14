@@ -170,9 +170,19 @@ Retire a live backlog note into the graveyard with an explicit disposition note 
 - `replacement` (optional) `string` — Optional replacement path or successor reference to record in the tombstone.
 - `dryRun` (optional) `boolean` — When true, return the planned graveyard move without mutating the repo.
 
+### `method_spike`
+
+Capture a behavior spike into the inbox with SPIKE legend and structured scaffolding.
+
+**Parameters:**
+
+- `goal` (required) `string` — What the spike is trying to prove or learn
+- `title` (optional) `string` — Optional override for the item title
+- `constraints` (optional) `string` — Stack constraints or scope notes
+
 ### `method_pull`
 
-Promote a backlog item into the next numbered cycle packet, using release-scoped paths when the backlog item carries release metadata.
+Promote a backlog item into a new cycle packet, using release-scoped paths when the backlog item carries release metadata.
 
 **Parameters:**
 

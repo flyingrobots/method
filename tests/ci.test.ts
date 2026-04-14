@@ -18,11 +18,12 @@ describe('CI hardening', () => {
     expect(ci).toContain('pull_request:');
   });
 
-  it('Does the pre-commit hook enforce lint before allowing a commit?', () => {
+  it('Does the pre-commit hook enforce lint and regenerate reference docs before allowing a commit?', () => {
     const hookPath = resolve(ROOT, 'scripts/hooks/pre-commit');
     expect(existsSync(hookPath)).toBe(true);
     const content = readFileSync(hookPath, 'utf8');
     expect(content).toContain('npm run lint');
+    expect(content).toContain('sync refs');
     // Hook must be executable
     const stats = statSync(hookPath);
     expect(stats.mode & 0o111).toBeGreaterThan(0);
