@@ -1,7 +1,7 @@
 ---
-title: "Signpost count scales with overhead not complexity"
+title: Signpost count scales with overhead not complexity
 legend: PROCESS
-lane: inbox
+lane: cool-ideas
 ---
 
 # Signpost count scales with overhead not complexity

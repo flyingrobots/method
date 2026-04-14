@@ -1,7 +1,7 @@
 ---
-title: "Right-sized cycle ceremony (t-shirt sizing)"
+title: Right-sized cycle ceremony (t-shirt sizing)
 legend: PROCESS
-lane: inbox
+lane: cool-ideas
 ---
 
 # Right-sized cycle ceremony (t-shirt sizing)

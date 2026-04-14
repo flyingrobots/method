@@ -1,7 +1,7 @@
 ---
-title: "Optional posture sections in design doc template"
+title: Optional posture sections in design doc template
 legend: PROCESS
-lane: inbox
+lane: cool-ideas
 ---
 
 # Optional posture sections in design doc template

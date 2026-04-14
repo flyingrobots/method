@@ -1,7 +1,7 @@
 ---
-title: "Maintenance track for sub-cycle work"
+title: Maintenance track for sub-cycle work
 legend: PROCESS
-lane: inbox
+lane: cool-ideas
 ---
 
 # Maintenance track for sub-cycle work

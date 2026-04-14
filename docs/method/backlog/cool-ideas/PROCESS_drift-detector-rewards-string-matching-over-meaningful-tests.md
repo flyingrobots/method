@@ -1,7 +1,7 @@
 ---
-title: "Drift detector rewards string-matching over meaningful tests"
+title: Drift detector rewards string-matching over meaningful tests
 legend: PROCESS
-lane: inbox
+lane: cool-ideas
 ---
 
 # Drift detector rewards string-matching over meaningful tests
