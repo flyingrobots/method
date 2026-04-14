@@ -353,12 +353,13 @@ describe('doctor engine', () => {
     const root = createTempRoot();
     initWorkspace(root);
     execFileSync('git', ['init'], { cwd: root, stdio: 'ignore' });
+    execFileSync('git', ['config', 'user.name', 'test'], { cwd: root, stdio: 'ignore' });
+    execFileSync('git', ['config', 'user.email', 'test@test'], { cwd: root, stdio: 'ignore' });
     execFileSync('git', ['add', '-A'], { cwd: root, stdio: 'ignore' });
     execFileSync('git', ['commit', '-m', 'init', '--no-gpg-sign'], { cwd: root, stdio: 'ignore' });
 
     const receipt = generateDoctorReceipt(root);
 
-    expect(receipt.generated_at).toMatch(/^\d{4}-\d{2}-\d{2}T/u);
     expect(receipt.generated_at).toMatch(/^\d{4}-\d{2}-\d{2}T/u);
     expect(receipt.commit_sha).toMatch(/^[0-9a-f]{40}$/u);
     expect(receipt.counts.errors).toBe(0);
@@ -371,6 +372,8 @@ describe('doctor engine', () => {
     const root = createTempRoot();
     initWorkspace(root);
     execFileSync('git', ['init'], { cwd: root, stdio: 'ignore' });
+    execFileSync('git', ['config', 'user.name', 'test'], { cwd: root, stdio: 'ignore' });
+    execFileSync('git', ['config', 'user.email', 'test@test'], { cwd: root, stdio: 'ignore' });
     execFileSync('git', ['add', '-A'], { cwd: root, stdio: 'ignore' });
     execFileSync('git', ['commit', '-m', 'init', '--no-gpg-sign'], { cwd: root, stdio: 'ignore' });
 
