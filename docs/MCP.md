@@ -202,13 +202,15 @@ Check active cycle playback questions against tests
 
 ### `method_close`
 
-Close an active cycle into its retro packet.
+Close an active cycle into its retro packet. Requires witnessVerified=true to confirm human witness verification.
 
 **Parameters:**
 
 - `cycle` (optional) `string`
 - `driftCheck` (required) `boolean`
 - `outcome` (required) `string` (hill-met, partial, not-met)
+- `witnessVerified` (required) `boolean` — Human attestation that the witness and human playback questions have been verified.
+- `summary` (optional) `string` — Retro summary.
 
 ### `method_sync_ship`
 

@@ -839,6 +839,7 @@ describe('MCP Server', () => {
             cycle: 'PROCESS_test-idea-from-mcp',
             driftCheck: true,
             outcome: 'hill-met',
+            witnessVerified: true,
           },
         },
       });

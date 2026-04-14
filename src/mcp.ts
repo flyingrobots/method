@@ -302,7 +302,7 @@ export const MCP_TOOLS: McpToolDef[] = [
   },
   {
     name: 'method_close',
-    description: 'Close an active cycle into its retro packet.',
+    description: 'Close an active cycle into its retro packet. Requires witnessVerified=true to confirm human witness verification.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -310,8 +310,13 @@ export const MCP_TOOLS: McpToolDef[] = [
         cycle: { type: 'string' },
         driftCheck: { type: 'boolean' },
         outcome: { type: 'string', enum: ['hill-met', 'partial', 'not-met'] },
+        witnessVerified: {
+          type: 'boolean',
+          description: 'Human attestation that the witness and human playback questions have been verified.',
+        },
+        summary: { type: 'string', description: 'Retro summary.' },
       },
-      required: ['workspace', 'driftCheck', 'outcome'],
+      required: ['workspace', 'driftCheck', 'outcome', 'witnessVerified'],
     },
   },
   {
@@ -596,7 +601,14 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
         const cycleName = validateOptionalString(args.cycle, 'cycle');
         const driftCheck = validateBoolean(args.driftCheck, 'driftCheck');
         const outcome = validateOutcome(args.outcome);
-        const cycle = await workspace.closeCycle(cycleName, driftCheck, outcome);
+        const witnessVerified = validateBoolean(args.witnessVerified, 'witnessVerified');
+        if (!witnessVerified) {
+          throw new Error('witnessVerified must be true — human witness verification is required before closing a cycle.');
+        }
+        const summary = validateOptionalString(args.summary, 'summary');
+        const cycle = await workspace.closeCycle(cycleName, driftCheck, outcome, {
+          summary: summary ?? undefined,
+        });
         return successResult('method_close', `Closed ${cycle.name}`, {
           cycle: relativizeCycle(workspace, cycle),
         });

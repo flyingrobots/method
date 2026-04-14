@@ -806,8 +806,12 @@ function applyRepair(root: string, issue: DoctorIssue): { status: 'applied' | 's
     const updated = raw.replace(/^(cycle:\s*)"[^"]*"\s*$/mu, `$1"${cycleName}"`);
     writeFileSync(flatPath, updated, 'utf8');
 
-    // Remove the old directory (all files should be the single md)
-    rmSync(target, { recursive: true });
+    // Remove the source file, then delete the directory only if empty
+    rmSync(sourceFile);
+    const remaining = readdirSync(target);
+    if (remaining.length === 0) {
+      rmSync(target, { recursive: true });
+    }
 
     // Also rename the corresponding retro directory if it exists
     const configInspection = inspectConfig(root);

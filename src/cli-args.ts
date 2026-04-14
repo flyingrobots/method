@@ -1289,6 +1289,9 @@ function parseSpikeArgs(args: readonly string[]): ParsedCommand {
       json = true;
       continue;
     }
+    if (value?.startsWith('-')) {
+      throw new MethodError(`Unknown option: ${value}\n\n${usage('spike')}`);
+    }
     if (value !== undefined) {
       positionals.push(value);
     }
