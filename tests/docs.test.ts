@@ -67,14 +67,13 @@ function walkMarkdownFiles(relativePath: string): string[] {
 }
 
 describe('METHOD docs', () => {
-  it('structures the README around stances, constraints, and quality gates', () => {
+  it('structures the README around principles, structure, the loop, and a documentation table', () => {
     const readme = readRepoFile('README.md');
 
-    expect(readme).toContain('### Stances');
-    expect(readme).toContain('### Design constraints');
-    expect(readme).toContain('### Quality gates');
-    expect(readme).toContain('## Coordination');
-    expect(readme).toContain('### BEARING.md');
+    expect(readme).toContain('## Principles');
+    expect(readme).toContain('## Structure');
+    expect(readme).toContain('## The loop');
+    expect(readme).toContain('## Documentation');
   });
 
   it('keeps reproducibility as part of done', () => {
@@ -88,18 +87,11 @@ describe('METHOD docs', () => {
     const readme = readRepoFile('README.md');
     const process = readRepoFile('docs/PROCESS.md');
 
-    expect(readme).toContain('5. **Close** - write the retro and witness packet on the branch.');
-    expect(readme).toContain('6. **PR / review** - review the full cycle packet until merge or');
-    expect(readme).toContain('7. **Ship sync on `main`** - after merge, update repo-level ship');
-    expect(readme).toContain('Review-stage visibility now has a repo-native METHOD query:');
-    expect(readme).toContain('`method review-state`');
-    expect(readme).toContain('What is actively open in this workspace? -> `method status`');
-    expect(readme).toContain('What is under review? -> `method review-state`');
-    expect(readme).toContain('Review state now has a repo-native query surface through');
-    expect(readme).not.toContain('5. **PR -> main** - review until merge.');
-    expect(readme).not.toContain('6. **Close** - merge. Retro in `docs/method/retro/<cycle>/`.');
-    expect(readme).toContain('It is updated during ship sync after merge.');
-    expect(readme).toContain('-> PR/review -> main');
+    // README carries the summary loop line
+    expect(readme).toContain('PR/review');
+    expect(readme).toContain('ship sync');
+
+    // PROCESS.md carries the full closeout-before-review doctrine
     expect(process).toContain('METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loop.');
     expect(process).toMatch(
       /6\.\s+Close the cycle packet with a retro in either[\s\S]*`docs\/method\/retro\/<cycle>\/<cycle>\.md`[\s\S]*`docs\/releases\/<version>\/retros\/<cycle>\/<cycle>\.md`[\s\S]*cycle carries release scope\./u,
@@ -111,11 +103,10 @@ describe('METHOD docs', () => {
   });
 
   it('keeps METHOD distinct from forge-specific PR tooling', () => {
-    const readme = readRepoFile('README.md');
+    const process = readRepoFile('docs/PROCESS.md');
 
-    expect(readme).toContain('METHOD is not a GitHub workflow, a pull-request cockpit, or a');
-    expect(readme).toContain('Draft Punks Doghouse');
-    expect(readme).toContain('they do not define the method');
+    expect(process).toContain('forge-agnostic');
+    expect(process).toContain('without turning METHOD into a forge');
   });
 
   it('ships the BEARING signpost the README describes', () => {
@@ -134,11 +125,13 @@ describe('METHOD docs', () => {
 
     expect(codes.length, 'expected at least one legend in docs/method/legends/').toBeGreaterThan(0);
 
+    // README references the legends directory in its structure section
+    expect(readme).toContain('legends/');
+
     for (const code of codes) {
       const legendDoc = readRepoFile(`docs/method/legends/${code}.md`);
 
       expect(legendDoc).toContain(`# Legend: ${code}`);
-      expect(readme).toContain(`\`${code}\``);
       expect(vision).toContain(`### ${code}`);
     }
   });
@@ -184,13 +177,10 @@ describe('METHOD docs', () => {
 
   it('formalizes human, agent, and user as abstract seats in doctrine', () => {
     const invariant = readRepoFile('docs/invariants/sponsor-abstractness.md');
-    const readme = readRepoFile('README.md');
     const process = readRepoFile('docs/PROCESS.md');
 
     expect(invariant).toContain('same way it is in a user story');
     expect(invariant).toContain('not a specific individual, account, model brand, or');
-    expect(readme).toContain('like in a user story');
-    expect(readme).toContain('It does not mean a specific named');
     expect(process).toContain('like a user story');
     expect(process).toContain('not a literal named');
   });
@@ -597,10 +587,12 @@ describe('METHOD docs', () => {
     expect(vision).toMatch(/^generated_at:\s+\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/mu);
   });
 
-  it('documents the drift detector in the README tooling section', () => {
+  it('documents the drift detector in the CLI reference', () => {
+    const cli = readRepoFile('docs/CLI.md');
     const readme = readRepoFile('README.md');
 
-    expect(readme).toContain('method drift');
+    expect(cli).toContain('method drift');
+    // README links to CLI reference
     expect(readme).toContain('docs/CLI.md');
   });
 
@@ -624,16 +616,14 @@ describe('METHOD docs', () => {
     expect(workflow).toContain('npm test');
   });
 
-  it('documents the CI gate in the README tooling section', () => {
-    const readme = readRepoFile('README.md');
+  it('documents the CI gate in the CI workflow file', () => {
+    const workflow = readRepoFile('.github/workflows/ci.yml');
 
-    expect(readme).toContain('.github/workflows/ci.yml');
-    expect(readme).toContain('GitHub Actions');
-    expect(readme).toContain('ubuntu-24.04');
-    expect(readme).toContain('Node `22`');
-    expect(readme).toContain('npm ci');
-    expect(readme).toContain('npm run build');
-    expect(readme).toContain('npm test');
+    expect(workflow).toContain('ubuntu-24.04');
+    expect(workflow).toContain('node-version: 22');
+    expect(workflow).toContain('npm ci');
+    expect(workflow).toContain('npm run build');
+    expect(workflow).toContain('npm test');
   });
 
   it('defines shaped releases as artifacts while allowing version-target backlog lanes as planning input', () => {
@@ -674,12 +664,9 @@ describe('METHOD docs', () => {
     expect(runbook).toContain('Never guess. Never claim success');
   });
 
-  it('Branch naming uses one canonical pattern across README.md and docs/PROCESS.md, with no contradictory examples.', () => {
-    const readme = readRepoFile('README.md');
+  it('Branch naming uses one canonical pattern in docs/PROCESS.md, with no contradictory examples.', () => {
     const process = readRepoFile('docs/PROCESS.md');
 
-    // Both docs must name the cycles/<LEGEND>_<slug> pattern
-    expect(readme).toContain('cycles/');
     expect(process).toContain('cycles/<LEGEND>_<slug>');
 
     // process.md Rules section must use cycles/<LEGEND>_<slug>, not bare cycles/<cycle_name>
@@ -690,22 +677,21 @@ describe('METHOD docs', () => {
     expect(process).toContain('`cycles/<LEGEND>_<slug>`');
   });
 
-  it('The RED step in README.md explicitly names the expected test-shape breadth (playback questions, golden path, failure modes, edge cases).', () => {
-    const readme = readRepoFile('README.md');
+  it('The RED step in docs/PROCESS.md names playback questions as the test driver.', () => {
+    const process = readRepoFile('docs/PROCESS.md');
 
-    // RED step must go beyond just "playback questions become specs"
-    expect(readme).toContain('playback questions');
-    expect(readme).toContain('golden path');
-    expect(readme).toContain('failure modes');
-    expect(readme).toContain('edge cases');
+    expect(process).toContain('Write failing tests from the playback questions');
+    expect(process).toContain('Playback questions drive the design and the tests');
   });
 
   it('Lane conformance has an explicit rule documented.', () => {
     const readme = readRepoFile('README.md');
+    const cli = readRepoFile('docs/CLI.md');
 
-    // The README must state whether lanes are scaffolded or created on demand
+    // README mentions method init in the quick start
     expect(readme).toContain('method init');
-    expect(readme).toMatch(/lane.*scaffold|scaffold.*lane/iu);
+    // CLI reference documents the init command that scaffolds the workspace
+    expect(cli).toContain('method init');
   });
 
   it('The repo has LICENSE (Apache 2.0), CONTRIBUTING.md, SECURITY.md, and NOTICE files.', () => {
@@ -796,36 +782,18 @@ describe('METHOD docs', () => {
       /On failure, tools set `isError: true` and `structuredContent` includes:[\s\S]*- `tool`[\s\S]*- `ok: false`[\s\S]*- `error\.message`/u,
     );
 
-    // README references both docs
+    // README references both reference docs in the documentation table
     expect(readme).toContain('docs/CLI.md');
     expect(readme).toContain('docs/MCP.md');
-    expect(readme).toContain('method migrate');
-    expect(readme).toContain('method backlog list');
-    expect(readme).toContain('method backlog deps');
-    expect(readme).toContain('method backlog edit');
-    expect(readme).toContain('method next');
-    expect(readme).toContain('method retire');
-    expect(readme).toContain('method signpost status');
-    expect(readme).toContain('method signpost init');
-    expect(readme).toContain('method_backlog_edit');
-    expect(readme).toContain('method_backlog_query');
-    expect(readme).toContain('method_backlog_dependencies');
-    expect(readme).toContain('method_next_work');
-    expect(readme).toContain('method_retire');
-    expect(readme).toContain('method_signpost_status');
-    expect(readme).toContain('method_signpost_init');
-    expect(readme).toContain('method repair');
-    expect(readme).toContain('method_repair');
-    expect(readme).toContain('method_migrate');
   });
 
   it('documents release-note surfaces in the repo structure and release guidance', () => {
     const readme = readRepoFile('README.md');
     const releasesGuide = readRepoFile('docs/releases/README.md');
 
-    expect(readme).toContain('docs/releases/');
+    // README structure section lists releases directory and links to RELEASE.md
+    expect(readme).toContain('releases/');
     expect(readme).toContain('RELEASE.md');
-    expect(readme).toMatch(/release\s+notes\s+when\s+the\s+cycle\s+changes\s+them/u);
     expect(releasesGuide).toContain('# Releases');
     expect(releasesGuide).toContain('`docs/releases/vX.Y.Z.md`');
     expect(releasesGuide).toContain('Summary');

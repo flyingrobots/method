@@ -228,3 +228,40 @@ A specialized cycle for temporary implementations that exist to prove behavior, 
 1. Honestly discard or replace the implementation.
 2. If retired, move artifacts to `docs/method/graveyard/`.
 3. If adopted, replace the spike with a formal design cycle.
+
+## Design Constraints
+
+**Meaning must survive without decoration.** If the work only makes
+sense with color, layout, motion, or shared visual context, the design
+is unfinished. Rich interaction is valuable, but the underlying truth
+must stand on its own.
+
+**Accessibility is a product concern, not a fallback string path.**
+Designs must name the linear reading model and reduced-complexity
+experience, not assume the default operator.
+
+**Localization is not translation after the fact.** Wording, wrapping,
+formatting, and directionality are design constraints from the start.
+Prefer logical `start`/`end` thinking over hardcoded left/right
+assumptions.
+
+## Coordination
+
+METHOD is designed for a solo developer working with an agent. It
+scales to a team without adding meetings, roles, or synchronization
+ceremonies. The mechanism is passive legibility.
+
+If you can answer these questions by reading the repo, you do not need
+a standup:
+
+- What is actively open? → `method status`
+- Is this workspace healthy? → `method doctor`
+- What is under review? → `method review-state`
+- What is committed? → each design doc names its sponsors and hill
+- What is next? → `method status` and the backlog
+- What failed and why? → `ls docs/method/retro/`
+- What did we decide not to do? → `ls docs/method/graveyard/`
+
+No standups. No syncs. No status emails. No sprint planning. No retro
+meetings. The retro is a document, not a ceremony. The repo is the
+single source of truth. Read it.
