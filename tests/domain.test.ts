@@ -25,6 +25,11 @@ describe('Domain Models', () => {
     };
     expect(CycleSchema.parse(validCycle)).toEqual(validCycle);
 
+    // Legacy payloads with `number` field should still parse (Zod strips unknown keys)
+    const legacyPayload = { ...validCycle, number: 42 };
+    const parsed = CycleSchema.parse(legacyPayload);
+    expect(parsed).not.toHaveProperty('number');
+
     // Invalid BacklogItem (malformed lane)
     expect(() =>
       BacklogItemSchema.parse({

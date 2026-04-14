@@ -145,6 +145,9 @@ export function runDoctorRepair(root: string, mode: DoctorRepairMode): DoctorRep
     };
   }
 
+  // Repairs are applied from the initial snapshot. Each repair handler checks
+  // existence before acting and returns 'skipped' if the target was already
+  // moved by a prior repair. This is safe because repair kinds are idempotent.
   const touchedPaths = new Set<string>();
   const repairs = selectedIssues.map((issue) => {
     const repair = issue.repair!;
@@ -415,12 +418,16 @@ function inspectStructure(root: string, paths: PathsConfig): DoctorIssue[] {
     );
   }
 
-  // Detect legacy nested design doc directories
+  // Detect legacy nested design doc directories (NNNN-slug pattern only)
+  const legacyDirPattern = /^\d{4}-[a-z0-9][a-z0-9-]*$/u;
   const designDir = resolve(root, paths.design);
   if (isDirectoryPath(designDir)) {
     for (const entry of readdirSync(designDir, { withFileTypes: true })) {
       if (!entry.isDirectory() || entry.isSymbolicLink()) {
         continue;
+      }
+      if (!legacyDirPattern.test(entry.name)) {
+        continue; // Only flag directories matching the legacy NNNN-slug convention
       }
       const subdir = resolve(designDir, entry.name);
       const mdFiles = readdirSync(subdir).filter((name) => name.endsWith('.md'));

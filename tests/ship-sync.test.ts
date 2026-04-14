@@ -1,6 +1,6 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, relative } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { initWorkspace, Workspace } from '../src/index.js';
 import { renderBearing } from '../src/renderers.js';
@@ -49,8 +49,8 @@ describe('Ship Sync', () => {
     const workspace = new Workspace(root);
 
     // Create a backlog item and move it to asap
-    workspace.captureIdea('Next priority', 'PROCESS', 'ASAP Priority');
-    workspace.moveBacklogItem('docs/method/backlog/inbox/PROCESS_asap-priority.md', 'asap');
+    const asapPath = workspace.captureIdea('Next priority', 'PROCESS', 'ASAP Priority');
+    workspace.moveBacklogItem(relative(root, asapPath), 'asap');
 
     const _itemPath = workspace.captureIdea('Feature Z', 'PROCESS', 'Just Shipped');
     const cycle = workspace.pullItem('PROCESS_just-shipped');

@@ -24,8 +24,8 @@ present during authorship, review, or playback.
 ## How do you check?
 
 - Design documents name sponsors as roles (e.g., "Human: System Architect").
-- Doctrine that says `human`, `agent`, or `user` is describing a seat or
-  perspective in the workflow, not a literal identity.
+- Doctrine uses `human`, `agent`, and `user` to describe seats or
+  perspectives in the workflow, not literal identities.
 - No literal personal names or specific agent brand names are used in
   the `Sponsors` section or elsewhere when an abstract seat is intended.
 - The roles named are descriptive of the interests being represented
