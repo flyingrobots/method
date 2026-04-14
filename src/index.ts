@@ -366,9 +366,9 @@ export class Workspace {
     outcome: Outcome,
     retroContent?: {
       summary?: string;
-      drift?: string;
-      newDebt?: string;
-      coolIdeas?: string;
+      surprised?: string;
+      differently?: string;
+      followUp?: string;
     },
   ): Promise<Cycle> {
     if (!completedDriftCheck) {
@@ -396,9 +396,9 @@ export class Workspace {
         witnessDir: relative(this.root, witnessDir),
         release: readCycleRelease(cycle),
         summary: retroContent?.summary,
-        drift: retroContent?.drift,
-        newDebt: retroContent?.newDebt,
-        coolIdeas: retroContent?.coolIdeas,
+        surprised: retroContent?.surprised,
+        differently: retroContent?.differently,
+        followUp: retroContent?.followUp,
       }),
       'utf8',
     );

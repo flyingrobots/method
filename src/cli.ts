@@ -212,21 +212,21 @@ export async function runCli(argv: readonly string[], options: RunCliOptions = {
 
       // Conversational retro prompts (skip if --summary provided)
       let retroSummary = parsed.summary ?? '';
-      let retroDrift = '';
-      let retroDebt = '';
-      let retroIdeas = '';
+      let surprised = '';
+      let differently = '';
+      let followUp = '';
       if (parsed.summary === undefined) {
-        retroSummary = await promptText({ title: 'Retro summary (what happened?):', defaultValue: '' });
-        retroDrift = await promptText({ title: 'Drift notes (empty if none):', defaultValue: '' });
-        retroDebt = await promptText({ title: 'New debt discovered (empty if none):', defaultValue: '' });
-        retroIdeas = await promptText({ title: 'Cool ideas surfaced (empty if none):', defaultValue: '' });
+        retroSummary = await promptText({ title: 'What happened? (summary):', defaultValue: '' });
+        surprised = await promptText({ title: 'What surprised you?', defaultValue: '' });
+        differently = await promptText({ title: 'What would you do differently?', defaultValue: '' });
+        followUp = await promptText({ title: 'Follow-up items (new debt, cool ideas, backlog notes):', defaultValue: '' });
       }
 
       const cycle = await workspace.closeCycle(parsed.cycle, completedDriftCheck, parsed.outcome, {
         summary: retroSummary.length > 0 ? retroSummary : undefined,
-        drift: retroDrift.length > 0 ? retroDrift : undefined,
-        newDebt: retroDebt.length > 0 ? retroDebt : undefined,
-        coolIdeas: retroIdeas.length > 0 ? retroIdeas : undefined,
+        surprised: surprised.length > 0 ? surprised : undefined,
+        differently: differently.length > 0 ? differently : undefined,
+        followUp: followUp.length > 0 ? followUp : undefined,
       });
       stdout.write(`${alert(`Closed ${cycle.name}`, { variant: 'success', ctx })}\n`);
       stdout.write(`${relative(root, cycle.retroDoc)}\n`);

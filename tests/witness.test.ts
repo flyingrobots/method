@@ -169,6 +169,6 @@ describe('Automated Witness Capture', () => {
       witnessDir: 'docs\\method\\retro\\PROCESS_windows-paths\\witness',
     });
     expect(retroContent).toContain('design_doc: "docs/design/PROCESS_windows-paths.md"');
-    expect(retroContent).toContain('Add artifacts under `docs/method/retro/PROCESS_windows-paths/witness`');
+    expect(retroContent).toContain('Artifacts under `docs/method/retro/PROCESS_windows-paths/witness`');
   });
 });

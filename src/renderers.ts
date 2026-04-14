@@ -225,9 +225,9 @@ export function renderRetroDoc(options: {
   witnessDir: string;
   release?: string;
   summary?: string;
-  drift?: string;
-  newDebt?: string;
-  coolIdeas?: string;
+  surprised?: string;
+  differently?: string;
+  followUp?: string;
 }): string {
   if (options.outcome !== 'hill-met' && options.outcome !== 'partial' && options.outcome !== 'not-met') {
     throw new Error('Outcome is required and must be one of: hill-met, partial, not-met.');
@@ -253,25 +253,19 @@ export function renderRetroDoc(options: {
     '',
     '## Playback Witness',
     '',
-    `Add artifacts under \`${witnessDir}\` and link them here.`,
+    `Artifacts under \`${witnessDir}\`.`,
     '',
-    '## Drift',
+    '## What surprised you?',
     '',
-    options.drift?.trim() || '- None recorded.',
+    options.surprised?.trim() || 'Nothing unexpected.',
     '',
-    '## New Debt',
+    '## What would you do differently?',
     '',
-    options.newDebt?.trim() || '- None recorded.',
+    options.differently?.trim() || 'No changes to approach.',
     '',
-    '## Cool Ideas',
+    '## Follow-up items',
     '',
-    options.coolIdeas?.trim() || '- None recorded.',
-    '',
-    '## Backlog Maintenance',
-    '',
-    '- [ ] Inbox processed',
-    '- [ ] Priorities reviewed',
-    '- [ ] Dead work buried or merged',
+    options.followUp?.trim() || '- None.',
     '',
   ].join('\n');
 }

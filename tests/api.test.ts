@@ -1119,7 +1119,28 @@ describe('Method API', () => {
     expect(retroContent).not.toMatch(/^TBD$/mu);
   });
 
-  it('Does `closeCycle` accept optional retro content and pass it through to the rendered retro doc?', async () => {
+  it('Does the retro template ask focused questions instead of providing empty sections?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.captureIdea('Template Check', 'PROCESS', 'Template Check');
+    workspace.pullItem('PROCESS_template-check');
+    const cycle = await workspace.closeCycle('PROCESS_template-check', true, 'hill-met');
+
+    const retro = readFileSync(cycle.retroDoc, 'utf8');
+    // New focused sections exist
+    expect(retro).toContain('## What surprised you?');
+    expect(retro).toContain('## What would you do differently?');
+    expect(retro).toContain('## Follow-up items');
+    // Old hollow sections are gone
+    expect(retro).not.toContain('## Drift');
+    expect(retro).not.toContain('## New Debt');
+    expect(retro).not.toContain('## Cool Ideas');
+    expect(retro).not.toContain('## Backlog Maintenance');
+  });
+
+  it('Does the retro doc contain the surprised and differently responses when provided during close?', async () => {
     const root = createTempRoot();
     initWorkspace(root);
     const workspace = new Workspace(root);
@@ -1129,16 +1150,16 @@ describe('Method API', () => {
 
     const cycle = await workspace.closeCycle('PROCESS_retro-content-test', true, 'hill-met', {
       summary: 'This is the actual retro summary.',
-      drift: '- Minor wording drift in README.',
-      newDebt: '- Need to refactor the widget module.',
-      coolIdeas: '- Could add a dashboard view.',
+      surprised: 'The drift detector caught more than expected.',
+      differently: 'Would have written the test first.',
+      followUp: '- File a backlog item for the remaining edge case.',
     });
 
     const retroContent = readFileSync(cycle.retroDoc, 'utf8');
     expect(retroContent).toContain('This is the actual retro summary.');
-    expect(retroContent).toContain('Minor wording drift in README.');
-    expect(retroContent).toContain('Need to refactor the widget module.');
-    expect(retroContent).toContain('Could add a dashboard view.');
+    expect(retroContent).toContain('The drift detector caught more than expected.');
+    expect(retroContent).toContain('Would have written the test first.');
+    expect(retroContent).toContain('File a backlog item for the remaining edge case.');
     expect(retroContent).not.toContain('TBD');
   });
 
