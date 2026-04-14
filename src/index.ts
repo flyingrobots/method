@@ -226,12 +226,19 @@ export class Workspace {
       throw new MethodError('Title cannot be empty.');
     }
 
-    const slug = slugify(heading);
+    const normalizedLegend = normalizeRequestedLegend(options.legend);
+    let slug = slugify(heading);
     if (slug.length === 0) {
       throw new MethodError('Could not derive a filename from the provided title.');
     }
-
-    const normalizedLegend = normalizeRequestedLegend(options.legend);
+    // Strip leading legend-like prefix from slug to avoid duplication
+    // e.g. legend=DX, title="DX-022 — Layout Inspector" → slug should be "022-layout-inspector" not "dx-022-layout-inspector"
+    if (normalizedLegend !== undefined) {
+      const legendLower = normalizedLegend.toLowerCase();
+      if (slug.startsWith(`${legendLower}-`)) {
+        slug = slug.slice(legendLower.length + 1);
+      }
+    }
     const prefix = normalizedLegend === undefined ? '' : `${normalizedLegend}_`;
     const path = resolve(this.paths.backlog, lane, `${prefix}${slug}.md`);
     if (existsSync(path)) {

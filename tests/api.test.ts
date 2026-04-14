@@ -1177,4 +1177,21 @@ describe('Method API', () => {
     expect(exitCode).toBe(0);
     expect(stdout.output).toContain('Closed method-cli');
   });
+
+  it('Does createBacklogItem avoid duplicating the legend prefix when the title already contains it?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    const path = workspace.createBacklogItem({
+      lane: 'inbox',
+      title: 'DX-022 — Layout Inspector Overlay',
+      legend: 'DX',
+    });
+
+    // Should NOT contain DX_dx-022 (duplicated legend)
+    expect(path).not.toContain('DX_dx-022');
+    // Should contain DX_ prefix followed by the slug without the legend prefix
+    expect(path).toContain('DX_022');
+  });
 });
