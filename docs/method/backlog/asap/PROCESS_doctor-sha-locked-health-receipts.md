@@ -1,7 +1,7 @@
 ---
-title: "Doctor SHA-locked health receipts"
+title: Doctor SHA-locked health receipts
 legend: PROCESS
-lane: inbox
+lane: asap
 ---
 
 # Doctor SHA-locked health receipts

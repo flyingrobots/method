@@ -1,7 +1,7 @@
 ---
-title: "Executable witness verification instructions"
+title: Executable witness verification instructions
 legend: PROCESS
-lane: inbox
+lane: asap
 ---
 
 # Executable witness verification instructions
