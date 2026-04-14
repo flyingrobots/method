@@ -966,14 +966,25 @@ describe('method CLI', () => {
     expect(designDoc).toMatch(/^cycle:\s+"PROCESS_strand-lifecycle"$/mu);
     expect(designDoc).toMatch(/^source_backlog:\s+"docs\/method\/backlog\/asap\/PROCESS_strand-lifecycle\.md"$/mu);
     expect(designDoc).toContain('Legend: PROCESS');
-    expect(designDoc).toContain('- Human: Backlog operator');
-    expect(designDoc).toContain('- Agent: Implementation agent');
-    expect(designDoc).toContain('These labels are abstract roles.');
-    expect(designDoc).toContain('like in a user story');
-    expect(designDoc).toContain('Mechanical state transitions for strands.');
-    expect(designDoc).toContain('## Accessibility and Assistive Reading');
-    expect(designDoc).toContain('## Localization and Directionality');
-    expect(designDoc).toContain('## Agent Inspectability and Explainability');
+    // Sponsors section and "user story" boilerplate removed
+    expect(designDoc).not.toContain('## Sponsors');
+  });
+
+  it('Do new design docs omit the static Sponsors section?', async () => {
+    const root = createTempRoot();
+    await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    writeFileSync(
+      join(root, 'docs/method/backlog/asap/PROCESS_sponsor-check.md'),
+      '---\ntitle: "Sponsor Check"\nlegend: PROCESS\nlane: asap\n---\n\n# Sponsor Check\n\nBody.\n',
+      'utf8',
+    );
+
+    await runCli(['pull', 'PROCESS_sponsor-check'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    const designDoc = readFile(root, 'docs/design/PROCESS_sponsor-check.md');
+
+    expect(designDoc).not.toContain('## Sponsors');
+    expect(designDoc).not.toContain('Backlog operator');
+    expect(designDoc).not.toContain('Implementation agent');
   });
 
   it('Does `method close` create a retro doc that already includes required frontmatter fields like `title`, `outcome`, `drift_check`, and `design_doc`?', async () => {
