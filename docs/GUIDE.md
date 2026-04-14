@@ -181,4 +181,6 @@ the load-bearing contract.
 | `docs/CLI.md` | Hybrid | CLI command reference. |
 | `docs/MCP.md` | Hybrid | MCP tool reference. |
 | `docs/GUIDE.md` | Hybrid | Operator advice with generated sections. |
+| `docs/PROCESS.md` | Hand-authored | Cycle doctrine, rules, and workflow. |
+| `docs/RELEASE.md` | Hand-authored | Release doctrine and runbook. |
 <!-- /generate -->

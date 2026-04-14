@@ -41,6 +41,8 @@ export const SIGNPOST_SPECS: readonly SignpostSpec[] = [
     description: 'Operator advice with generated sections.',
     initStrategy: 'reference-doc',
   },
+  { name: 'PROCESS', path: 'docs/PROCESS.md', kind: 'Hand-authored', description: 'Cycle doctrine, rules, and workflow.' },
+  { name: 'RELEASE', path: 'docs/RELEASE.md', kind: 'Hand-authored', description: 'Release doctrine and runbook.' },
 ] as const;
 
 export const REFERENCE_DOC_TARGETS = ['ARCHITECTURE.md', 'docs/CLI.md', 'docs/MCP.md', 'docs/GUIDE.md'] as const;
