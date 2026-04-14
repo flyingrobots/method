@@ -15,6 +15,12 @@ export interface DriftReport {
   output: string;
 }
 
+const NON_ALNUM_PATTERN = /[^\p{L}\p{N}\s]/gu;
+const WHITESPACE_PATTERN = /\s+/gu;
+const BACKTICK_PATTERN = /`/gu;
+const QUESTION_PREFIX_PATTERN = /^(?:does|is|can|will|are|do|has|have)\s+/u;
+const TRAILING_PUNCTUATION_PATTERN = /[.?!]+$/u;
+
 export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], testsDir?: string, thresholds?: DriftThresholds): DriftReport {
   const semanticMatchThreshold = thresholds?.semantic_match ?? DEFAULT_SEMANTIC_MATCH_THRESHOLD;
   const nearMissThreshold = thresholds?.near_miss ?? DEFAULT_NEAR_MISS_THRESHOLD;
@@ -217,7 +223,7 @@ function tokenSimilarity(left: string, right: string): number {
   const tokenize = (value: string): Set<string> =>
     new Set(
       value
-        .replace(/[^\p{L}\p{N}\s]/gu, '')
+        .replace(NON_ALNUM_PATTERN, '')
         .split(' ')
         .filter((t) => t.length > 0)
         .map(stemToken),
@@ -271,7 +277,7 @@ function stemToken(token: string): string {
 }
 
 function normalizeForMatch(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/gu, ' ');
+  return value.trim().toLowerCase().replace(WHITESPACE_PATTERN, ' ');
 }
 
 function normalizeForSemanticMatch(value: string): string {
@@ -280,13 +286,10 @@ function normalizeForSemanticMatch(value: string): string {
       .trim()
       .toLowerCase()
       // Strip backticks
-      .replace(/`/gu, '')
-      // Strip leading question words: "Does", "Is", "Can", "Will", "Are", "Do", "Has", "Have"
-      .replace(/^(?:does|is|can|will|are|do|has|have)\s+/u, '')
-      // Collapse whitespace
-      .replace(/\s+/gu, ' ')
-      // Strip trailing punctuation
-      .replace(/[.?!]+$/u, '')
+      .replace(BACKTICK_PATTERN, '')
+      .replace(QUESTION_PREFIX_PATTERN, '')
+      .replace(WHITESPACE_PATTERN, ' ')
+      .replace(TRAILING_PUNCTUATION_PATTERN, '')
       .trim()
   );
 }

@@ -42,6 +42,7 @@ class MemoryWriter {
 function createCallToolHarness(
   options: { reviewStateQuery?: (options: { cwd: string; pr?: number; currentBranch?: boolean }) => Promise<ReviewStateResult> } = {},
 ) {
+  // biome-ignore lint/suspicious/noExplicitAny: MCP protocol handler has dynamic shape
   let callToolHandler: any;
   const mockServer = {
     setRequestHandler: vi.fn((schema, handler) => {
@@ -64,6 +65,7 @@ describe('MCP Server', () => {
   });
 
   it('Are tools provided for querying the backlog, pulling items, and closing cycles?', async () => {
+    // biome-ignore lint/suspicious/noExplicitAny: MCP protocol handler has dynamic shape
     let listToolsHandler: any;
     const mockServer = {
       setRequestHandler: vi.fn((schema, handler) => {
@@ -81,6 +83,7 @@ describe('MCP Server', () => {
     const result = await listToolsHandler();
     expect(result.tools.length).toBeGreaterThan(0);
 
+    // biome-ignore lint/suspicious/noExplicitAny: MCP tool shape is dynamic
     const toolNames = result.tools.map((t: any) => t.name);
     expect(toolNames).toContain('method_doctor');
     expect(toolNames).toContain('method_repair');
@@ -110,8 +113,10 @@ describe('MCP Server', () => {
       expect(tool.inputSchema.required, `${tool.name} must require workspace`).toContain('workspace');
       expect(tool.inputSchema.properties.workspace, `${tool.name} must have workspace property`).toBeDefined();
     }
+    // biome-ignore lint/suspicious/noExplicitAny: MCP tool shape is dynamic
     const statusTool = result.tools.find((tool: any) => tool.name === 'method_status');
     expect(statusTool.inputSchema.properties.summary).toBeDefined();
+    // biome-ignore lint/suspicious/noExplicitAny: MCP tool shape is dynamic
     const reviewStateTool = result.tools.find((tool: any) => tool.name === 'method_review_state');
     expect(reviewStateTool.inputSchema.properties.pr).toBeDefined();
     expect(reviewStateTool.inputSchema.properties.currentBranch).toBeDefined();

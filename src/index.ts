@@ -126,7 +126,7 @@ function resolvePaths(root: string, paths: PathsConfig): ResolvedPaths {
 }
 
 const LEGEND_CODE_PATTERN = /^[A-Z][A-Z0-9]*$/u;
-const LEGEND_PATTERN = /^(?<legend>[A-Z][A-Z0-9]*)_(?<slug>.+)$/;
+const LEGEND_PATTERN = /^(?<legend>[A-Z][A-Z0-9]*)_(?<slug>.+)$/u;
 // CYCLE_NAME_PATTERN and LEGACY_CYCLE_PATTERN imported from ./cycle-ops.js
 const FEEDBACK_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
 
@@ -1225,11 +1225,12 @@ export class Workspace {
         timeout: options?.timeoutMs,
       });
       return stdout + stderr;
-    } catch (error: any) {
-      if (error.killed || error.signal === 'SIGTERM') {
+    } catch (error: unknown) {
+      const execError = error as { killed?: boolean; signal?: string; stdout?: string; stderr?: string };
+      if (execError.killed || execError.signal === 'SIGTERM') {
         throw new MethodError(`Command timed out: ${fullCommand}`);
       }
-      return (error.stdout ?? '') + (error.stderr ?? '');
+      return (execError.stdout ?? '') + (execError.stderr ?? '');
     }
   }
 }

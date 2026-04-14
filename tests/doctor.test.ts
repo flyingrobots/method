@@ -286,7 +286,7 @@ describe('doctor engine', () => {
 
     expect(legacyIssue).toBeDefined();
     expect(legacyIssue?.severity).toBe('warning');
-    expect(legacyIssue?.fix).toContain('method doctor --repair');
+    expect(legacyIssue?.fix).toContain('method repair --apply');
     expect(legacyIssue?.repair?.kind).toBe('flatten-design-doc');
   });
 

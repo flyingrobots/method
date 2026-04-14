@@ -1,5 +1,5 @@
 import { readdirSync, statSync } from 'node:fs';
-import { basename, isAbsolute, relative } from 'node:path';
+import { basename, isAbsolute, relative, resolve } from 'node:path';
 import { MethodError } from './errors.js';
 
 export function normalizeRepoPath(value: string): string {
@@ -26,7 +26,7 @@ export function collectMarkdownFiles(root: string, maxDepth = 10): string[] {
 
   const files: string[] = [];
   for (const entry of readdirSync(root, { withFileTypes: true })) {
-    const path = `${root}/${entry.name}`;
+    const path = resolve(root, entry.name);
     if (entry.isDirectory() && !entry.isSymbolicLink()) {
       files.push(...collectMarkdownFiles(path, maxDepth - 1));
     } else if (entry.isFile() && entry.name.endsWith('.md')) {

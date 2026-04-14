@@ -17,6 +17,7 @@ import type {
 } from './domain.js';
 import { isLaneName } from './domain.js';
 import { workspaceScaffold } from './index.js';
+import { collectMarkdownFiles as collectMarkdownFilesShared } from './workspace-utils.js';
 
 interface ConfigInspection {
   paths: PathsConfig | null;
@@ -432,7 +433,7 @@ function inspectStructure(root: string, paths: PathsConfig): DoctorIssue[] {
             'warning',
             'Design doc lives in a subdirectory instead of as a flat file under the design root.',
             relDir,
-            `Run \`method doctor --repair\` to flatten \`${relDir}/\` into \`${paths.design}/<name>.md\`.`,
+            `Run \`method repair --apply\` to flatten \`${relDir}/\` into \`${paths.design}/<name>.md\`.`,
             { kind: 'flatten-design-doc', targetPath: relDir },
           ),
         );
@@ -851,21 +852,9 @@ function inferFrontmatterTitle(targetPath: string, raw: string): string {
     .join(' ');
 }
 
+// collectMarkdownFiles imported from workspace-utils.ts as collectMarkdownFilesShared
 function collectMarkdownFiles(root: string, maxDepth = 10): string[] {
-  if (maxDepth <= 0 || !isDirectoryPath(root)) {
-    return [];
-  }
-
-  const files: string[] = [];
-  for (const entry of readdirSync(root, { withFileTypes: true })) {
-    const path = resolve(root, entry.name);
-    if (entry.isDirectory() && !entry.isSymbolicLink()) {
-      files.push(...collectMarkdownFiles(path, maxDepth - 1));
-    } else if (entry.isFile() && entry.name.endsWith('.md')) {
-      files.push(path);
-    }
-  }
-  return files.sort((left, right) => left.localeCompare(right));
+  return collectMarkdownFilesShared(root, maxDepth);
 }
 
 function hasInstalledHook(directory: string): boolean {

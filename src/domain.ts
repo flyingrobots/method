@@ -41,6 +41,7 @@ export function isReleaseLane(value: string): boolean {
 export function orderedBacklogLaneNames(lanes: Iterable<string>): string[] {
   const unique = new Set(lanes);
   const leadingCanonical = ['inbox', 'asap'].filter((lane): lane is CanonicalLane => unique.has(lane));
+  // Legacy: 'up-next' was a canonical lane before v2.0.0. Preserved for backward compat only.
   const legacyUpNext = unique.has('up-next') ? ['up-next'] : [];
   const releaseLanes = [...unique].filter((lane) => isReleaseLane(lane)).sort(compareReleaseLaneNames);
   const trailingCanonical = ['bad-code', 'cool-ideas'].filter((lane): lane is CanonicalLane => unique.has(lane));

@@ -349,7 +349,7 @@ export interface CreateMcpServerOptions {
 }
 
 export function createMcpServer(options: CreateMcpServerOptions = {}) {
-  const server = new Server({ name: 'method', version: '0.3.0' }, { capabilities: { tools: {} } });
+  const server = new Server({ name: 'method', version: '2.0.0' }, { capabilities: { tools: {} } });
 
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     return { tools: MCP_TOOLS };

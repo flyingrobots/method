@@ -32,8 +32,7 @@
         "noNonNullAssertion": "off"
       },
       "suspicious": {
-        "noConsole": "off",
-        "noExplicitAny": "off"
+        "noConsole": "off"
       },
       "performance": {
         "useTopLevelRegex": "off"

@@ -3,7 +3,9 @@
 npm run lint || exit 1
 
 # Regenerate reference docs and stage any changes
-npx tsx src/cli.ts sync refs >/dev/null 2>&1
+if ! npx tsx src/cli.ts sync refs >/dev/null 2>&1; then
+  echo "[pre-commit] Warning: sync refs failed." >&2
+fi
 git diff --quiet ARCHITECTURE.md docs/CLI.md docs/MCP.md docs/GUIDE.md || {
   git add ARCHITECTURE.md docs/CLI.md docs/MCP.md docs/GUIDE.md
   echo "[pre-commit] Regenerated and staged reference docs."

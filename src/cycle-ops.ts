@@ -6,8 +6,8 @@ import { readFrontmatter as fmReadFrontmatter } from './frontmatter.js';
 import type { ResolvedPaths } from './index.js';
 import { fileStem, normalizeOptionalString, normalizeRepoPath } from './workspace-utils.js';
 
-export const CYCLE_NAME_PATTERN = /^(?:(?<legend>[A-Z][A-Z0-9]*)_)?(?<slug>[a-z0-9][a-z0-9-]*)$/;
-export const LEGACY_CYCLE_PATTERN = /^(?<number>\d{4})-(?<slug>[a-z0-9][a-z0-9-]*)$/;
+export const CYCLE_NAME_PATTERN = /^(?:(?<legend>[A-Z][A-Z0-9]*)_)?(?<slug>[a-z0-9][a-z0-9-]*)$/u;
+export const LEGACY_CYCLE_PATTERN = /^(?<number>\d{4})-(?<slug>[a-z0-9][a-z0-9-]*)$/u;
 
 export function resolveCyclePacketPaths(
   root: string,
