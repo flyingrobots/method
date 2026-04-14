@@ -3,8 +3,17 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { runDoctor, runDoctorMigrate, runDoctorRepair } from '../src/doctor.js';
+import { runCli } from '../src/cli.js';
+import { generateDoctorReceipt, runDoctor, runDoctorMigrate, runDoctorRepair } from '../src/doctor.js';
 import { initWorkspace } from '../src/index.js';
+
+class MemoryWriter {
+  output = '';
+  write(data: string | Buffer): boolean {
+    this.output += typeof data === 'string' ? data : data.toString('utf8');
+    return true;
+  }
+}
 
 const tempRoots: string[] = [];
 
@@ -338,6 +347,39 @@ describe('doctor engine', () => {
 
     const content = readFileSync(join(root, 'docs/design/PROCESS_method-cli.md'), 'utf8');
     expect(content).toContain('cycle: "PROCESS_method-cli"');
+  });
+
+  it('Does `generateDoctorReceipt` return a receipt with commit_sha, status, and checks?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    execFileSync('git', ['init'], { cwd: root, stdio: 'ignore' });
+    execFileSync('git', ['add', '-A'], { cwd: root, stdio: 'ignore' });
+    execFileSync('git', ['commit', '-m', 'init', '--no-gpg-sign'], { cwd: root, stdio: 'ignore' });
+
+    const receipt = generateDoctorReceipt(root);
+
+    expect(receipt.generated_at).toMatch(/^\d{4}-\d{2}-\d{2}T/u);
+    expect(receipt.generated_at).toMatch(/^\d{4}-\d{2}-\d{2}T/u);
+    expect(receipt.commit_sha).toMatch(/^[0-9a-f]{40}$/u);
+    expect(receipt.counts.errors).toBe(0);
+    expect(receipt.checks.length).toBeGreaterThan(0);
+    // Status may be 'warn' (e.g. git hooks not configured) — that's fine for this test
+    expect(['ok', 'warn']).toContain(receipt.status);
+  });
+
+  it('Does `method doctor --receipt` produce a JSON receipt containing the commit SHA and health status?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    execFileSync('git', ['init'], { cwd: root, stdio: 'ignore' });
+    execFileSync('git', ['add', '-A'], { cwd: root, stdio: 'ignore' });
+    execFileSync('git', ['commit', '-m', 'init', '--no-gpg-sign'], { cwd: root, stdio: 'ignore' });
+
+    const stdout = new MemoryWriter();
+    const exitCode = await runCli(['doctor', '--receipt'], { cwd: root, stdout, stderr: new MemoryWriter() });
+
+    expect(exitCode).toBe(0);
+    const receipt = JSON.parse(stdout.output);
+    expect(receipt.commit_sha).toMatch(/^[0-9a-f]{40}$/u);
   });
 
   it('runs doctor, applies the bounded repair set, and re-checks the workspace through one migrate result.', () => {

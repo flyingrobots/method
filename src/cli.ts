@@ -17,6 +17,7 @@ import {
 } from './cli-renderer.js';
 import { loadConfig } from './config.js';
 import {
+  generateDoctorReceipt,
   renderDoctorMigrateText,
   renderDoctorRepairText,
   renderDoctorText,
@@ -74,6 +75,11 @@ export async function runCli(argv: readonly string[], options: RunCliOptions = {
       return 0;
     }
     if (parsed.command === 'doctor') {
+      if (parsed.receipt) {
+        const receipt = generateDoctorReceipt(root);
+        stdout.write(`${JSON.stringify(receipt, null, 2)}\n`);
+        return receipt.status === 'error' ? 1 : 0;
+      }
       const report = runDoctor(root);
       stdout.write(parsed.json ? `${JSON.stringify(report, null, 2)}\n` : renderDoctorText(report));
       return report.status === 'error' ? 1 : 0;

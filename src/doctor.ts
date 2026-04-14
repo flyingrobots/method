@@ -5,7 +5,16 @@ import { headerBox, separator } from '@flyingrobots/bijou';
 import { createNodeContext } from '@flyingrobots/bijou-node';
 import { parse as parseYaml } from 'yaml';
 import { ConfigSchema, DEFAULT_PATHS, type PathsConfig, PathsSchema } from './config.js';
-import type { DoctorCheck, DoctorCheckId, DoctorIssue, DoctorRepairKind, DoctorReport, DoctorSeverity, DoctorStatus } from './domain.js';
+import type {
+  DoctorCheck,
+  DoctorCheckId,
+  DoctorIssue,
+  DoctorReceipt,
+  DoctorRepairKind,
+  DoctorReport,
+  DoctorSeverity,
+  DoctorStatus,
+} from './domain.js';
 import { isLaneName } from './domain.js';
 import { workspaceScaffold } from './index.js';
 
@@ -66,6 +75,24 @@ export function runDoctor(root: string): DoctorReport {
     checks,
     issues,
     counts,
+  };
+}
+
+export function generateDoctorReceipt(root: string): DoctorReceipt {
+  const report = runDoctor(root);
+  let commitSha = 'unknown';
+  try {
+    commitSha = runGit(['rev-parse', 'HEAD'], root);
+  } catch {
+    // Not a git repo or no commits — receipt still valid, just unanchored
+  }
+
+  return {
+    generated_at: new Date().toISOString(),
+    commit_sha: commitSha,
+    status: report.status,
+    counts: report.counts,
+    checks: report.checks,
   };
 }
 

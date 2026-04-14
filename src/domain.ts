@@ -241,3 +241,15 @@ export const DoctorReportSchema = z.object({
   }),
 });
 export type DoctorReport = z.infer<typeof DoctorReportSchema>;
+
+export const DoctorReceiptSchema = z.object({
+  generated_at: z.string(),
+  commit_sha: z.string(),
+  status: DoctorStatusSchema,
+  counts: z.object({
+    errors: z.number().int().nonnegative(),
+    warnings: z.number().int().nonnegative(),
+  }),
+  checks: z.array(DoctorCheckSchema),
+});
+export type DoctorReceipt = z.infer<typeof DoctorReceiptSchema>;

@@ -3,6 +3,7 @@ import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { GitHubAdapter, type GitHubSyncResult } from './adapters/github.js';
 import {
+  generateDoctorReceipt,
   renderDoctorMigrateText,
   renderDoctorRepairText,
   renderDoctorText,
@@ -39,6 +40,15 @@ export const MCP_TOOLS: McpToolDef[] = [
     name: 'method_doctor',
     description:
       'Inspect METHOD workspace health and report concrete problems with suggested fixes, even when the workspace is partially broken.',
+    inputSchema: {
+      type: 'object',
+      properties: { ...workspaceProperty },
+      required: ['workspace'],
+    },
+  },
+  {
+    name: 'method_doctor_receipt',
+    description: 'Generate a SHA-locked doctor health receipt anchored to the current commit, for release gate verification.',
     inputSchema: {
       type: 'object',
       properties: { ...workspaceProperty },
@@ -356,6 +366,11 @@ export function createMcpServer(options: CreateMcpServerOptions = {}) {
       if (request.params.name === 'method_doctor') {
         const report = runDoctor(workspacePath);
         return successResult('method_doctor', renderDoctorText(report), report);
+      }
+
+      if (request.params.name === 'method_doctor_receipt') {
+        const receipt = generateDoctorReceipt(workspacePath);
+        return successResult('method_doctor_receipt', `Doctor receipt at ${receipt.commit_sha}: ${receipt.status}`, receipt);
       }
 
       if (request.params.name === 'method_repair') {

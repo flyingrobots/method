@@ -25,6 +25,10 @@ workspace-agnostic — a single instance can serve multiple projects.
 
 Inspect METHOD workspace health and report concrete problems with suggested fixes, even when the workspace is partially broken.
 
+### `method_doctor_receipt`
+
+Generate a SHA-locked doctor health receipt anchored to the current commit, for release gate verification.
+
 ### `method_repair`
 
 Plan or apply bounded doctor-guided repairs for missing directories, missing scaffold files, and frontmatter stubs.

@@ -4,7 +4,7 @@ import { MethodError } from './errors.js';
 export type ParsedCommand =
   | { command: 'help'; topic?: string }
   | { command: 'init'; path: string }
-  | { command: 'doctor'; json?: boolean }
+  | { command: 'doctor'; json?: boolean; receipt?: boolean }
   | { command: 'migrate'; json?: boolean }
   | {
       command: 'inbox';
@@ -386,16 +386,21 @@ function parseInitArgs(args: readonly string[]): ParsedCommand {
 
 function parseDoctorArgs(args: readonly string[]): ParsedCommand {
   let json = false;
+  let receipt = false;
 
   for (const value of args) {
     if (value === '--json') {
       json = true;
       continue;
     }
+    if (value === '--receipt') {
+      receipt = true;
+      continue;
+    }
     throw new MethodError(`Unknown option: ${value}\n\n${usage('doctor')}`);
   }
 
-  return { command: 'doctor', json };
+  return { command: 'doctor', json, receipt };
 }
 
 function parseMigrateArgs(args: readonly string[]): ParsedCommand {
