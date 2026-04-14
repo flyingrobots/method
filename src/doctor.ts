@@ -304,9 +304,8 @@ function inspectStructure(root: string, paths: PathsConfig): DoctorIssue[] {
   ];
   const requiredFiles = [
     resolve(root, 'CHANGELOG.md'),
-    resolve(root, paths.method_dir, 'process.md'),
-    resolve(root, paths.method_dir, 'release.md'),
-    resolve(root, paths.method_dir, 'release-runbook.md'),
+    resolve(root, 'docs/PROCESS.md'),
+    resolve(root, 'docs/RELEASE.md'),
     resolve(root, paths.method_dir, 'releases/README.md'),
     resolve(root, 'docs/releases/README.md'),
   ];

@@ -147,12 +147,8 @@ export function workspaceScaffold(
     ],
     files: new Map<string, string>([
       [resolve(root, 'CHANGELOG.md'), '# Changelog\n\n## Unreleased\n\n- No externally meaningful changes recorded yet.\n'],
-      [resolve(p.methodDir, 'process.md'), '# Process\n\nDescribe how cycles run in this repository.\n'],
-      [resolve(p.methodDir, 'release.md'), '# Release\n\nDescribe when and how externally meaningful releases ship.\n'],
-      [
-        resolve(p.methodDir, 'release-runbook.md'),
-        '# Release Runbook\n\nDescribe the sequential release pre-flight for this repository.\n',
-      ],
+      [resolve(root, 'docs/PROCESS.md'), '# Process\n\nDescribe how cycles run in this repository.\n'],
+      [resolve(root, 'docs/RELEASE.md'), '# Release\n\nDescribe when and how externally meaningful releases ship.\n'],
       [resolve(p.methodDir, 'releases/README.md'), '# Release Packets\n\nStore internal release design and verification artifacts here.\n'],
       [resolve(root, 'docs/releases/README.md'), '# Releases\n\nStore user-facing release notes and migration guides here.\n'],
     ]),
@@ -204,8 +200,8 @@ export class Workspace {
       this.paths.backlog,
       this.paths.design,
       this.paths.retro,
-      resolve(this.paths.methodDir, 'process.md'),
-      resolve(this.paths.methodDir, 'release.md'),
+      resolve(this.root, 'docs/PROCESS.md'),
+      resolve(this.root, 'docs/RELEASE.md'),
     ];
     if (requiredPaths.some((path) => !existsSync(path))) {
       throw new MethodError(`${this.root} is not a METHOD workspace. Run \`method init\` first.`);

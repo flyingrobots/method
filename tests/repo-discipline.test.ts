@@ -30,7 +30,7 @@ function createTempRoot(): string {
 describe('METHOD repo discipline', () => {
   it('Does METHOD repo doctrine now say that `main` should not carry open cycle packets or release-prep exceptions, and that discovering one is stop-and-repair work?', () => {
     const readme = readRepoFile('README.md');
-    const process = readRepoFile('docs/method/process.md');
+    const process = readRepoFile('docs/PROCESS.md');
 
     expect(readme).toContain('If `main` is ever found carrying an open cycle packet or a');
     expect(readme).toContain('release-prep exception, stop and repair that state');
@@ -40,7 +40,7 @@ describe('METHOD repo discipline', () => {
   });
 
   it('If I prep a release from this repo, does the release runbook explicitly fail when active cycles are still open on `main`?', () => {
-    const runbook = readRepoFile('docs/method/release-runbook.md');
+    const runbook = readRepoFile('docs/RELEASE.md');
 
     expect(runbook).toContain('Abort if any cycle packets are still open on merged `main`');
     expect(runbook).toContain('active cycle count on `main`');

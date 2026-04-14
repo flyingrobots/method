@@ -8,7 +8,7 @@ provenance_level: artifact_history
 
 This document holds practical advice for working in a METHOD repo. It
 is intentionally lighter than doctrine in `README.md` or
-`docs/method/process.md`.
+`docs/PROCESS.md`.
 
 If a practice proves durable and load-bearing, it can graduate into the
 core method later. Until then, this is guidance: useful, explicit, and
@@ -66,7 +66,7 @@ Why this is good practice:
 
 Some things are worth saying before they are worth standardizing.
 
-`README.md` and `docs/method/process.md` describe the load-bearing
+`README.md` and `docs/PROCESS.md` describe the load-bearing
 contract of METHOD. This guide is for patterns that help in practice
 but are not yet strong enough to claim as universal rules.
 

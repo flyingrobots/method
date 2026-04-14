@@ -46,9 +46,8 @@ describe('method CLI', () => {
     expect(stdout.output).toContain('Initialized METHOD workspace');
     expectFile(root, 'docs/method/backlog/inbox');
     expectFile(root, 'docs/design');
-    expectFile(root, 'docs/method/process.md');
-    expectFile(root, 'docs/method/release.md');
-    expectFile(root, 'docs/method/release-runbook.md');
+    expectFile(root, 'docs/PROCESS.md');
+    expectFile(root, 'docs/RELEASE.md');
     expectFile(root, 'docs/method/releases/README.md');
     expectFile(root, 'docs/releases/README.md');
     expectFile(root, 'CHANGELOG.md');
@@ -151,7 +150,7 @@ describe('method CLI', () => {
     const root = createTempRoot();
     initWorkspace(root);
     rmSync(join(root, 'docs/design'), { recursive: true, force: true });
-    rmSync(join(root, 'docs/method/release-runbook.md'), { recursive: true, force: true });
+    rmSync(join(root, 'docs/RELEASE.md'), { recursive: true, force: true });
     writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
 
     const planStdout = new MemoryWriter();
@@ -179,7 +178,7 @@ describe('method CLI', () => {
     expect(applied.mode).toBe('apply');
     expect(applied.repairs.every((repair: { status: string }) => repair.status === 'applied')).toBe(true);
     expect(applied.repairs.length).toBeGreaterThanOrEqual(3);
-    expect(readFile(root, 'docs/method/release-runbook.md')).toContain('# Release Runbook');
+    expect(readFile(root, 'docs/RELEASE.md')).toContain('# Release');
     expect(readFile(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md')).toMatch(
       /^---\ntitle: "Missing Frontmatter"\n---\n\n# Missing Frontmatter/mu,
     );
@@ -189,7 +188,7 @@ describe('method CLI', () => {
     const root = createTempRoot();
     initWorkspace(root);
     rmSync(join(root, 'docs/design'), { recursive: true, force: true });
-    rmSync(join(root, 'docs/method/release-runbook.md'), { recursive: true, force: true });
+    rmSync(join(root, 'docs/RELEASE.md'), { recursive: true, force: true });
     writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
     const stdout = new MemoryWriter();
 
@@ -206,7 +205,7 @@ describe('method CLI', () => {
     expect(result.repair.mode).toBe('apply');
     expect(result.repair.repairs.every((repair: { status: string }) => repair.status === 'applied')).toBe(true);
     expect(result.repair.repairs.length).toBeGreaterThanOrEqual(3);
-    expect(readFile(root, 'docs/method/release-runbook.md')).toContain('# Release Runbook');
+    expect(readFile(root, 'docs/RELEASE.md')).toContain('# Release');
     expect(readFile(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md')).toMatch(
       /^---\ntitle: "Missing Frontmatter"\n---\n\n# Missing Frontmatter/mu,
     );
@@ -1470,7 +1469,7 @@ describe('method CLI', () => {
     expect(existsSync(join(root, '.method/design'))).toBe(true);
     expect(existsSync(join(root, '.method/retro'))).toBe(true);
     expect(existsSync(join(root, '.method/graveyard'))).toBe(true);
-    expect(existsSync(join(root, '.method/process.md'))).toBe(true);
+    expect(existsSync(join(root, 'docs/PROCESS.md'))).toBe(true);
 
     // Inbox should work against custom paths
     const inboxOut = new MemoryWriter();

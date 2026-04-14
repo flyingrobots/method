@@ -502,7 +502,7 @@ describe('MCP Server', () => {
     const root = createTempRoot();
     initWorkspace(root);
     rmSync(join(root, 'docs/design'), { recursive: true, force: true });
-    rmSync(join(root, 'docs/method/release-runbook.md'), { recursive: true, force: true });
+    rmSync(join(root, 'docs/RELEASE.md'), { recursive: true, force: true });
     writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
     const callToolHandler = createCallToolHarness();
 
@@ -537,7 +537,7 @@ describe('MCP Server', () => {
     expect(applied.structuredContent.result.mode).toBe('apply');
     expect(applied.structuredContent.result.repairs.every((repair: { status: string }) => repair.status === 'applied')).toBe(true);
     expect(applied.structuredContent.result.repairs.length).toBeGreaterThanOrEqual(3);
-    expect(readFileSync(join(root, 'docs/method/release-runbook.md'), 'utf8')).toContain('# Release Runbook');
+    expect(readFileSync(join(root, 'docs/RELEASE.md'), 'utf8')).toContain('# Release');
     expect(readFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), 'utf8')).toMatch(
       /^---\ntitle: "Missing Frontmatter"\n---\n\n# Missing Frontmatter/mu,
     );
@@ -547,7 +547,7 @@ describe('MCP Server', () => {
     const root = createTempRoot();
     initWorkspace(root);
     rmSync(join(root, 'docs/design'), { recursive: true, force: true });
-    rmSync(join(root, 'docs/method/release-runbook.md'), { recursive: true, force: true });
+    rmSync(join(root, 'docs/RELEASE.md'), { recursive: true, force: true });
     writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
     const callToolHandler = createCallToolHarness();
 
@@ -567,7 +567,7 @@ describe('MCP Server', () => {
     expect(result.structuredContent.result.repair.mode).toBe('apply');
     expect(result.structuredContent.result.repair.repairs.every((repair: { status: string }) => repair.status === 'applied')).toBe(true);
     expect(result.structuredContent.result.repair.repairs.length).toBeGreaterThanOrEqual(3);
-    expect(readFileSync(join(root, 'docs/method/release-runbook.md'), 'utf8')).toContain('# Release Runbook');
+    expect(readFileSync(join(root, 'docs/RELEASE.md'), 'utf8')).toContain('# Release');
   });
 
   it('Does `method_sync_refs` return structured content with the refreshed targets?', async () => {

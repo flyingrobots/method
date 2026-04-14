@@ -66,7 +66,7 @@ describe('doctor engine', () => {
     const root = createTempRoot();
     initWorkspace(root);
     rmSync(join(root, 'docs/design'), { recursive: true, force: true });
-    rmSync(join(root, 'docs/method/release-runbook.md'), { recursive: true, force: true });
+    rmSync(join(root, 'docs/RELEASE.md'), { recursive: true, force: true });
     writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
 
     const report = runDoctor(root);
@@ -81,8 +81,8 @@ describe('doctor engine', () => {
     expect(report.issues).toContainEqual(
       expect.objectContaining({
         code: 'missing-file',
-        path: 'docs/method/release-runbook.md',
-        repair: { kind: 'restore-file', targetPath: 'docs/method/release-runbook.md' },
+        path: 'docs/RELEASE.md',
+        repair: { kind: 'restore-file', targetPath: 'docs/RELEASE.md' },
       }),
     );
     expect(report.issues).toContainEqual(
@@ -234,7 +234,7 @@ describe('doctor engine', () => {
     const root = createTempRoot();
     initWorkspace(root);
     rmSync(join(root, 'docs/design'), { recursive: true, force: true });
-    rmSync(join(root, 'docs/method/release-runbook.md'), { recursive: true, force: true });
+    rmSync(join(root, 'docs/RELEASE.md'), { recursive: true, force: true });
     writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
 
     const plan = runDoctorRepair(root, 'plan');
@@ -250,15 +250,13 @@ describe('doctor engine', () => {
     expect(applied.repairs.every((repair) => repair.status === 'applied')).toBe(true);
     expect(applied.touchedPaths).toContain('docs/design');
     expect(applied.touchedPaths).toContain('docs/method/backlog/inbox/PROCESS_missing-frontmatter.md');
-    expect(applied.touchedPaths).toContain('docs/method/release-runbook.md');
-    expect(readFileSync(join(root, 'docs/method/release-runbook.md'), 'utf8')).toContain('# Release Runbook');
+    expect(applied.touchedPaths).toContain('docs/RELEASE.md');
+    expect(readFileSync(join(root, 'docs/RELEASE.md'), 'utf8')).toContain('# Release');
     expect(readFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), 'utf8')).toMatch(
       /^---\ntitle: "Missing Frontmatter"\n---\n\n# Missing Frontmatter/mu,
     );
     expect(applied.unresolvedIssues).not.toContainEqual(expect.objectContaining({ code: 'missing-directory', path: 'docs/design' }));
-    expect(applied.unresolvedIssues).not.toContainEqual(
-      expect.objectContaining({ code: 'missing-file', path: 'docs/method/release-runbook.md' }),
-    );
+    expect(applied.unresolvedIssues).not.toContainEqual(expect.objectContaining({ code: 'missing-file', path: 'docs/RELEASE.md' }));
     expect(applied.unresolvedIssues).not.toContainEqual(
       expect.objectContaining({ code: 'missing-frontmatter', path: 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md' }),
     );
@@ -346,7 +344,7 @@ describe('doctor engine', () => {
     const root = createTempRoot();
     initWorkspace(root);
     rmSync(join(root, 'docs/design'), { recursive: true, force: true });
-    rmSync(join(root, 'docs/method/release-runbook.md'), { recursive: true, force: true });
+    rmSync(join(root, 'docs/RELEASE.md'), { recursive: true, force: true });
     writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
 
     const result = runDoctorMigrate(root);
@@ -357,9 +355,7 @@ describe('doctor engine', () => {
     expect(result.repair.mode).toBe('apply');
     expect(result.repair.repairs.every((repair) => repair.status === 'applied')).toBe(true);
     expect(result.finalReport.issues).not.toContainEqual(expect.objectContaining({ code: 'missing-directory', path: 'docs/design' }));
-    expect(result.finalReport.issues).not.toContainEqual(
-      expect.objectContaining({ code: 'missing-file', path: 'docs/method/release-runbook.md' }),
-    );
+    expect(result.finalReport.issues).not.toContainEqual(expect.objectContaining({ code: 'missing-file', path: 'docs/RELEASE.md' }));
     expect(result.finalReport.issues).not.toContainEqual(
       expect.objectContaining({ code: 'missing-frontmatter', path: 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md' }),
     );

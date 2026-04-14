@@ -17,7 +17,7 @@ person who must be present during authorship or playback.
 
 **The METHOD repo gets no special pleading.** The repository that
 defines METHOD should use METHOD on itself. If repo truth conflicts with
-`README.md`, `docs/GUIDE.md`, `docs/method/process.md`, or release
+`README.md`, `docs/GUIDE.md`, `docs/PROCESS.md`, or release
 doctrine, repair the repo or evolve the method through an explicit
 cycle. Do not treat the tool's own repo as exempt from the bookkeeping
 it asks of others.
@@ -88,9 +88,8 @@ docs/
     releases/vX.Y.Z/                internal release packets
     graveyard/                      rejected ideas
   GUIDE.md                          operator advice and non-doctrinal practice notes
-    process.md                      how cycles run
-    release.md                      how releases work
-    release-runbook.md              sequential release pre-flight
+  PROCESS.md                        how cycles run (signpost)
+  RELEASE.md                        how releases work, including runbook (signpost)
   releases/
     vX.Y.Z.md                       user-facing release notes and migration guides
     README.md                       release note structure

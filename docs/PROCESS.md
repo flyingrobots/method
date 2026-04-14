@@ -157,7 +157,7 @@ A specialized cycle for "reading the repo and summarizing what it is." This prot
 
 1. Enumerate governing surfaces in precedence order:
    - `README.md`
-   - repo instructions and `docs/method/process.md`
+   - repo instructions and `docs/PROCESS.md`
    - `docs/method/legends/*.md`
    - `docs/design/*.md`
    - `docs/method/retro/*/`

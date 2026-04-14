@@ -11,7 +11,7 @@ source_files:
   - docs/BEARING.md
   - docs/releases/v1.0.0.md
   - docs/method/releases/v1.0.0/release.md
-  - docs/method/process.md
+  - docs/PROCESS.md
   - docs/method/legends/PROCESS.md
   - docs/method/legends/SYNTH.md
   - docs/design/0001-method-cli/method-cli.md
