@@ -6,74 +6,168 @@ provenance_level: artifact_history
 
 # Guide
 
-This document holds practical advice for working in a METHOD repo. It
-is intentionally lighter than doctrine in `README.md` or
-`docs/PROCESS.md`.
+A practical guide to working in a METHOD repo. For doctrine, see
+[`docs/PROCESS.md`](PROCESS.md). For release procedures, see
+[`docs/RELEASE.md`](RELEASE.md).
 
-If a practice proves durable and load-bearing, it can graduate into the
-core method later. Until then, this is guidance: useful, explicit, and
-non-binding.
+## Getting started
 
-For the METHOD repo itself, "non-binding" is not permission to drift.
-If this guide repeatedly governs real work in this repository, the repo
-should either follow it honestly, promote it into doctrine, or retire
-it. The METHOD repo does not get a carve-out from its own operating
-notes.
+```bash
+# Install
+npm install @flyingrobots/method
 
-## Capture ideas immediately
+# Initialize a workspace
+method init .
 
-If a backlog-worthy idea surfaces during the work, capture it now.
+# Check workspace health
+method doctor
 
-Do not leave it only in chat. Do not leave it floating uncommitted in a
-dirty worktree. Do not assume you will remember it after the current
-task is done.
+# See what's on the backlog
+method status
+```
 
-Prefer a small standalone docs commit that:
+## The cycle lifecycle
 
-- creates the backlog note
-- keeps it separate from feature/code changes
-- preserves the moment it became real enough to name
+Every unit of shipped work follows the same loop:
 
-Why this is good practice:
+```mermaid
+flowchart TD
+    A[Backlog item] -->|method pull| B[Design doc]
+    B --> C[Write failing tests]
+    C --> D[Make tests pass]
+    D --> E[Playback witness]
+    E -->|method close| F[Retro]
+    F --> G[PR / Review]
+    G -->|merge| H[Ship sync on main]
 
-- It is honest.
-- It preserves provenance in Git.
-- It reduces the chance of losing the idea or confusing it with the
-  current feature work.
-- It avoids awkward cleanup and weird Git operations later.
+    style A fill:#f9f,stroke:#333
+    style F fill:#bbf,stroke:#333
+    style H fill:#bfb,stroke:#333
+```
 
-## Keep one raw-intake path
+## Backlog flow
 
-If review notes or operator feedback start piling up, capture them in
-`docs/method/backlog/inbox/` instead of inventing a second holding area
-for critique.
+Ideas enter the inbox, get triaged into lanes, and eventually get
+pulled into cycles or retired to the graveyard:
 
-Use `method inbox` for this too. Add `--source` and `--captured-at`
-when origin and timing matter.
+```mermaid
+flowchart LR
+    Idea -->|method inbox| Inbox
+    Inbox -->|triage| ASAP
+    Inbox -->|triage| CoolIdeas[cool-ideas]
+    Inbox -->|triage| BadCode[bad-code]
+    Inbox -->|triage| Release[vX.Y.Z]
+    Inbox -->|method retire| Graveyard
 
-Treat the inbox item as raw input, not as already-prioritized work.
-During a maintenance pass, split accepted points into the right durable
-artifacts and then move or retire the inbox item intentionally.
+    ASAP -->|method pull| Cycle
+    BadCode -->|method pull| Cycle
+    CoolIdeas -->|method pull| Cycle
+    Release -->|method pull| Cycle
+```
 
-Why this is good practice:
+## Cycle branches
 
-- It keeps raw intake legible in one place.
-- It preserves the original wording and context behind later backlog or
-  docs changes.
-- It makes triage visible instead of hiding it in parallel inboxes.
+```mermaid
+gitGraph
+    commit id: "main"
+    branch cycles/PROCESS_my-feature
+    commit id: "design doc"
+    commit id: "failing tests"
+    commit id: "make tests pass"
+    commit id: "close cycle"
+    checkout main
+    merge cycles/PROCESS_my-feature id: "PR merge"
+    commit id: "ship sync"
+```
 
-## Advice is not doctrine
+## File lifecycle
 
-Some things are worth saying before they are worth standardizing.
+```mermaid
+flowchart TD
+    subgraph Backlog
+        BI[backlog/inbox/PROCESS_foo.md]
+    end
 
-`README.md` and `docs/PROCESS.md` describe the load-bearing
-contract of METHOD. This guide is for patterns that help in practice
-but are not yet strong enough to claim as universal rules.
+    subgraph Active
+        DD[design/PROCESS_foo.md]
+    end
 
-That distinction still requires honesty. For the METHOD repo, guidance
-must not become a shadow process that we invoke when useful and ignore
-when inconvenient. If a guide note is doing real governance work, say so
-more strongly or stop pretending it matters.
+    subgraph Closed
+        RD[retro/PROCESS_foo/PROCESS_foo.md]
+        W[retro/PROCESS_foo/witness/verification.md]
+    end
+
+    subgraph Retired
+        GY[graveyard/PROCESS_foo.md]
+    end
+
+    BI -->|pull| DD
+    DD -->|close| RD
+    DD -->|close| W
+    BI -->|retire| GY
+```
+
+## Common commands
+
+| Task | Command |
+|------|---------|
+| Capture an idea | `method inbox "idea" --legend PROCESS` |
+| Add shaped backlog item | `method backlog add --lane asap --title "Title" --legend PROCESS` |
+| Move between lanes | `method backlog move PROCESS_foo --to asap` |
+| Pull into a cycle | `method pull PROCESS_foo` |
+| Check drift | `method drift` |
+| Close a cycle | `method close --drift-check yes --outcome hill-met` |
+| Retire an item | `method retire PROCESS_foo --reason "Replaced by X" --yes` |
+| Check workspace health | `method doctor` |
+| Generate health receipt | `method doctor --receipt` |
+| Refresh generated docs | `method sync refs` |
+| Ship sync after merge | `method sync ship` |
+| Capture a spike | `method spike "Prove X works under Y"` |
+| See what's next | `method next` |
+
+See [`docs/CLI.md`](CLI.md) for the full command reference.
+
+## Release flow
+
+```mermaid
+flowchart TD
+    A[Shape release] --> B[Doctor clean?]
+    B -->|yes| C[Re-execute witnesses]
+    C --> D[Human verifies human hills]
+    D --> E[Version bump + CHANGELOG]
+    E --> F[Validation: build, lint, test, pack]
+    F --> G[Commit, tag, publish]
+    G --> H[Ship sync on main]
+
+    B -->|no| X[Fix issues first]
+    X --> B
+```
+
+See [`docs/RELEASE.md`](RELEASE.md) for the full release doctrine and
+runbook.
+
+## Practical advice
+
+### Capture ideas immediately
+
+If a backlog-worthy idea surfaces during work, capture it now. Do not
+leave it in chat or assume you'll remember it later.
+
+```bash
+method inbox "the idea" --legend PROCESS
+```
+
+### Keep one raw-intake path
+
+Review notes, critique, and outside-in observations all go to
+`method inbox` with `--source` and `--captured-at` when provenance
+matters. Don't invent parallel holding areas.
+
+### Advice is not doctrine
+
+This guide is for patterns that help in practice but are not yet strong
+enough to claim as universal rules. [`docs/PROCESS.md`](PROCESS.md) is
+the load-bearing contract.
 
 ## Signposts
 
