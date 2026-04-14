@@ -87,4 +87,17 @@ describe('Typed frontmatter access', () => {
     expect(fm.acceptance_criteria).toEqual(['New', 'Criteria']);
     expect(fm.ready).toBe(true);
   });
+
+  it('Does `updateTypedFrontmatter` allow writing to a field that was previously null?', () => {
+    const root = createTempRoot();
+    const path = writeDoc(root, 'null-field.md', ['title: "Null Field"', 'github_labels:'].join('\n'), '# Null Field');
+
+    // YAML parses bare `github_labels:` as null — writing a string should not throw
+    expect(() => {
+      updateTypedFrontmatter(path, { github_labels: 'bug,priority' });
+    }).not.toThrow();
+
+    const fm = readTypedFrontmatter(path);
+    expect(fm.github_labels).toBe('bug,priority');
+  });
 });

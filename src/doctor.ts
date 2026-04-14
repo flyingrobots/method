@@ -776,13 +776,15 @@ function applyRepair(root: string, issue: DoctorIssue): { status: 'applied' | 's
     if (mdFiles.length === 0) {
       return { status: 'skipped', reason: 'no-md-files' };
     }
-    const sourceFile = resolve(target, mdFiles[0]);
-    const raw = readFileSync(sourceFile, 'utf8');
 
-    // Derive the new cycle name from frontmatter legend + slug, or fall back to dir name
+    // Derive slug from dir name first, then pick the file matching the convention
     const dirName = basename(target);
     const legacyMatch = /^(\d{4})-(.+)$/u.exec(dirName);
     const slug = legacyMatch !== null ? legacyMatch[2] : dirName;
+    const expectedFile = `${slug}.md`;
+    const sourceFileName = mdFiles.includes(expectedFile) ? expectedFile : mdFiles[0];
+    const sourceFile = resolve(target, sourceFileName);
+    const raw = readFileSync(sourceFile, 'utf8');
     const legendMatch = /^legend:\s*"?([A-Z][A-Z0-9]*)"?\s*$/mu.exec(raw);
     const legend = legendMatch !== null ? legendMatch[1] : undefined;
     const cycleName = legend !== undefined ? `${legend}_${slug}` : slug;

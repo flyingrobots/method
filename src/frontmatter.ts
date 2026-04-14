@@ -154,6 +154,9 @@ function typeName(value: unknown): string {
 }
 
 function assertNoTypeDowngrade(key: string, existing: unknown, incoming: unknown): void {
+  if (existing === null) {
+    return; // null is not a type constraint — allow any type to replace it
+  }
   const existingType = typeName(existing);
   const incomingType = typeName(incoming);
   if (existingType === incomingType) {
