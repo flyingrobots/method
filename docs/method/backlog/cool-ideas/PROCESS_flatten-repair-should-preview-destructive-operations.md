@@ -1,7 +1,7 @@
 ---
-title: "Flatten repair should preview destructive operations"
+title: Flatten repair should preview destructive operations
 legend: PROCESS
-lane: inbox
+lane: cool-ideas
 ---
 
 # Flatten repair should preview destructive operations

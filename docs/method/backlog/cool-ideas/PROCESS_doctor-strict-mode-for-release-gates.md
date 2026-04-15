@@ -1,7 +1,7 @@
 ---
-title: "Doctor strict mode for release gates"
+title: Doctor strict mode for release gates
 legend: PROCESS
-lane: inbox
+lane: cool-ideas
 ---
 
 # Doctor strict mode for release gates
