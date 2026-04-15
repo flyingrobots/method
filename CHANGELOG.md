@@ -2,8 +2,51 @@
 
 ## Unreleased
 
-- Test Taxonomy And Fixture Drift (0037-test-taxonomy-and-fixture-drift)
 - No externally meaningful changes recorded yet.
+
+## v2.0.0
+
+### Breaking Changes
+
+- Design docs are now flat files (`docs/design/<LEGEND>_<slug>.md`)
+  instead of directory-per-cycle. The `number` field has been removed
+  from the `Cycle` type. Cycle names use `<LEGEND>_<slug>` format.
+- `docs/method/process.md` → `docs/PROCESS.md` (signpost)
+- `docs/method/release.md` + `release-runbook.md` → `docs/RELEASE.md`
+- Retro template changed: "What surprised you?" / "What would you do
+  differently?" replaces Drift/New Debt/Cool Ideas sections.
+- Sponsors section removed from design doc scaffold.
+- `method close` now requires witness verification (`--witness-verified`
+  or interactive prompt). MCP `method_close` requires `witnessVerified`.
+
+### Added
+
+- `method spike` command and `method_spike` MCP tool
+- `method doctor --receipt` for SHA-locked health attestations
+- Three-tier semantic drift matching (exact → semantic → token similarity)
+- Drift score percentages in near-miss hints
+- Configurable drift thresholds via `.method.json`
+- Pull-time backlog readiness warnings
+- Conversational retro prompts on close
+- Auto-regenerate reference docs on pre-commit
+- Type-downgrade protection in frontmatter writes
+- Biome linter with CI enforcement
+- Pre-commit (lint + sync refs) and pre-push (tests) hooks
+- `SCAFFOLD_LANES` as single source of truth
+- `cycle-ops.ts` and `workspace-utils.ts` extracted from Workspace
+
+### Fixed
+
+- Clean `dist/` before build (prevents stale artifacts)
+- MCP input validation for `method_pull` and `method_capture_witness`
+- GitHub comment sync uses stable IDs instead of string matching
+- Doctor checks for `.gitkeep` in required directories
+- Doctor flatten repair matches by slug convention (prevents data loss)
+- Flatten repair preserves non-cycle files in legacy directories
+- Null frontmatter values don't block type-downgrade guard
+- Duplicated legend prefix stripped from backlog filenames
+- Doctor fix text corrected (`method repair --apply`)
+- MCP server version aligned with package version
 
 ## v1.0.0
 
