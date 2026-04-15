@@ -22,7 +22,7 @@ describe('METHOD package', () => {
     const pack = parsed[0];
     const packedPaths = pack.files.map((entry) => entry.path).sort((left, right) => left.localeCompare(right));
 
-    expect(pack.filename).toBe('flyingrobots-method-1.0.0.tgz');
+    expect(pack.filename).toBe('flyingrobots-method-2.0.0.tgz');
     expect(packedPaths).toContain('package.json');
     expect(packedPaths).toContain('README.md');
     expect(packedPaths).toContain('CHANGELOG.md');
