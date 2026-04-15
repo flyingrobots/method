@@ -1,6 +1,6 @@
 ---
 title: "Architecture"
-generator: "method sync ship"
+generator: "method sync refs"
 provenance_level: artifact_history
 ---
 
@@ -23,16 +23,19 @@ src/
   cli-renderer.ts
   cli.ts
   config.ts
+  cycle-ops.ts
   doctor.ts
   domain.ts
   drift.ts
   errors.ts
+  feedback-surface.ts
   frontmatter.ts
   generate.ts
   index.ts
   mcp.ts
   renderers.ts
   review-state.ts
+  workspace-utils.ts
 ```
 <!-- /generate -->
 
@@ -45,6 +48,7 @@ The `Workspace` class is the core. It owns:
 - **Backlog operations**: `captureIdea`, `pullItem`, `moveBacklogItem`
 - **Cycle lifecycle**: `closeCycle`, `openCycles`, `captureWitness`
 - **Drift detection**: `detectDrift` (delegates to `drift.ts`)
+- **Reference sync**: `syncRefs` (refreshes generated reference docs without touching ship-only artifacts)
 - **Ship sync**: `shipSync` (updates CHANGELOG and BEARING)
 - **Status**: `status` (backlog lanes, active cycles, legend health)
 
@@ -105,9 +109,11 @@ Two-way sync between the local backlog and GitHub Issues:
 ## Testing
 
 <!-- generate:test-summary -->
-17 test files in `tests/` using Vitest:
+22 test files in `tests/` using Vitest:
 
 - `api.test.ts`
+- `build.test.ts`
+- `ci.test.ts`
 - `cli.test.ts`
 - `config.test.ts`
 - `docs.test.ts`
@@ -115,8 +121,10 @@ Two-way sync between the local backlog and GitHub Issues:
 - `domain.test.ts`
 - `drift.test.ts`
 - `exec.test.ts`
+- `frontmatter.test.ts`
 - `generate.test.ts`
 - `github-adapter.test.ts`
+- `lane-contract.test.ts`
 - `mcp.test.ts`
 - `package.test.ts`
 - `repo-discipline.test.ts`
@@ -124,6 +132,7 @@ Two-way sync between the local backlog and GitHub Issues:
 - `review-state.test.ts`
 - `ship-sync.test.ts`
 - `witness.test.ts`
+- `workspace-split.test.ts`
 
 Each test file creates temp workspaces via `mkdtempSync` and cleans
 up in `afterEach`. The `METHOD_TEST=true` environment variable mocks

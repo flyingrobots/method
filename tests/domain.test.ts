@@ -1,41 +1,44 @@
 import { describe, expect, it } from 'vitest';
-import {
-  CycleSchema,
-  BacklogItemSchema,
-  WorkspaceStatusSchema,
-} from '../src/domain.js';
+import { BacklogItemSchema, CycleSchema } from '../src/domain.js';
 
 describe('Domain Models', () => {
   it('`tests/domain.test.ts` proves that domain models (e.g., `Cycle`, `BacklogItem`) reject invalid data at runtime.', () => {
     // Invalid Cycle (missing fields)
     expect(() => CycleSchema.parse({})).toThrow();
-    
+
     // Invalid Cycle (wrong types)
-    expect(() => CycleSchema.parse({
-      name: '0001-test',
-      number: '1', // should be number
-      slug: 'test',
-      designDoc: 'path',
-      retroDoc: 'path',
-    })).toThrow();
+    expect(() =>
+      CycleSchema.parse({
+        name: 123,
+        slug: 'test',
+        designDoc: 'path',
+        retroDoc: 'path',
+      }),
+    ).toThrow();
 
     // Valid Cycle
     const validCycle = {
-      name: '0001-test',
-      number: 1,
+      name: 'PROCESS_test',
       slug: 'test',
-      designDoc: 'docs/design/0001-test/test.md',
-      retroDoc: 'docs/method/retro/0001-test/test.md',
+      designDoc: 'docs/design/PROCESS_test.md',
+      retroDoc: 'docs/method/retro/PROCESS_test/PROCESS_test.md',
     };
     expect(CycleSchema.parse(validCycle)).toEqual(validCycle);
 
-    // Invalid BacklogItem (invalid lane)
-    expect(() => BacklogItemSchema.parse({
-      stem: 'test',
-      lane: 'invalid-lane',
-      path: 'path',
-      slug: 'test',
-    })).toThrow();
+    // Legacy payloads with `number` field should still parse (Zod strips unknown keys)
+    const legacyPayload = { ...validCycle, number: 42 };
+    const parsed = CycleSchema.parse(legacyPayload);
+    expect(parsed).not.toHaveProperty('number');
+
+    // Invalid BacklogItem (malformed lane)
+    expect(() =>
+      BacklogItemSchema.parse({
+        stem: 'test',
+        lane: '../invalid-lane',
+        path: 'path',
+        slug: 'test',
+      }),
+    ).toThrow();
 
     // Valid BacklogItem
     const validItem = {
@@ -49,7 +52,7 @@ describe('Domain Models', () => {
   });
 
   it('The codebase demonstrates browser-portability by keeping Node-specific imports (like `node:fs`) strictly in the adapters or workspace implementation, not the domain models.', () => {
-    // This is an architectural claim. We can verify it by ensuring domain.ts 
+    // This is an architectural claim. We can verify it by ensuring domain.ts
     // doesn't have Node imports.
   });
 });

@@ -1,17 +1,163 @@
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
 import { CLI_TOPICS, usage } from './cli-args.js';
 import { MCP_TOOLS } from './mcp.js';
 
 export type GeneratorFn = () => string;
 export type GeneratorRegistry = Record<string, GeneratorFn>;
+export type SignpostKind = 'Hand-authored' | 'Hybrid' | 'Generated';
+export type SignpostInitStrategy = 'reference-doc' | 'bearing';
+export interface SignpostSpec {
+  name: string;
+  path: string;
+  kind: SignpostKind;
+  description: string;
+  initStrategy?: SignpostInitStrategy;
+}
+
+export const SIGNPOST_SPECS: readonly SignpostSpec[] = [
+  { name: 'README', path: 'README.md', kind: 'Hand-authored', description: 'Core doctrine and filesystem shape.' },
+  {
+    name: 'ARCHITECTURE',
+    path: 'ARCHITECTURE.md',
+    kind: 'Hybrid',
+    description: 'How the source code is organized.',
+    initStrategy: 'reference-doc',
+  },
+  {
+    name: 'BEARING',
+    path: 'docs/BEARING.md',
+    kind: 'Generated',
+    description: 'Current direction and recent ships.',
+    initStrategy: 'bearing',
+  },
+  { name: 'VISION', path: 'docs/VISION.md', kind: 'Generated', description: 'Bounded executive synthesis.' },
+  { name: 'CLI', path: 'docs/CLI.md', kind: 'Hybrid', description: 'CLI command reference.', initStrategy: 'reference-doc' },
+  { name: 'MCP', path: 'docs/MCP.md', kind: 'Hybrid', description: 'MCP tool reference.', initStrategy: 'reference-doc' },
+  {
+    name: 'GUIDE',
+    path: 'docs/GUIDE.md',
+    kind: 'Hybrid',
+    description: 'Operator advice with generated sections.',
+    initStrategy: 'reference-doc',
+  },
+  { name: 'PROCESS', path: 'docs/PROCESS.md', kind: 'Hand-authored', description: 'Cycle doctrine, rules, and workflow.' },
+  { name: 'RELEASE', path: 'docs/RELEASE.md', kind: 'Hand-authored', description: 'Release doctrine and runbook.' },
+] as const;
+
+export const REFERENCE_DOC_TARGETS = ['ARCHITECTURE.md', 'docs/CLI.md', 'docs/MCP.md', 'docs/GUIDE.md'] as const;
+
+const REFERENCE_DOC_TEMPLATES: Record<(typeof REFERENCE_DOC_TARGETS)[number], string> = {
+  'ARCHITECTURE.md': [
+    '---',
+    'title: "Architecture"',
+    'generator: "method sync refs"',
+    'provenance_level: artifact_history',
+    '---',
+    '',
+    '# Architecture',
+    '',
+    'METHOD is a TypeScript CLI and library that implements the METHOD',
+    'development workflow.',
+    '',
+    '## Source Layout',
+    '',
+    '<!-- generate:source-layout -->',
+    '<!-- /generate -->',
+    '',
+    '## Key Modules',
+    '',
+    '### `index.ts` — Workspace',
+    '',
+    'The `Workspace` class owns backlog operations, cycle lifecycle,',
+    'reference sync, ship sync, and status.',
+    '',
+    '### `cli.ts` — CLI Entry Point',
+    '',
+    'Dispatches commands parsed by `cli-args.ts`.',
+    '',
+    '### `mcp.ts` — MCP Server',
+    '',
+    'Exposes the same workspace operations through MCP tools.',
+    '',
+  ].join('\n'),
+  'docs/CLI.md': [
+    '---',
+    'title: CLI Reference',
+    'generator: method sync refs',
+    'provenance_level: artifact_history',
+    '---',
+    '',
+    '# CLI Reference',
+    '',
+    'The `method` command is the primary interface for METHOD workspace',
+    'operations. Run `method help` for a quick summary or',
+    '`method help <command>` for command-specific usage.',
+    '',
+    '## Commands',
+    '',
+    '<!-- generate:cli-commands -->',
+    '<!-- /generate -->',
+    '',
+    '## Configuration',
+    '',
+    'The CLI reads `.method.json` from the workspace root for:',
+    '',
+    '- `paths` — custom directory layout (see `ARCHITECTURE.md`)',
+    '- `github_token` / `github_repo` — GitHub adapter credentials',
+    '- Environment overrides: `GITHUB_TOKEN`, `GITHUB_REPO`',
+    '',
+  ].join('\n'),
+  'docs/MCP.md': [
+    '---',
+    'title: MCP Reference',
+    'generator: method sync refs',
+    'provenance_level: artifact_history',
+    '---',
+    '',
+    '# MCP Reference',
+    '',
+    'METHOD exposes its workspace operations through a Model Context',
+    'Protocol (MCP) server. Start it with `method mcp`.',
+    '',
+    '## Workspace Parameter',
+    '',
+    'Every tool requires a `workspace` parameter: the absolute path to the',
+    'METHOD workspace root directory.',
+    '',
+    '## Tools',
+    '',
+    '<!-- generate:mcp-tools -->',
+    '<!-- /generate -->',
+    '',
+    '## Error Handling',
+    '',
+    'All tools return a human-readable text message in `content`.',
+    'Machine-readable callers should consume `structuredContent`.',
+    '',
+  ].join('\n'),
+  'docs/GUIDE.md': [
+    '---',
+    'title: "Guide"',
+    'generator: "method sync refs"',
+    'provenance_level: artifact_history',
+    '---',
+    '',
+    '# Guide',
+    '',
+    'This document holds practical advice for working in a METHOD repo.',
+    '',
+    '## Signposts',
+    '',
+    '<!-- generate:signpost-inventory -->',
+    '<!-- /generate -->',
+    '',
+  ].join('\n'),
+};
 
 const MARKER_PATTERN = /<!-- generate:(\S+) -->\n[\s\S]*?<!-- \/generate -->/gu;
 
-export function replaceGeneratedSections(
-  content: string,
-  generators: GeneratorRegistry,
-): string {
+export function replaceGeneratedSections(content: string, generators: GeneratorRegistry): string {
   return content.replace(MARKER_PATTERN, (match, name: string) => {
     const generator = generators[name];
     if (generator === undefined) {
@@ -29,8 +175,63 @@ export function createGenerators(root: string): GeneratorRegistry {
     'signpost-inventory': signpostInventoryGenerator,
     'source-layout': () => sourceLayoutGenerator(root),
     'test-summary': () => testSummaryGenerator(root),
-    'dependencies': () => dependenciesGenerator(root),
+    dependencies: () => dependenciesGenerator(root),
   };
+}
+
+export function generateReferenceDocs(root: string): { targets: string[]; updated: string[] } {
+  const generators = createGenerators(root);
+  const targets: string[] = [];
+  const updated: string[] = [];
+
+  for (const signpost of REFERENCE_DOC_TARGETS) {
+    const signpostPath = resolve(root, signpost);
+    if (!existsSync(signpostPath)) {
+      mkdirSync(dirname(signpostPath), { recursive: true });
+      writeFileSync(signpostPath, REFERENCE_DOC_TEMPLATES[signpost], 'utf8');
+    }
+
+    targets.push(signpost);
+    const before = readFileSync(signpostPath, 'utf8');
+    const after = replaceGeneratedSections(before, generators);
+    if (after !== before) {
+      writeFileSync(signpostPath, after, 'utf8');
+      updated.push(signpost);
+    }
+  }
+
+  return { targets, updated };
+}
+
+export function initializeReferenceDoc(
+  root: string,
+  target: (typeof REFERENCE_DOC_TARGETS)[number],
+): { path: string; initialized: boolean } {
+  const signpostPath = resolve(root, target);
+  if (existsSync(signpostPath)) {
+    return { path: target, initialized: false };
+  }
+
+  mkdirSync(dirname(signpostPath), { recursive: true });
+  const content = replaceGeneratedSections(REFERENCE_DOC_TEMPLATES[target], createGenerators(root));
+  writeFileSync(signpostPath, content, 'utf8');
+  return { path: target, initialized: true };
+}
+
+export function resolveSignpostSpec(query: string): SignpostSpec | undefined {
+  const normalized = query.trim();
+  if (normalized.length === 0) {
+    return undefined;
+  }
+
+  const upper = normalized.toUpperCase();
+  return SIGNPOST_SPECS.find(
+    (spec) =>
+      spec.name === upper ||
+      spec.path === normalized ||
+      spec.path.toUpperCase() === upper ||
+      spec.path.split('/').at(-1)?.toUpperCase() === upper,
+  );
 }
 
 export function cliCommandsGenerator(): string {
@@ -38,7 +239,10 @@ export function cliCommandsGenerator(): string {
   for (const topic of CLI_TOPICS) {
     const text = usage(topic);
     const usageLine = text.split('\n')[0] ?? '';
-    const description = text.split('\n').slice(1).filter((l) => l.trim().length > 0);
+    const description = text
+      .split('\n')
+      .slice(1)
+      .filter((l) => l.trim().length > 0);
     lines.push(`### \`${usageLine.replace(/^Usage: /u, '')}\``);
     lines.push('');
     for (const line of description) {
@@ -67,8 +271,7 @@ export function mcpToolsGenerator(): string {
     lines.push(tool.description);
     lines.push('');
 
-    const params = Object.entries(tool.inputSchema.properties)
-      .filter(([key]) => key !== 'workspace');
+    const params = Object.entries(tool.inputSchema.properties).filter(([key]) => key !== 'workspace');
     const required = new Set(tool.inputSchema.required.filter((k) => k !== 'workspace'));
 
     if (params.length > 0) {
@@ -76,8 +279,8 @@ export function mcpToolsGenerator(): string {
       lines.push('');
       for (const [key, schema] of params) {
         const req = required.has(key) ? '(required)' : '(optional)';
-        const desc = ('description' in schema && schema.description) ? ` — ${schema.description}` : '';
-        const enumValues = ('enum' in schema && schema.enum) ? ` (${schema.enum.join(', ')})` : '';
+        const desc = 'description' in schema && schema.description ? ` — ${schema.description}` : '';
+        const enumValues = 'enum' in schema && schema.enum ? ` (${schema.enum.join(', ')})` : '';
         lines.push(`- \`${key}\` ${req} \`${schema.type}\`${enumValues}${desc}`);
       }
       lines.push('');
@@ -90,13 +293,7 @@ export function signpostInventoryGenerator(): string {
   const lines: string[] = [
     '| Signpost | Type | Description |',
     '|----------|------|-------------|',
-    '| `README.md` | Hand-authored | Core doctrine and filesystem shape. |',
-    '| `ARCHITECTURE.md` | Hybrid | How the source code is organized. |',
-    '| `docs/BEARING.md` | Generated | Current direction and recent ships. |',
-    '| `docs/VISION.md` | Generated | Bounded executive synthesis. |',
-    '| `docs/CLI.md` | Hybrid | CLI command reference. |',
-    '| `docs/MCP.md` | Hybrid | MCP tool reference. |',
-    '| `docs/GUIDE.md` | Hybrid | Operator advice with generated sections. |',
+    ...SIGNPOST_SPECS.map((spec) => `| \`${spec.path}\` | ${spec.kind} | ${spec.description} |`),
     '',
   ];
   return lines.join('\n');

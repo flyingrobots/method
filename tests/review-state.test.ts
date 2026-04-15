@@ -9,7 +9,10 @@ describe('review-state engine', () => {
     });
     const ambiguousClient = createClient({
       gitBranch: 'feature/review-state',
-      prList: [{ number: 17, url: 'https://example.test/pr/17' }, { number: 18, url: 'https://example.test/pr/18' }],
+      prList: [
+        { number: 17, url: 'https://example.test/pr/17' },
+        { number: 18, url: 'https://example.test/pr/18' },
+      ],
     });
 
     const noPrResult = await queryReviewState({
@@ -63,7 +66,10 @@ describe('review-state engine', () => {
   it('returns an ambiguous-pr result when multiple PRs match the current branch', async () => {
     const client = createClient({
       gitBranch: 'feature/review-state',
-      prList: [{ number: 17, url: 'https://example.test/pr/17' }, { number: 18, url: 'https://example.test/pr/18' }],
+      prList: [
+        { number: 17, url: 'https://example.test/pr/17' },
+        { number: 18, url: 'https://example.test/pr/18' },
+      ],
     });
 
     const result = await queryReviewState({
@@ -82,11 +88,13 @@ describe('review-state engine', () => {
   it('rejects currentBranch:false when no explicit PR is provided', async () => {
     const client = createClient({});
 
-    await expect(queryReviewState({
-      cwd: '/tmp/method',
-      currentBranch: false,
-      client,
-    })).rejects.toThrow('review-state requires either --pr or --current-branch');
+    await expect(
+      queryReviewState({
+        cwd: '/tmp/method',
+        currentBranch: false,
+        client,
+      }),
+    ).rejects.toThrow('review-state requires either --pr or --current-branch');
   });
 
   it('Do unresolved review threads remain the primary blockers when `reviewDecision` is still `CHANGES_REQUESTED`?', async () => {
@@ -98,9 +106,7 @@ describe('review-state engine', () => {
         url: 'https://example.test/pr/18',
         reviewDecision: 'CHANGES_REQUESTED',
         statusCheckRollup: [],
-        reviews: [
-          { author: { login: 'reviewer-one' }, state: 'CHANGES_REQUESTED', submittedAt: '2026-04-09T07:00:00Z' },
-        ],
+        reviews: [{ author: { login: 'reviewer-one' }, state: 'CHANGES_REQUESTED', submittedAt: '2026-04-09T07:00:00Z' }],
         comments: [],
       },
       unresolvedThreads: [
@@ -213,18 +219,12 @@ describe('review-state engine', () => {
         url: 'https://example.test/pr/22',
         reviewDecision: 'APPROVED',
         statusCheckRollup: [],
-        reviews: [
-          { author: { login: 'reviewer-one' }, state: 'APPROVED', submittedAt: '2026-04-09T07:15:00Z' },
-        ],
+        reviews: [{ author: { login: 'reviewer-one' }, state: 'APPROVED', submittedAt: '2026-04-09T07:15:00Z' }],
         comments: [
           {
             author: { login: 'coderabbitai' },
             createdAt: '2026-04-09T07:31:00Z',
-            body: [
-              '## Rate limit exceeded',
-              '',
-              'Please wait **14 minutes and 30 seconds** before requesting another review.',
-            ].join('\n'),
+            body: ['## Rate limit exceeded', '', 'Please wait **14 minutes and 30 seconds** before requesting another review.'].join('\n'),
           },
         ],
       },
@@ -284,9 +284,7 @@ describe('review-state engine', () => {
             startedAt: '2026-04-09T07:33:00Z',
           },
         ],
-        reviews: [
-          { author: { login: 'reviewer-one' }, state: 'APPROVED', submittedAt: '2026-04-09T07:20:00Z' },
-        ],
+        reviews: [{ author: { login: 'reviewer-one' }, state: 'APPROVED', submittedAt: '2026-04-09T07:20:00Z' }],
         comments: [],
       },
       unresolvedThreads: [],
@@ -320,9 +318,7 @@ describe('review-state engine', () => {
             startedAt: '2026-04-09T07:33:00Z',
           },
         ],
-        reviews: [
-          { author: { login: 'reviewer-one' }, state: 'APPROVED', submittedAt: '2026-04-09T07:20:00Z' },
-        ],
+        reviews: [{ author: { login: 'reviewer-one' }, state: 'APPROVED', submittedAt: '2026-04-09T07:20:00Z' }],
         comments: [],
       },
       unresolvedThreads: [],

@@ -1,13 +1,13 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { GitHubAdapter } from '../src/adapters/github.js';
 import { runCli } from '../src/cli.js';
-import { createMcpServer } from '../src/mcp.js';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { ListToolsRequestSchema, CallToolRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { initWorkspace, Workspace } from '../src/index.js';
+import { createMcpServer } from '../src/mcp.js';
 import type { ReviewStateResult } from '../src/review-state.js';
 
 const tempRoots: string[] = [];
@@ -26,6 +26,10 @@ function createTempRoot(): string {
   return root;
 }
 
+function ensureBacklogLane(root: string, lane: string): void {
+  mkdirSync(join(root, 'docs/method/backlog', lane), { recursive: true });
+}
+
 class MemoryWriter {
   output = '';
 
@@ -36,10 +40,9 @@ class MemoryWriter {
 }
 
 function createCallToolHarness(
-  options: {
-    reviewStateQuery?: (options: { cwd: string; pr?: number; currentBranch?: boolean }) => Promise<ReviewStateResult>;
-  } = {},
+  options: { reviewStateQuery?: (options: { cwd: string; pr?: number; currentBranch?: boolean }) => Promise<ReviewStateResult> } = {},
 ) {
+  // biome-ignore lint/suspicious/noExplicitAny: MCP protocol handler has dynamic shape
   let callToolHandler: any;
   const mockServer = {
     setRequestHandler: vi.fn((schema, handler) => {
@@ -62,6 +65,7 @@ describe('MCP Server', () => {
   });
 
   it('Are tools provided for querying the backlog, pulling items, and closing cycles?', async () => {
+    // biome-ignore lint/suspicious/noExplicitAny: MCP protocol handler has dynamic shape
     let listToolsHandler: any;
     const mockServer = {
       setRequestHandler: vi.fn((schema, handler) => {
@@ -79,24 +83,40 @@ describe('MCP Server', () => {
     const result = await listToolsHandler();
     expect(result.tools.length).toBeGreaterThan(0);
 
+    // biome-ignore lint/suspicious/noExplicitAny: MCP tool shape is dynamic
     const toolNames = result.tools.map((t: any) => t.name);
     expect(toolNames).toContain('method_doctor');
+    expect(toolNames).toContain('method_repair');
+    expect(toolNames).toContain('method_migrate');
     expect(toolNames).toContain('method_status');
     expect(toolNames).toContain('method_review_state');
     expect(toolNames).toContain('method_inbox');
+    expect(toolNames).toContain('method_backlog_add');
+    expect(toolNames).toContain('method_backlog_move');
+    expect(toolNames).toContain('method_backlog_edit');
+    expect(toolNames).toContain('method_backlog_query');
+    expect(toolNames).toContain('method_backlog_dependencies');
+    expect(toolNames).toContain('method_next_work');
+    expect(toolNames).toContain('method_signpost_status');
+    expect(toolNames).toContain('method_signpost_init');
+    expect(toolNames).toContain('method_retire');
     expect(toolNames).toContain('method_pull');
     expect(toolNames).toContain('method_close');
     expect(toolNames).toContain('method_drift');
     expect(toolNames).toContain('method_sync_ship');
+    expect(toolNames).toContain('method_sync_refs');
     expect(toolNames).toContain('method_capture_witness');
+    expect(toolNames).toContain('method_spike');
 
     // Every tool must require cwd
     for (const tool of result.tools) {
       expect(tool.inputSchema.required, `${tool.name} must require workspace`).toContain('workspace');
       expect(tool.inputSchema.properties.workspace, `${tool.name} must have workspace property`).toBeDefined();
     }
+    // biome-ignore lint/suspicious/noExplicitAny: MCP tool shape is dynamic
     const statusTool = result.tools.find((tool: any) => tool.name === 'method_status');
     expect(statusTool.inputSchema.properties.summary).toBeDefined();
+    // biome-ignore lint/suspicious/noExplicitAny: MCP tool shape is dynamic
     const reviewStateTool = result.tools.find((tool: any) => tool.name === 'method_review_state');
     expect(reviewStateTool.inputSchema.properties.pr).toBeDefined();
     expect(reviewStateTool.inputSchema.properties.currentBranch).toBeDefined();
@@ -173,6 +193,411 @@ describe('MCP Server', () => {
     expect(mcpResult.structuredContent.tool).toBe('method_doctor');
     expect(mcpResult.structuredContent.result).toEqual(JSON.parse(stdout.output));
     expect(mcpResult.content[0].text).toContain('Status: error');
+  });
+
+  it('Does `method_backlog_dependencies` match the CLI JSON contract for ready work and critical paths?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    ensureBacklogLane(root, 'up-next');
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_foundation.md'),
+      ['---', 'title: "Foundation"', 'legend: PROCESS', 'lane: up-next', '---', '', '# Foundation', '', 'Body'].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_build.md'),
+      [
+        '---',
+        'title: "Build"',
+        'legend: PROCESS',
+        'lane: up-next',
+        'blocked_by:',
+        '  - foundation',
+        'blocks:',
+        '  - finish',
+        '---',
+        '',
+        '# Build',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_finish.md'),
+      ['---', 'title: "Finish"', 'legend: PROCESS', 'lane: up-next', 'blocked_by:', '  - build', '---', '', '# Finish', '', 'Body'].join(
+        '\n',
+      ),
+      'utf8',
+    );
+
+    const callToolHandler = createCallToolHarness();
+    const stdout = new MemoryWriter();
+
+    const cliExitCode = await runCli(['backlog', 'deps', 'finish', '--critical-path', '--json'], {
+      cwd: root,
+      stdout,
+      stderr: new MemoryWriter(),
+    });
+    const mcpResult = await callToolHandler({
+      params: {
+        name: 'method_backlog_dependencies',
+        arguments: {
+          workspace: root,
+          item: 'finish',
+          criticalPath: true,
+        },
+      },
+    });
+
+    expect(cliExitCode).toBe(0);
+    expect(mcpResult.isError).toBe(false);
+    expect(mcpResult.structuredContent.tool).toBe('method_backlog_dependencies');
+    expect(mcpResult.structuredContent.result).toEqual(JSON.parse(stdout.output));
+    expect(mcpResult.structuredContent.result.focus.item.stem).toBe('PROCESS_finish');
+    expect(mcpResult.content[0].text).toContain('Critical path to PROCESS_finish');
+  });
+
+  it('Does `method_backlog_query` match the CLI JSON contract for explicit keywords, owners, readiness, sort mode, and bounded filtering?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    ensureBacklogLane(root, 'up-next');
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_query-foundation.md'),
+      [
+        '---',
+        'title: "Query Foundation"',
+        'legend: PROCESS',
+        'lane: up-next',
+        'owner: "METHOD maintainers"',
+        'priority: medium',
+        'keywords:',
+        '  - agent',
+        '  - query',
+        'blocked_by:',
+        '  - setup',
+        'acceptance_criteria:',
+        '  - "Has a query API"',
+        '---',
+        '',
+        '# Query Foundation',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_query-polish.md'),
+      [
+        '---',
+        'title: "Query Polish"',
+        'legend: PROCESS',
+        'lane: up-next',
+        'priority: medium',
+        'keywords:',
+        '  - agent',
+        '  - polish',
+        '---',
+        '',
+        '# Query Polish',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const callToolHandler = createCallToolHarness();
+    const stdout = new MemoryWriter();
+
+    const cliExitCode = await runCli(
+      [
+        'backlog',
+        'list',
+        '--lane',
+        'up-next',
+        '--keyword',
+        'agent',
+        '--owner',
+        'METHOD maintainers',
+        '--blocked',
+        '--has-acceptance-criteria',
+        '--blocked-by',
+        'setup',
+        '--sort',
+        'priority',
+        '--limit',
+        '1',
+        '--json',
+      ],
+      {
+        cwd: root,
+        stdout,
+        stderr: new MemoryWriter(),
+      },
+    );
+    const mcpResult = await callToolHandler({
+      params: {
+        name: 'method_backlog_query',
+        arguments: {
+          workspace: root,
+          lane: 'up-next',
+          keyword: 'agent',
+          owner: 'METHOD maintainers',
+          ready: false,
+          hasAcceptanceCriteria: true,
+          blockedBy: 'setup',
+          sort: 'priority',
+          limit: 1,
+        },
+      },
+    });
+
+    expect(cliExitCode).toBe(0);
+    expect(mcpResult.isError).toBe(false);
+    expect(mcpResult.structuredContent.tool).toBe('method_backlog_query');
+    expect(mcpResult.structuredContent.result).toEqual(JSON.parse(stdout.output));
+    expect(mcpResult.structuredContent.result.items[0].keywords).toEqual(['agent', 'query']);
+    expect(mcpResult.content[0].text).toContain('Backlog query');
+  });
+
+  it('Does `method_backlog_edit` match the CLI JSON contract for schema-backed metadata updates?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    ensureBacklogLane(root, 'up-next');
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_metadata-edit.md'),
+      ['---', 'title: "Metadata Edit"', 'legend: PROCESS', 'lane: up-next', '---', '', '# Metadata Edit', '', 'Body'].join('\n'),
+      'utf8',
+    );
+
+    const callToolHandler = createCallToolHarness();
+    const stdout = new MemoryWriter();
+
+    const cliExitCode = await runCli(
+      [
+        'backlog',
+        'edit',
+        'metadata-edit',
+        '--owner',
+        'Core Team',
+        '--priority',
+        'HIGH',
+        '--keyword',
+        'roadmap',
+        '--keyword',
+        'query',
+        '--blocked-by',
+        'setup',
+        '--blocks',
+        'finish',
+        '--json',
+      ],
+      {
+        cwd: root,
+        stdout,
+        stderr: new MemoryWriter(),
+      },
+    );
+    const mcpResult = await callToolHandler({
+      params: {
+        name: 'method_backlog_edit',
+        arguments: {
+          workspace: root,
+          item: 'metadata-edit',
+          owner: 'Core Team',
+          priority: 'HIGH',
+          keywords: ['roadmap', 'query'],
+          blockedBy: ['setup'],
+          blocks: ['finish'],
+        },
+      },
+    });
+
+    expect(cliExitCode).toBe(0);
+    expect(mcpResult.isError).toBe(false);
+    expect(mcpResult.structuredContent.tool).toBe('method_backlog_edit');
+    expect(mcpResult.structuredContent.result).toEqual(JSON.parse(stdout.output));
+    expect(mcpResult.content[0].text).toContain('Updated backlog metadata');
+  });
+
+  it('Does `method_next_work` match the CLI JSON contract for filtered recommendations and optional blocked inclusion?', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-04-11T12:48:24.000Z'));
+    try {
+      const root = createTempRoot();
+      initWorkspace(root);
+      ensureBacklogLane(root, 'up-next');
+      writeFileSync(
+        join(root, 'docs/method/backlog/up-next/PROCESS_blocked-owner-match.md'),
+        [
+          '---',
+          'title: "Blocked Owner Match"',
+          'legend: PROCESS',
+          'lane: up-next',
+          'owner: "Core Team"',
+          'priority: medium',
+          'keywords:',
+          '  - roadmap',
+          'blocked_by:',
+          '  - setup',
+          '---',
+          '',
+          '# Blocked Owner Match',
+          '',
+          'Body',
+        ].join('\n'),
+        'utf8',
+      );
+      writeFileSync(
+        join(root, 'docs/method/backlog/cool-ideas/PROCESS_ready-owner-match.md'),
+        [
+          '---',
+          'title: "Ready Owner Match"',
+          'legend: PROCESS',
+          'lane: cool-ideas',
+          'owner: "Core Team"',
+          'priority: medium',
+          'keywords:',
+          '  - roadmap',
+          '---',
+          '',
+          '# Ready Owner Match',
+          '',
+          'Body',
+        ].join('\n'),
+        'utf8',
+      );
+
+      const callToolHandler = createCallToolHarness();
+      const stdout = new MemoryWriter();
+
+      const cliExitCode = await runCli(
+        ['next', '--keyword', 'roadmap', '--owner', 'Core Team', '--include-blocked', '--limit', '3', '--json'],
+        {
+          cwd: root,
+          stdout,
+          stderr: new MemoryWriter(),
+        },
+      );
+      const mcpResult = await callToolHandler({
+        params: {
+          name: 'method_next_work',
+          arguments: {
+            workspace: root,
+            keyword: 'roadmap',
+            owner: 'Core Team',
+            includeBlocked: true,
+            limit: 3,
+          },
+        },
+      });
+
+      expect(cliExitCode).toBe(0);
+      expect(mcpResult.isError).toBe(false);
+      expect(mcpResult.structuredContent.tool).toBe('method_next_work');
+      expect(mcpResult.structuredContent.result).toEqual(JSON.parse(stdout.output));
+      expect(mcpResult.content[0].text).toContain('Next-work menu');
+      expect(mcpResult.structuredContent.result.selection_notes).toContain('Applied filters: keyword=roadmap, owner=core team.');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('Does `method_repair` plan and apply the same bounded repair set through MCP structured results?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    rmSync(join(root, 'docs/design'), { recursive: true, force: true });
+    rmSync(join(root, 'docs/RELEASE.md'), { recursive: true, force: true });
+    writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
+    const callToolHandler = createCallToolHarness();
+
+    const plan = await callToolHandler({
+      params: {
+        name: 'method_repair',
+        arguments: {
+          workspace: root,
+          mode: 'plan',
+        },
+      },
+    });
+
+    expect(plan.isError).toBe(false);
+    expect(plan.structuredContent.tool).toBe('method_repair');
+    expect(plan.structuredContent.result.mode).toBe('plan');
+    expect(plan.structuredContent.result.repairs.every((repair: { status: string }) => repair.status === 'planned')).toBe(true);
+    expect(plan.structuredContent.result.repairs.length).toBeGreaterThanOrEqual(3);
+
+    const applied = await callToolHandler({
+      params: {
+        name: 'method_repair',
+        arguments: {
+          workspace: root,
+          mode: 'apply',
+        },
+      },
+    });
+
+    expect(applied.isError).toBe(false);
+    expect(applied.structuredContent.tool).toBe('method_repair');
+    expect(applied.structuredContent.result.mode).toBe('apply');
+    expect(applied.structuredContent.result.repairs.every((repair: { status: string }) => repair.status === 'applied')).toBe(true);
+    expect(applied.structuredContent.result.repairs.length).toBeGreaterThanOrEqual(3);
+    expect(readFileSync(join(root, 'docs/RELEASE.md'), 'utf8')).toContain('# Release');
+    expect(readFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), 'utf8')).toMatch(
+      /^---\ntitle: "Missing Frontmatter"\n---\n\n# Missing Frontmatter/mu,
+    );
+  });
+
+  it('Does `method_migrate` apply the bounded repair set and return both before/after doctor reports?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    rmSync(join(root, 'docs/design'), { recursive: true, force: true });
+    rmSync(join(root, 'docs/RELEASE.md'), { recursive: true, force: true });
+    writeFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-frontmatter.md'), '# Missing Frontmatter\n\nBody\n', 'utf8');
+    const callToolHandler = createCallToolHarness();
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_migrate',
+        arguments: {
+          workspace: root,
+        },
+      },
+    });
+
+    expect(result.isError).toBe(false);
+    expect(result.structuredContent.tool).toBe('method_migrate');
+    expect(result.structuredContent.result.changed).toBe(true);
+    expect(result.structuredContent.result.initialReport.status).toBe('error');
+    expect(result.structuredContent.result.repair.mode).toBe('apply');
+    expect(result.structuredContent.result.repair.repairs.every((repair: { status: string }) => repair.status === 'applied')).toBe(true);
+    expect(result.structuredContent.result.repair.repairs.length).toBeGreaterThanOrEqual(3);
+    expect(readFileSync(join(root, 'docs/RELEASE.md'), 'utf8')).toContain('# Release');
+  });
+
+  it('Does `method_sync_refs` return structured content with the refreshed targets?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const callToolHandler = createCallToolHarness();
+    const changelogBefore = readFileSync(join(root, 'CHANGELOG.md'), 'utf8');
+    const bearingPath = join(root, 'docs/BEARING.md');
+    expect(existsSync(bearingPath)).toBe(false);
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_sync_refs',
+        arguments: {
+          workspace: root,
+        },
+      },
+    });
+
+    expect(result.isError).toBe(false);
+    expect(result.structuredContent.tool).toBe('method_sync_refs');
+    expect(result.structuredContent.result.targets).toEqual(['ARCHITECTURE.md', 'docs/CLI.md', 'docs/MCP.md', 'docs/GUIDE.md']);
+    expect(result.content[0].text).toContain('Refreshed ARCHITECTURE.md, docs/CLI.md, docs/MCP.md, docs/GUIDE.md');
+    expect(readFileSync(join(root, 'CHANGELOG.md'), 'utf8')).toBe(changelogBefore);
+    expect(existsSync(bearingPath)).toBe(false);
   });
 
   it('Does the CLI `--json` output exactly match the MCP `structuredContent.result` contract?', async () => {
@@ -396,36 +821,33 @@ describe('MCP Server', () => {
       });
       expect(pullResult.isError).toBeFalsy();
       expect(pullResult.structuredContent.tool).toBe('method_pull');
-      expect(pullResult.structuredContent.result.cycle.name).toBe('0001-test-idea-from-mcp');
-      expect(pullResult.structuredContent.result.cycle.designDoc).toBe(
-        'docs/design/0001-test-idea-from-mcp/test-idea-from-mcp.md',
-      );
+      expect(pullResult.structuredContent.result.cycle.name).toBe('PROCESS_test-idea-from-mcp');
+      expect(pullResult.structuredContent.result.cycle.designDoc).toBe('docs/design/PROCESS_test-idea-from-mcp.md');
 
       const captureResult = await callToolHandler({
-        params: { name: 'method_capture_witness', arguments: { workspace: root, cycle: '0001-test-idea-from-mcp' } },
+        params: { name: 'method_capture_witness', arguments: { workspace: root, cycle: 'PROCESS_test-idea-from-mcp' } },
       });
       expect(captureResult.isError).toBeFalsy();
       expect(captureResult.structuredContent.tool).toBe('method_capture_witness');
-      expect(captureResult.structuredContent.result.path).toBe(
-        'docs/method/retro/0001-test-idea-from-mcp/witness/verification.md',
-      );
+      expect(captureResult.structuredContent.result.path).toBe('docs/method/retro/PROCESS_test-idea-from-mcp/witness/verification.md');
 
       const closeResult = await callToolHandler({
         params: {
           name: 'method_close',
           arguments: {
             workspace: root,
-            cycle: '0001-test-idea-from-mcp',
+            cycle: 'PROCESS_test-idea-from-mcp',
             driftCheck: true,
             outcome: 'hill-met',
+            witnessVerified: true,
           },
         },
       });
       expect(closeResult.isError).toBeFalsy();
       expect(closeResult.structuredContent.tool).toBe('method_close');
-      expect(closeResult.structuredContent.result.cycle.name).toBe('0001-test-idea-from-mcp');
+      expect(closeResult.structuredContent.result.cycle.name).toBe('PROCESS_test-idea-from-mcp');
       expect(closeResult.structuredContent.result.cycle.retroDoc).toBe(
-        'docs/method/retro/0001-test-idea-from-mcp/test-idea-from-mcp.md',
+        'docs/method/retro/PROCESS_test-idea-from-mcp/PROCESS_test-idea-from-mcp.md',
       );
     } finally {
       if (originalMethodTest === undefined) {
@@ -437,26 +859,275 @@ describe('MCP Server', () => {
     }
   });
 
+  it('Does `method_backlog_add` create a shaped backlog note in a requested custom lane and return stable structured content?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const callToolHandler = createCallToolHarness();
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_backlog_add',
+        arguments: {
+          workspace: root,
+          lane: 'v1.1.0',
+          title: 'Backlog Add',
+          legend: 'process',
+          body: 'Body from mcp.\n',
+        },
+      },
+    });
+
+    expect(result.isError).toBe(false);
+    expect(result.structuredContent.tool).toBe('method_backlog_add');
+    expect(result.structuredContent.result.path).toBe('docs/method/backlog/v1.1.0/PROCESS_backlog-add.md');
+    expect(result.structuredContent.result.lane).toBe('v1.1.0');
+    expect(result.structuredContent.result.legend).toBe('PROCESS');
+    expect(result.structuredContent.result.title).toBe('Backlog Add');
+    expect(result.structuredContent.result.stem).toBe('PROCESS_backlog-add');
+    expect(result.structuredContent.result.slug).toBe('backlog-add');
+    expect(readFileSync(join(root, 'docs/method/backlog/v1.1.0/PROCESS_backlog-add.md'), 'utf8')).toContain('Body from mcp.');
+  });
+
+  it('Does `method_backlog_add` reject malformed lane names instead of writing outside the backlog tree?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const callToolHandler = createCallToolHarness();
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_backlog_add',
+        arguments: {
+          workspace: root,
+          lane: '../oops',
+          title: 'Backlog Add',
+        },
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent.tool).toBe('method_backlog_add');
+    expect(result.structuredContent.error.message).toContain('Backlog lane must be a live lane');
+  });
+
+  it('Does `method_backlog_move` move a live backlog note and return both source and destination identity?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    writeFileSync(
+      join(root, 'docs/method/backlog/inbox/PROCESS_move-me.md'),
+      ['---', 'title: "Move Me"', 'legend: PROCESS', 'lane: inbox', '---', '', '# Move Me', '', 'Body'].join('\n'),
+      'utf8',
+    );
+    const callToolHandler = createCallToolHarness();
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_backlog_move',
+        arguments: {
+          workspace: root,
+          item: 'move-me',
+          to: 'v1.1.0',
+        },
+      },
+    });
+
+    expect(result.isError).toBe(false);
+    expect(result.structuredContent.tool).toBe('method_backlog_move');
+    expect(result.structuredContent.result.sourcePath).toBe('docs/method/backlog/inbox/PROCESS_move-me.md');
+    expect(result.structuredContent.result.path).toBe('docs/method/backlog/v1.1.0/PROCESS_move-me.md');
+    expect(result.structuredContent.result.lane).toBe('v1.1.0');
+    expect(result.structuredContent.result.legend).toBe('PROCESS');
+    expect(readFileSync(join(root, 'docs/method/backlog/v1.1.0/PROCESS_move-me.md'), 'utf8')).toContain('lane: v1.1.0');
+  });
+
+  it('Does `method_backlog_move` reject unresolved item selectors before mutating the repo?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const callToolHandler = createCallToolHarness();
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_backlog_move',
+        arguments: {
+          workspace: root,
+          item: 'missing-item',
+          to: 'v1.1.0',
+        },
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent.tool).toBe('method_backlog_move');
+    expect(result.structuredContent.error.message).toContain('Could not find backlog item');
+  });
+
+  it('Does `method_retire` preview and retire a live backlog note with the same structured result contract?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    ensureBacklogLane(root, 'up-next');
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_retire-me.md'),
+      ['---', 'title: "Retire Me"', 'legend: PROCESS', 'lane: up-next', '---', '', '# Retire Me', '', 'Body'].join('\n'),
+      'utf8',
+    );
+    const callToolHandler = createCallToolHarness();
+
+    const preview = await callToolHandler({
+      params: {
+        name: 'method_retire',
+        arguments: {
+          workspace: root,
+          item: 'retire-me',
+          reason: 'Superseded by another cycle.',
+          replacement: 'docs/design/0040-release-scope/release-scope.md',
+          dryRun: true,
+        },
+      },
+    });
+
+    expect(preview.isError).toBe(false);
+    expect(preview.structuredContent.tool).toBe('method_retire');
+    expect(preview.structuredContent.result.dryRun).toBe(true);
+    expect(preview.structuredContent.result.sourcePath).toBe('docs/method/backlog/up-next/PROCESS_retire-me.md');
+    expect(preview.structuredContent.result.graveyardPath).toBe('docs/method/graveyard/PROCESS_retire-me.md');
+    expect(existsSync(join(root, 'docs/method/backlog/up-next/PROCESS_retire-me.md'))).toBe(true);
+
+    const applied = await callToolHandler({
+      params: {
+        name: 'method_retire',
+        arguments: {
+          workspace: root,
+          item: 'retire-me',
+          reason: 'Superseded by another cycle.',
+          replacement: 'docs/design/0040-release-scope/release-scope.md',
+        },
+      },
+    });
+
+    expect(applied.isError).toBe(false);
+    expect(applied.structuredContent.tool).toBe('method_retire');
+    expect(applied.structuredContent.result.dryRun).toBe(false);
+    expect(applied.structuredContent.result.sourcePath).toBe('docs/method/backlog/up-next/PROCESS_retire-me.md');
+    expect(applied.structuredContent.result.graveyardPath).toBe('docs/method/graveyard/PROCESS_retire-me.md');
+    expect(readFileSync(join(root, 'docs/method/graveyard/PROCESS_retire-me.md'), 'utf8')).toContain('## Disposition');
+    expect(readFileSync(join(root, 'docs/method/graveyard/PROCESS_retire-me.md'), 'utf8')).toContain(
+      'Replacement: `docs/design/0040-release-scope/release-scope.md`',
+    );
+  });
+
+  it('Do signpost MCP tools report expected signposts and initialize supported missing signposts?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const callToolHandler = createCallToolHarness();
+
+    const status = await callToolHandler({
+      params: {
+        name: 'method_signpost_status',
+        arguments: {
+          workspace: root,
+        },
+      },
+    });
+
+    expect(status.isError).toBe(false);
+    expect(status.structuredContent.tool).toBe('method_signpost_status');
+    expect(status.structuredContent.result.missing).toContain('docs/BEARING.md');
+    expect(status.structuredContent.result.signposts).toContainEqual(
+      expect.objectContaining({
+        name: 'BEARING',
+        path: 'docs/BEARING.md',
+        exists: false,
+        initable: true,
+      }),
+    );
+
+    const initialized = await callToolHandler({
+      params: {
+        name: 'method_signpost_init',
+        arguments: {
+          workspace: root,
+          name: 'BEARING',
+        },
+      },
+    });
+
+    expect(initialized.isError).toBe(false);
+    expect(initialized.structuredContent.tool).toBe('method_signpost_init');
+    expect(initialized.structuredContent.result.initializedTargets).toEqual(['docs/BEARING.md']);
+    expect(readFileSync(join(root, 'docs/BEARING.md'), 'utf8')).toContain('# BEARING');
+  });
+
+  it('Does `method_inbox` capture explicit source metadata and return stable structured content?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const callToolHandler = createCallToolHarness();
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_inbox',
+        arguments: {
+          workspace: root,
+          idea: 'Feedback note worth triaging',
+          legend: 'PROCESS',
+          title: 'Missing API Surfaces',
+          source: 'cross-repo usage',
+          body: 'Observed while operating METHOD elsewhere.\n',
+          capturedAt: '2026-04-11',
+        },
+      },
+    });
+
+    expect(result.isError).toBe(false);
+    expect(result.structuredContent.tool).toBe('method_inbox');
+    expect(result.structuredContent.result.path).toBe('docs/method/backlog/inbox/PROCESS_missing-api-surfaces.md');
+    expect(result.structuredContent.result.lane).toBe('inbox');
+    expect(result.structuredContent.result.legend).toBe('PROCESS');
+    expect(result.structuredContent.result.title).toBe('Missing API Surfaces');
+    expect(result.structuredContent.result.source).toBe('cross-repo usage');
+    expect(result.structuredContent.result.captured_at).toBe('2026-04-11');
+    expect(readFileSync(join(root, 'docs/method/backlog/inbox/PROCESS_missing-api-surfaces.md'), 'utf8')).toContain(
+      'Observed while operating METHOD elsewhere.',
+    );
+  });
+
+  it('Does `method_pull` use release-scoped cycle packet paths when the backlog item carries release metadata?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+    workspace.createBacklogItem({
+      lane: 'v2.4.5',
+      title: 'Release Scope',
+      legend: 'PROCESS',
+      body: 'Release-scoped packet.\n',
+    });
+    const callToolHandler = createCallToolHarness();
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_pull',
+        arguments: {
+          workspace: root,
+          item: 'PROCESS_release-scope',
+        },
+      },
+    });
+
+    expect(result.isError).toBe(false);
+    expect(result.structuredContent.tool).toBe('method_pull');
+    expect(result.structuredContent.result.cycle.designDoc).toBe('docs/releases/v2.4.5/design/PROCESS_release-scope.md');
+    expect(readFileSync(join(root, 'docs/releases/v2.4.5/design/PROCESS_release-scope.md'), 'utf8')).toContain('release: "v2.4.5"');
+  });
+
   it('Does `method_inbox` normalize persisted legends before returning structured content?', async () => {
     const root = createTempRoot();
     initWorkspace(root);
     const persistedPath = join(root, 'docs/method/backlog/inbox/PROCESS_tampered-legend.md');
     writeFileSync(
       persistedPath,
-      [
-        '---',
-        'title: Tampered Legend',
-        'lane: inbox',
-        'legend: foo-bar',
-        '---',
-        '',
-        'Body',
-        '',
-      ].join('\n'),
+      ['---', 'title: Tampered Legend', 'lane: inbox', 'legend: foo-bar', '---', '', 'Body', ''].join('\n'),
       'utf8',
     );
 
-    const captureIdea = vi.spyOn(Workspace.prototype, 'captureIdea').mockReturnValue(persistedPath);
+    const captureIdea = vi.spyOn(Workspace.prototype, 'captureIdeaWithMetadata').mockReturnValue(persistedPath);
     const callToolHandler = createCallToolHarness();
 
     const result = await callToolHandler({
@@ -502,7 +1173,7 @@ describe('MCP Server', () => {
         name: 'method_close',
         arguments: {
           workspace: root,
-          cycle: '0001-close-validation',
+          cycle: 'PROCESS_close-validation',
           driftCheck: 'false',
           outcome: 'hill-met',
         },
@@ -516,7 +1187,7 @@ describe('MCP Server', () => {
         name: 'method_close',
         arguments: {
           workspace: root,
-          cycle: '0001-close-validation',
+          cycle: 'PROCESS_close-validation',
           driftCheck: true,
           outcome: 'done',
         },
@@ -559,11 +1230,7 @@ describe('MCP Server', () => {
   it('Does `method_sync_github` respect explicit false flags instead of treating them as omitted defaults?', async () => {
     const root = createTempRoot();
     initWorkspace(root);
-    writeFileSync(
-      join(root, '.method.json'),
-      JSON.stringify({ github_token: 'test-token', github_repo: 'owner/repo' }),
-      'utf8',
-    );
+    writeFileSync(join(root, '.method.json'), JSON.stringify({ github_token: 'test-token', github_repo: 'owner/repo' }), 'utf8');
 
     const pushBacklog = vi.spyOn(GitHubAdapter.prototype, 'pushBacklog').mockResolvedValue([]);
     const pullBacklog = vi.spyOn(GitHubAdapter.prototype, 'pullBacklog').mockResolvedValue([]);
@@ -620,11 +1287,7 @@ describe('MCP Server', () => {
   it('Does `method_sync_github` reject non-boolean push and pull flags before touching GitHub?', async () => {
     const root = createTempRoot();
     initWorkspace(root);
-    writeFileSync(
-      join(root, '.method.json'),
-      JSON.stringify({ github_token: 'test-token', github_repo: 'owner/repo' }),
-      'utf8',
-    );
+    writeFileSync(join(root, '.method.json'), JSON.stringify({ github_token: 'test-token', github_repo: 'owner/repo' }), 'utf8');
 
     const pushBacklog = vi.spyOn(GitHubAdapter.prototype, 'pushBacklog').mockResolvedValue([]);
     const pullBacklog = vi.spyOn(GitHubAdapter.prototype, 'pullBacklog').mockResolvedValue([]);
@@ -659,5 +1322,92 @@ describe('MCP Server', () => {
     expect(badPull.structuredContent.error.message).toContain('pull must be a boolean');
     expect(pushBacklog).not.toHaveBeenCalled();
     expect(pullBacklog).not.toHaveBeenCalled();
+  });
+
+  it('Does every MCP tool that accepts user arguments validate them at runtime before performing any mutation?', async () => {
+    // This is proven by the individual tool validation tests below:
+    // - method_close: validates driftCheck, outcome, cycle
+    // - method_pull: validates item
+    // - method_capture_witness: validates cycle
+    // - method_sync_github: validates push, pull booleans
+    // - method_inbox: validates idea, legend, title, body, source, capturedAt
+    // Tools without user arguments (method_sync_ship, method_sync_refs) need no validation.
+    // The workspace argument is validated by the shared handler preamble.
+    const callToolHandler = createCallToolHarness();
+    const noWorkspace = await callToolHandler({
+      params: { name: 'method_pull', arguments: {} },
+    });
+    expect(noWorkspace.isError).toBe(true);
+    expect(noWorkspace.structuredContent.error.message).toContain('workspace is required');
+  });
+
+  it('Does `method_spike` return structured content with the created spike path?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const callToolHandler = createCallToolHarness();
+
+    const result = await callToolHandler({
+      params: {
+        name: 'method_spike',
+        arguments: { workspace: root, goal: 'Test MCP spike', title: 'MCP Spike Test' },
+      },
+    });
+
+    expect(result.isError).toBeFalsy();
+    expect(result.structuredContent.tool).toBe('method_spike');
+    expect(result.structuredContent.result.path).toContain('SPIKE_mcp-spike-test.md');
+  });
+
+  it('Does `method_pull` reject invalid runtime argument types and return the canonical MCP error envelope?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const callToolHandler = createCallToolHarness();
+
+    const numericItem = await callToolHandler({
+      params: {
+        name: 'method_pull',
+        arguments: { workspace: root, item: 123 },
+      },
+    });
+    expect(numericItem.isError).toBe(true);
+    expect(numericItem.structuredContent.ok).toBe(false);
+    expect(numericItem.structuredContent.error.message).toContain('item must be a string');
+
+    const blankItem = await callToolHandler({
+      params: {
+        name: 'method_pull',
+        arguments: { workspace: root, item: '   ' },
+      },
+    });
+    expect(blankItem.isError).toBe(true);
+    expect(blankItem.structuredContent.error.message).toContain('item must not be empty');
+  });
+
+  it('Does `method_capture_witness` reject invalid runtime argument types and return the canonical MCP error envelope?', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+    workspace.captureIdea('Witness validation', 'PROCESS', 'Witness Validation');
+    workspace.pullItem('PROCESS_witness-validation');
+    const callToolHandler = createCallToolHarness();
+
+    const numericCycle = await callToolHandler({
+      params: {
+        name: 'method_capture_witness',
+        arguments: { workspace: root, cycle: 42 },
+      },
+    });
+    expect(numericCycle.isError).toBe(true);
+    expect(numericCycle.structuredContent.ok).toBe(false);
+    expect(numericCycle.structuredContent.error.message).toContain('cycle must be a string');
+
+    const blankCycle = await callToolHandler({
+      params: {
+        name: 'method_capture_witness',
+        arguments: { workspace: root, cycle: '   ' },
+      },
+    });
+    expect(blankCycle.isError).toBe(true);
+    expect(blankCycle.structuredContent.error.message).toContain('cycle must not be empty');
   });
 });

@@ -17,10 +17,10 @@ const BLOCKER_TYPES = [
   'policy_cooldown',
 ] as const;
 
-type ReviewStateStatus = typeof REVIEW_STATE_STATUSES[number];
-type ReviewDecision = typeof REVIEW_DECISIONS[number];
-type BotReviewState = typeof BOT_REVIEW_STATES[number];
-type ReviewStateBlockerType = typeof BLOCKER_TYPES[number];
+type ReviewStateStatus = (typeof REVIEW_STATE_STATUSES)[number];
+type ReviewDecision = (typeof REVIEW_DECISIONS)[number];
+type BotReviewState = (typeof BOT_REVIEW_STATES)[number];
+type ReviewStateBlockerType = (typeof BLOCKER_TYPES)[number];
 
 export interface ReviewCheck {
   name: string;
@@ -163,10 +163,7 @@ export async function queryReviewState(options: ReviewStateQueryOptions): Promis
   }
 
   const client = options.client ?? createExecReviewStateClient();
-  let selection:
-    | { kind: 'selected'; prNumber: number }
-    | { kind: 'no-pr'; message: string }
-    | { kind: 'ambiguous-pr'; message: string };
+  let selection: { kind: 'selected'; prNumber: number } | { kind: 'no-pr'; message: string } | { kind: 'ambiguous-pr'; message: string };
   if (currentBranch) {
     selection = await resolveCurrentBranchPr(options.cwd, client);
   } else {
@@ -182,10 +179,13 @@ export async function queryReviewState(options: ReviewStateQueryOptions): Promis
 
   const [repo, prView] = await Promise.all([
     client.ghJson<GhRepoViewResponse>(options.cwd, ['repo', 'view', '--json', 'owner,name']),
-    client.ghJson<GhPrViewResponse>(
-      options.cwd,
-      ['pr', 'view', String(selection.prNumber), '--json', 'number,url,reviewDecision,statusCheckRollup,reviews,comments'],
-    ),
+    client.ghJson<GhPrViewResponse>(options.cwd, [
+      'pr',
+      'view',
+      String(selection.prNumber),
+      '--json',
+      'number,url,reviewDecision,statusCheckRollup,reviews,comments',
+    ]),
   ]);
 
   const owner = repo.owner?.login?.trim();
@@ -254,8 +254,10 @@ async function runCommand(command: string, args: readonly string[], cwd: string)
     });
     return stdout;
   } catch (error: unknown) {
-    const stdout = typeof error === 'object' && error !== null && 'stdout' in error ? String((error as { stdout?: string }).stdout ?? '') : '';
-    const stderr = typeof error === 'object' && error !== null && 'stderr' in error ? String((error as { stderr?: string }).stderr ?? '') : '';
+    const stdout =
+      typeof error === 'object' && error !== null && 'stdout' in error ? String((error as { stdout?: string }).stdout ?? '') : '';
+    const stderr =
+      typeof error === 'object' && error !== null && 'stderr' in error ? String((error as { stderr?: string }).stderr ?? '') : '';
     const message = [stdout.trim(), stderr.trim()].filter((value) => value.length > 0).join('\n');
     throw new Error(message.length > 0 ? message : `${command} ${args.join(' ')} failed.`);
   }
@@ -264,20 +266,22 @@ async function runCommand(command: string, args: readonly string[], cwd: string)
 async function resolveCurrentBranchPr(
   cwd: string,
   client: ReviewStateClient,
-): Promise<
-  | { kind: 'selected'; prNumber: number }
-  | { kind: 'no-pr'; message: string }
-  | { kind: 'ambiguous-pr'; message: string }
-> {
+): Promise<{ kind: 'selected'; prNumber: number } | { kind: 'no-pr'; message: string } | { kind: 'ambiguous-pr'; message: string }> {
   const branch = (await client.gitText(cwd, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim();
   if (branch.length === 0 || branch === 'HEAD') {
     return { kind: 'no-pr', message: 'No PR found for current branch (detached HEAD).' };
   }
 
-  const matches = await client.ghJson<PullRequestCandidate[]>(
-    cwd,
-    ['pr', 'list', '--head', branch, '--state', 'open', '--json', 'number,url'],
-  );
+  const matches = await client.ghJson<PullRequestCandidate[]>(cwd, [
+    'pr',
+    'list',
+    '--head',
+    branch,
+    '--state',
+    'open',
+    '--json',
+    'number,url',
+  ]);
 
   if (matches.length === 0) {
     return { kind: 'no-pr', message: `No PR found for current branch: ${branch}.` };
@@ -315,18 +319,7 @@ async function fetchUnresolvedThreadCount(
   let total = 0;
   let cursor: string | undefined;
   while (true) {
-    const args = [
-      'api',
-      'graphql',
-      '-F',
-      `owner=${owner}`,
-      '-F',
-      `repo=${repo}`,
-      '-F',
-      `pr=${prNumber}`,
-      '-f',
-      `query=${query}`,
-    ];
+    const args = ['api', 'graphql', '-F', `owner=${owner}`, '-F', `repo=${repo}`, '-F', `pr=${prNumber}`, '-f', `query=${query}`];
     if (cursor !== undefined) {
       args.push('-F', `cursor=${cursor}`);
     }
@@ -519,10 +512,7 @@ function latestDecisiveStates(reviews: GhReview[]): Map<string, 'APPROVED' | 'CH
   for (const review of reviews) {
     const author = normalizeOptionalString(review.author?.login);
     const state = normalizeOptionalString(review.state)?.toUpperCase();
-    if (
-      author === undefined
-      || (state !== 'APPROVED' && state !== 'CHANGES_REQUESTED' && state !== 'DISMISSED')
-    ) {
+    if (author === undefined || (state !== 'APPROVED' && state !== 'CHANGES_REQUESTED' && state !== 'DISMISSED')) {
       continue;
     }
     const timestamp = parseTimestamp(review.submittedAt);
@@ -531,14 +521,14 @@ function latestDecisiveStates(reviews: GhReview[]): Map<string, 'APPROVED' | 'CH
       latest.set(author, { timestamp, state: state === 'DISMISSED' ? undefined : state });
     }
   }
-  return new Map(
-    [...latest.entries()]
-      .filter(([, value]) => value.state !== undefined)
-      .map(([author, value]) => [author, value.state!]),
-  );
+  return new Map([...latest.entries()].filter(([, value]) => value.state !== undefined).map(([author, value]) => [author, value.state!]));
 }
 
-function analyzeBotSignals(reviews: GhReview[], comments: GhComment[], checks: GhCheckRun[]): {
+function analyzeBotSignals(
+  reviews: GhReview[],
+  comments: GhComment[],
+  checks: GhCheckRun[],
+): {
   state: BotReviewState;
   source: string;
   cooldownMessage?: string;
@@ -598,7 +588,11 @@ function analyzeBotSignals(reviews: GhReview[], comments: GhComment[], checks: G
     };
   }
 
-  if (latestBotCheck !== undefined && isPendingBotStatus(latestBotCheck.status) && latestBotCheck.timestamp >= latestBotMeaningfulTimestamp) {
+  if (
+    latestBotCheck !== undefined &&
+    isPendingBotStatus(latestBotCheck.status) &&
+    latestBotCheck.timestamp >= latestBotMeaningfulTimestamp
+  ) {
     return { state: 'pending', source: latestBotCheck.source };
   }
 
@@ -608,7 +602,11 @@ function analyzeBotSignals(reviews: GhReview[], comments: GhComment[], checks: G
   if (latestBotReview?.state === 'CHANGES_REQUESTED') {
     return { state: 'changes_requested', source: latestBotReview.source };
   }
-  if (latestBotCheck !== undefined && isSuccessfulBotStatus(latestBotCheck.status) && latestBotCheck.timestamp >= latestBotMeaningfulTimestamp) {
+  if (
+    latestBotCheck !== undefined &&
+    isSuccessfulBotStatus(latestBotCheck.status) &&
+    latestBotCheck.timestamp >= latestBotMeaningfulTimestamp
+  ) {
     return { state: 'approved', source: latestBotCheck.source };
   }
   if (latestSignal !== undefined) {

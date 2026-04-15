@@ -1,0 +1,3 @@
+#!/bin/sh
+# Pre-push hook: tests must pass before code leaves the machine.
+npm test

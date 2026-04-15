@@ -15,10 +15,23 @@ export type PathsConfig = z.infer<typeof PathsSchema>;
 
 export const DEFAULT_PATHS: PathsConfig = PathsSchema.parse({});
 
+export const DriftThresholdsSchema = z.object({
+  semantic_match: z.number().min(0).max(1).default(0.85),
+  near_miss: z.number().min(0).max(1).default(0.65),
+});
+
+export type DriftThresholds = z.infer<typeof DriftThresholdsSchema>;
+
+export const DEFAULT_DRIFT_THRESHOLDS: DriftThresholds = DriftThresholdsSchema.parse({});
+
 export const ConfigSchema = z.object({
   forge: z.enum(['github']).default('github'),
   github_token: z.string().optional(),
   github_repo: z.string().optional(), // owner/repo
+  drift_thresholds: DriftThresholdsSchema.default({
+    semantic_match: 0.85,
+    near_miss: 0.65,
+  }),
   paths: PathsSchema.default({
     backlog: 'docs/method/backlog',
     design: 'docs/design',

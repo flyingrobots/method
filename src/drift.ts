@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
+import type { DriftThresholds } from './config.js';
 import type { Cycle } from './domain.js';
 
 interface PlaybackQuestion {
@@ -14,7 +15,15 @@ export interface DriftReport {
   output: string;
 }
 
-export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], testsDir?: string): DriftReport {
+const NON_ALNUM_PATTERN = /[^\p{L}\p{N}\s]/gu;
+const WHITESPACE_PATTERN = /\s+/gu;
+const BACKTICK_PATTERN = /`/gu;
+const QUESTION_PREFIX_PATTERN = /^(?:does|is|can|will|are|do|has|have)\s+/u;
+const TRAILING_PUNCTUATION_PATTERN = /[.?!]+$/u;
+
+export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], testsDir?: string, thresholds?: DriftThresholds): DriftReport {
+  const semanticMatchThreshold = thresholds?.semantic_match ?? DEFAULT_SEMANTIC_MATCH_THRESHOLD;
+  const nearMissThreshold = thresholds?.near_miss ?? DEFAULT_NEAR_MISS_THRESHOLD;
   if (cycles.length === 0) {
     return {
       exitCode: 0,
@@ -24,20 +33,33 @@ export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], tes
 
   const questions = cycles.flatMap((cycle) => extractPlaybackQuestions(cycle.designDoc));
   const testDescriptions = collectTestDescriptions(testsDir ?? resolve(root, 'tests'));
-  const unmatched = questions.filter((question) =>
-    !testDescriptions.some((description) => normalizeForMatch(description) === question.normalized));
+  const normalizedDescriptions = testDescriptions.map((d) => ({
+    original: d,
+    normalized: normalizeForMatch(d),
+    semantic: normalizeForSemanticMatch(d),
+  }));
+  const unmatched = questions.filter((question) => {
+    // Tier 1: exact normalized match
+    if (normalizedDescriptions.some((desc) => desc.normalized === question.normalized)) {
+      return false;
+    }
+    // Tier 2: semantic normalization match (strips question form, backticks, etc.)
+    const semanticQ = normalizeForSemanticMatch(question.text);
+    if (normalizedDescriptions.some((desc) => desc.semantic === semanticQ)) {
+      return false;
+    }
+    // Tier 3: high-confidence token similarity
+    const bestScore = Math.max(...normalizedDescriptions.map((desc) => tokenSimilarity(semanticQ, desc.semantic)), 0);
+    return bestScore < semanticMatchThreshold;
+  });
   const summaryLine = `Scanned ${cycles.length} active cycle${plural(cycles.length)}, ${questions.length} playback question${plural(questions.length)}, ${testDescriptions.length} test description${plural(testDescriptions.length)}.`;
-  const searchBasis = 'Search basis: exact normalized match in tests/**/*.test.* and tests/**/*.spec.* descriptions.';
+  const searchBasis =
+    'Search basis: normalized match, semantic normalization, or high-confidence token similarity in tests/**/*.test.* and tests/**/*.spec.* descriptions.';
 
   if (unmatched.length === 0) {
     return {
       exitCode: 0,
-      output: [
-        'No playback-question drift found.',
-        summaryLine,
-        searchBasis,
-        '',
-      ].join('\n'),
+      output: ['No playback-question drift found.', summaryLine, searchBasis, ''].join('\n'),
     };
   }
 
@@ -48,21 +70,17 @@ export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], tes
     grouped.set(question.designDoc, current);
   }
 
-  const normalizedDescriptions = testDescriptions.map((d) => ({
-    original: d,
-    normalized: normalizeForMatch(d),
-  }));
-
   const findingLines: string[] = [];
   for (const designDoc of [...grouped.keys()].sort((left, right) => left.localeCompare(right))) {
     findingLines.push(relative(root, designDoc));
     for (const question of grouped.get(designDoc) ?? []) {
       findingLines.push(`- ${question.sponsor}: ${question.text}`);
-      const hint = findNearMiss(question.normalized, normalizedDescriptions);
+      const hint = findNearMiss(question.text, normalizedDescriptions, nearMissThreshold, semanticMatchThreshold);
       if (hint !== undefined) {
-        findingLines.push(`  Near miss: "${hint}"`);
+        const pct = Math.round(hint.score * 100);
+        findingLines.push(`  Near miss (${pct}%): "${hint.text}"`);
       } else {
-        findingLines.push('  No exact normalized test description match found.');
+        findingLines.push('  No matching test description found.');
       }
     }
     findingLines.push('');
@@ -70,13 +88,7 @@ export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], tes
 
   return {
     exitCode: 2,
-    output: [
-      'Playback-question drift found.',
-      summaryLine,
-      searchBasis,
-      '',
-      ...findingLines,
-    ].join('\n'),
+    output: ['Playback-question drift found.', summaryLine, searchBasis, '', ...findingLines].join('\n'),
   };
 }
 
@@ -181,29 +193,41 @@ function extractPlaybackQuestions(path: string): PlaybackQuestion[] {
   return questions;
 }
 
-const NEAR_MISS_THRESHOLD = 0.7;
+const DEFAULT_SEMANTIC_MATCH_THRESHOLD = 0.85;
+const DEFAULT_NEAR_MISS_THRESHOLD = 0.65;
 
 function findNearMiss(
-  normalizedQuestion: string,
-  descriptions: readonly { original: string; normalized: string }[],
-): string | undefined {
+  question: string,
+  descriptions: readonly { original: string; semantic: string }[],
+  nearMissThreshold: number,
+  semanticMatchThreshold: number,
+): { text: string; score: number } | undefined {
+  const semanticQ = normalizeForSemanticMatch(question);
   let bestScore = 0;
   let bestOriginal: string | undefined;
 
   for (const desc of descriptions) {
-    const score = tokenSimilarity(normalizedQuestion, desc.normalized);
+    const score = tokenSimilarity(semanticQ, desc.semantic);
     if (score > bestScore) {
       bestScore = score;
       bestOriginal = desc.original;
     }
   }
 
-  return bestScore >= NEAR_MISS_THRESHOLD ? bestOriginal : undefined;
+  return bestScore >= nearMissThreshold && bestScore < semanticMatchThreshold && bestOriginal !== undefined
+    ? { text: bestOriginal, score: bestScore }
+    : undefined;
 }
 
 function tokenSimilarity(left: string, right: string): number {
   const tokenize = (value: string): Set<string> =>
-    new Set(value.replace(/[^\p{L}\p{N}\s]/gu, '').split(' ').filter((t) => t.length > 0));
+    new Set(
+      value
+        .replace(NON_ALNUM_PATTERN, '')
+        .split(' ')
+        .filter((t) => t.length > 0)
+        .map(stemToken),
+    );
   const leftTokens = tokenize(left);
   const rightTokens = tokenize(right);
 
@@ -226,11 +250,48 @@ function tokenSimilarity(left: string, right: string): number {
   return intersection / union;
 }
 
+function stemToken(token: string): string {
+  // Minimal English suffix stripping for verb/noun forms.
+  // Goal: "creates" and "create" should produce the same stem.
+  if (token.length <= 3) {
+    return token;
+  }
+  if (token.endsWith('ing') && token.length > 5) {
+    return token.slice(0, -3);
+  }
+  if (token.endsWith('ied') && token.length > 4) {
+    return `${token.slice(0, -3)}y`;
+  }
+  if (token.endsWith('ies') && token.length > 4) {
+    return `${token.slice(0, -3)}y`;
+  }
+  if (token.endsWith('ed') && token.length > 4) {
+    return token.slice(0, -2);
+  }
+  // Strip trailing "s" (handles "creates" → "create", "docs" → "doc")
+  // but not "ss" (e.g. "pass") or "us"/"is" endings
+  if (token.endsWith('s') && !token.endsWith('ss') && !token.endsWith('us') && token.length > 3) {
+    return token.slice(0, -1);
+  }
+  return token;
+}
+
 function normalizeForMatch(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/gu, ' ');
+  return value.trim().toLowerCase().replace(WHITESPACE_PATTERN, ' ');
+}
+
+function normalizeForSemanticMatch(value: string): string {
+  return (
+    value
+      .trim()
+      .toLowerCase()
+      // Strip backticks
+      .replace(BACKTICK_PATTERN, '')
+      .replace(QUESTION_PREFIX_PATTERN, '')
+      .replace(WHITESPACE_PATTERN, ' ')
+      .replace(TRAILING_PUNCTUATION_PATTERN, '')
+      .trim()
+  );
 }
 
 function plural(count: number): string {
@@ -289,9 +350,9 @@ function stripComments(value: string): string {
       } else if (current === '\\') {
         escaped = true;
       } else if (
-        (state === 'single-quote' && current === '\'')
-        || (state === 'double-quote' && current === '"')
-        || (state === 'template' && current === '`')
+        (state === 'single-quote' && current === "'") ||
+        (state === 'double-quote' && current === '"') ||
+        (state === 'template' && current === '`')
       ) {
         state = 'code';
       }
@@ -314,7 +375,7 @@ function stripComments(value: string): string {
       continue;
     }
 
-    if (current === '\'') {
+    if (current === "'") {
       state = 'single-quote';
       result += current;
       index += 1;

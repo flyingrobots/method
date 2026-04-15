@@ -4,14 +4,14 @@ generated_at: 2026-04-09T18:27:16-07:00
 generator: "manual synthesis following Executive Summary Protocol (Cycle 0013)"
 generated_from_commit: "f1631d02fda4551245fe3f3bb66fe3d1e5b45891"
 provenance_level: artifact_history
-witness_ref: docs/method/retro/0037-test-taxonomy-and-fixture-drift/witness/verification.md
+witness_ref: docs/method/retro/PROCESS_test-taxonomy-and-fixture-drift/witness/verification.md
 source_files:
   - README.md
   - CHANGELOG.md
   - docs/BEARING.md
   - docs/releases/v1.0.0.md
   - docs/method/releases/v1.0.0/release.md
-  - docs/method/process.md
+  - docs/PROCESS.md
   - docs/method/legends/PROCESS.md
   - docs/method/legends/SYNTH.md
   - docs/design/0001-method-cli/method-cli.md

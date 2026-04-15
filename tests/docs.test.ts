@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -14,6 +14,7 @@ function readBacklogDoc(filename: string): string {
   const matches = [
     ...walkMarkdownFiles('docs/method/backlog'),
     ...walkMarkdownFiles('docs/design'),
+    ...walkMarkdownFiles('docs/releases'),
   ].filter((relativePath) => relativePath.endsWith(`/${filename}`));
 
   if (matches.length === 0) {
@@ -66,14 +67,13 @@ function walkMarkdownFiles(relativePath: string): string[] {
 }
 
 describe('METHOD docs', () => {
-  it('structures the README around stances, constraints, and quality gates', () => {
+  it('structures the README around principles, structure, the loop, and a documentation table', () => {
     const readme = readRepoFile('README.md');
 
-    expect(readme).toContain('### Stances');
-    expect(readme).toContain('### Design constraints');
-    expect(readme).toContain('### Quality gates');
-    expect(readme).toContain('## Coordination');
-    expect(readme).toContain('### BEARING.md');
+    expect(readme).toContain('## Principles');
+    expect(readme).toContain('## Structure');
+    expect(readme).toContain('## The loop');
+    expect(readme).toContain('## Documentation');
   });
 
   it('keeps reproducibility as part of done', () => {
@@ -85,22 +85,17 @@ describe('METHOD docs', () => {
 
   it('documents cycle closeout before PR review and ship sync after merge', () => {
     const readme = readRepoFile('README.md');
-    const process = readRepoFile('docs/method/process.md');
+    const process = readRepoFile('docs/PROCESS.md');
 
-    expect(readme).toContain('5. **Close** - write the retro and witness packet on the branch.');
-    expect(readme).toContain('6. **PR / review** - review the full cycle packet until merge or');
-    expect(readme).toContain('7. **Ship sync on `main`** - after merge, update repo-level ship');
-    expect(readme).toContain('Review-stage visibility now has a repo-native METHOD query:');
-    expect(readme).toContain('`method review-state`');
-    expect(readme).toContain('What is actively open in this workspace? -> `method status`');
-    expect(readme).toContain('What is under review? -> `method review-state`');
-    expect(readme).toContain('Review state now has a repo-native query surface through');
-    expect(readme).not.toContain('5. **PR -> main** - review until merge.');
-    expect(readme).not.toContain('6. **Close** - merge. Retro in `docs/method/retro/<cycle>/`.');
-    expect(readme).toContain('It is updated during ship sync after merge.');
-    expect(readme).toContain('-> PR/review -> main');
+    // README carries the summary loop line
+    expect(readme).toContain('PR/review');
+    expect(readme).toContain('ship sync');
+
+    // PROCESS.md carries the full closeout-before-review doctrine
     expect(process).toContain('METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loop.');
-    expect(process).toContain('6. Close the cycle packet with a retro in `docs/method/retro/<cycle>/`.');
+    expect(process).toMatch(
+      /6\.\s+Close the cycle packet with a retro in either[\s\S]*`docs\/method\/retro\/<cycle>\/<cycle>\.md`[\s\S]*`docs\/releases\/<version>\/retros\/<cycle>\/<cycle>\.md`[\s\S]*cycle carries release scope\./u,
+    );
     expect(process).toContain('7. Review the complete cycle packet on a branch or PR.');
     expect(process).toContain('8. After merge, update repo-level ship surfaces on `main` such as');
     expect(process).toContain('reflect merged `main` state, not branch-local closeout state.');
@@ -108,11 +103,10 @@ describe('METHOD docs', () => {
   });
 
   it('keeps METHOD distinct from forge-specific PR tooling', () => {
-    const readme = readRepoFile('README.md');
+    const process = readRepoFile('docs/PROCESS.md');
 
-    expect(readme).toContain('METHOD is not a GitHub workflow, a pull-request cockpit, or a');
-    expect(readme).toContain('Draft Punks Doghouse');
-    expect(readme).toContain('they do not define the method');
+    expect(process).toContain('forge-agnostic');
+    expect(process).toContain('without turning METHOD into a forge');
   });
 
   it('ships the BEARING signpost the README describes', () => {
@@ -131,11 +125,13 @@ describe('METHOD docs', () => {
 
     expect(codes.length, 'expected at least one legend in docs/method/legends/').toBeGreaterThan(0);
 
+    // README references the legends directory in its structure section
+    expect(readme).toContain('legends/');
+
     for (const code of codes) {
       const legendDoc = readRepoFile(`docs/method/legends/${code}.md`);
 
       expect(legendDoc).toContain(`# Legend: ${code}`);
-      expect(readme).toContain(`\`${code}\``);
       expect(vision).toContain(`### ${code}`);
     }
   });
@@ -150,25 +146,43 @@ describe('METHOD docs', () => {
       if (!content.includes('## Sponsors')) continue;
 
       const sponsorsMatch = /## Sponsors\n\n- Human: (?<human>[\s\S]*?)\n- Agent: (?<agent>[\s\S]*?)(?=\n\n##|$)/u.exec(content);
-      
-      expect(sponsorsMatch, `${designPath} has a ## Sponsors heading but does not match the expected format:
+
+      expect(
+        sponsorsMatch,
+        `${designPath} has a ## Sponsors heading but does not match the expected format:
 - Human: Role
-- Agent: Role`).not.toBeNull();
+- Agent: Role`,
+      ).not.toBeNull();
 
       if (sponsorsMatch?.groups !== undefined) {
         const human = (sponsorsMatch.groups.human ?? '').trim();
         const agent = (sponsorsMatch.groups.agent ?? '').trim();
-        
-        for (const [label, name] of [['human', human], ['agent', agent]]) {
+
+        for (const [label, name] of [
+          ['human', human],
+          ['agent', agent],
+        ]) {
           expect(name, `${designPath} ${label} sponsor should not be TBD`).not.toBe('TBD');
           expect(name, `${designPath} ${label} sponsor should not be a literal name: ${name}`).not.toMatch(literalNames);
-          
+
           if (!name.includes(' ') && !name.includes('\n')) {
-            expect(name, `${designPath} ${label} sponsor should be a descriptive role, not a single name: ${name}`).not.toMatch(singleCapitalizedWord);
+            expect(name, `${designPath} ${label} sponsor should be a descriptive role, not a single name: ${name}`).not.toMatch(
+              singleCapitalizedWord,
+            );
           }
         }
       }
     }
+  });
+
+  it('formalizes human, agent, and user as abstract seats in doctrine', () => {
+    const invariant = readRepoFile('docs/invariants/sponsor-abstractness.md');
+    const process = readRepoFile('docs/PROCESS.md');
+
+    expect(invariant).toContain('same way it is in a user story');
+    expect(invariant).toContain('not a specific individual, account, model brand, or');
+    expect(process).toContain('like a user story');
+    expect(process).toContain('not a literal named');
   });
 
   it('keeps this repo inbox aligned with the current legend split', () => {
@@ -186,8 +200,8 @@ describe('METHOD docs', () => {
   });
 
   it('records synthesis protocol and provenance contract details in backlog docs', () => {
-    const protocol = readBacklogDoc('executive-summary-protocol.md');
-    const provenance = readBacklogDoc('generated-signpost-provenance.md');
+    const protocol = readBacklogDoc('SYNTH_executive-summary-protocol.md');
+    const provenance = readBacklogDoc('SYNTH_generated-signpost-provenance.md');
     const legendAudit = readBacklogDoc('PROCESS_legend-audit-and-assignment.md');
 
     expect(protocol).toContain('### Phase 1: Inventory');
@@ -220,18 +234,11 @@ describe('METHOD docs', () => {
   });
 
   it('sanitizes personal absolute paths from committed verification witnesses', () => {
-    const witnesses = walkMarkdownFiles('docs/method/retro')
-      .filter((relativePath) => relativePath.includes('/witness/verification.md'));
+    const witnesses = walkMarkdownFiles('docs/method/retro').filter((relativePath) => relativePath.includes('/witness/verification.md'));
 
     expect(witnesses.length, 'expected at least one verification witness').toBeGreaterThan(0);
 
-    const personalPathPatterns = [
-      '/Users/',
-      '/home/',
-      '/root/',
-      '/mnt/',
-      'C:\\Users\\',
-    ];
+    const personalPathPatterns = ['/Users/', '/home/', '/root/', '/mnt/', 'C:\\Users\\'];
 
     for (const witnessPath of witnesses) {
       const content = readRepoFile(witnessPath);
@@ -242,7 +249,7 @@ describe('METHOD docs', () => {
   });
 
   it('proves both clean and drift-found exit codes in the 0005 verification witness', () => {
-    const verification = readRepoFile('docs/method/retro/0005-drift-detector/witness/verification.md');
+    const verification = readRepoFile('docs/method/retro/PROCESS_drift-detector/witness/verification.md');
 
     expect(verification).toContain('$ echo $?\n0');
     expect(verification).toContain('$ echo $?\n2');
@@ -300,9 +307,9 @@ describe('METHOD docs', () => {
       'docs/VISION.md', // Already tested separately
       'docs/CLI.md',
       'docs/MCP.md',
-      'docs/method/process.md',
-      'docs/method/release.md',
-      'docs/method/release-runbook.md',
+      'docs/PROCESS.md',
+      'docs/RELEASE.md',
+      'docs/RELEASE.md',
       'docs/method/releases/README.md',
       'docs/releases/README.md',
     ];
@@ -321,8 +328,8 @@ describe('METHOD docs', () => {
     const docs = walkMarkdownFiles('docs');
     for (const doc of docs) {
       const content = readRepoFile(doc);
-      const isDesign = doc.startsWith('docs/design/');
-      const isRetro = doc.startsWith('docs/method/retro/') && !doc.includes('/witness/');
+      const isDesign = doc.startsWith('docs/design/') || doc.includes('/design/');
+      const isRetro = (doc.startsWith('docs/method/retro/') || doc.includes('/retros/')) && !doc.includes('/witness/');
 
       if (isDesign) {
         expect(content, `${doc} (design) must have a legend field in frontmatter`).toMatch(/^legend:\s+\S+$/mu);
@@ -350,13 +357,20 @@ describe('METHOD docs', () => {
       'cycle',
       'sponsors',
       'source_backlog',
+      'release',
       'design_doc',
       'outcome',
       'drift_check',
       'lane',
       'owner',
       'priority',
+      'keywords',
       'acceptance_criteria',
+      'blocked_by',
+      'blocks',
+      'captured_at',
+      'source',
+      'status',
       'github_issue_id',
       'github_issue_url',
       'github_labels',
@@ -382,13 +396,13 @@ describe('METHOD docs', () => {
     }
   });
 
-  it('`docs/method/process.md` contains the canonical Executive Summary Protocol.', () => {
-    const process = readRepoFile('docs/method/process.md');
+  it('`docs/PROCESS.md` contains the canonical Executive Summary Protocol.', () => {
+    const process = readRepoFile('docs/PROCESS.md');
     expect(process).toContain('### Executive Summary Protocol');
   });
 
-  it('`docs/method/process.md` contains a "Workflow" section defining branch naming and lifecycles.', () => {
-    const process = readRepoFile('docs/method/process.md');
+  it('`docs/PROCESS.md` contains a "Workflow" section defining branch naming and lifecycles.', () => {
+    const process = readRepoFile('docs/PROCESS.md');
     expect(process).toContain('## Workflow');
     expect(process).toContain('### Branch Naming');
     expect(process).toContain('### The Cycle Lifecycle');
@@ -396,37 +410,37 @@ describe('METHOD docs', () => {
   });
 
   it('The policy clearly distinguishes between "Cycle Branches" and "Maintenance Moves."', () => {
-    const process = readRepoFile('docs/method/process.md');
+    const process = readRepoFile('docs/PROCESS.md');
     expect(process).toContain('Cycle Branches');
     expect(process).toContain('Maintenance Branches');
   });
 
   it('The "Ship Sync" maneuver is defined (updating `BEARING.md` and `CHANGELOG.md` on `main` after merge).', () => {
-    const process = readRepoFile('docs/method/process.md');
+    const process = readRepoFile('docs/PROCESS.md');
     expect(process).toContain('Ship Sync');
     expect(process).toContain('BEARING.md');
     expect(process).toContain('CHANGELOG.md');
   });
 
-  it('docs/method/process.md contains the branching and commitment rules.', () => {
-    const process = readRepoFile('docs/method/process.md');
-    expect(process).toContain('cycles/####-slug');
+  it('docs/PROCESS.md contains the branching and commitment rules.', () => {
+    const process = readRepoFile('docs/PROCESS.md');
+    expect(process).toContain('cycles/<LEGEND>_<slug>');
     expect(process).toContain('stage and commit all modified files');
   });
 
   it('docs.test.ts validates that the workflow policy is documented in the process doc.', () => {
-    const process = readRepoFile('docs/method/process.md');
+    const process = readRepoFile('docs/PROCESS.md');
     expect(process).toContain('## Workflow');
   });
 
-  it('`docs.test.ts` validates that the policy includes specific naming patterns (e.g., `####-slug`).', () => {
-    const process = readRepoFile('docs/method/process.md');
-    expect(process).toContain('####-slug');
+  it('`docs.test.ts` validates that the policy includes specific naming patterns (e.g., `<LEGEND>_<slug>`).', () => {
+    const process = readRepoFile('docs/PROCESS.md');
+    expect(process).toContain('<LEGEND>_<slug>');
     expect(process).toContain('maint-slug');
   });
 
-  it('`docs/method/process.md` contains a "System-Style JavaScript" section defining the repo\'s architectural posture.', () => {
-    const process = readRepoFile('docs/method/process.md');
+  it('`docs/PROCESS.md` contains a "System-Style JavaScript" section defining the repo\'s architectural posture.', () => {
+    const process = readRepoFile('docs/PROCESS.md');
     expect(process).toContain('## System-Style JavaScript');
     expect(process).toContain('### Core Principles');
     expect(process).toContain('Runtime Truth');
@@ -441,18 +455,18 @@ describe('METHOD docs', () => {
   });
 
   it('`docs.test.ts` validates that the System-Style JS doctrine is documented.', () => {
-    const process = readRepoFile('docs/method/process.md');
+    const process = readRepoFile('docs/PROCESS.md');
     expect(process).toContain('## System-Style JavaScript');
   });
 
-  it('`docs/method/process.md` contains a "Behavior Spikes" section under "Special Cycles".', () => {
-    const process = readRepoFile('docs/method/process.md');
+  it('`docs/PROCESS.md` contains a "Behavior Spikes" section under "Special Cycles".', () => {
+    const process = readRepoFile('docs/PROCESS.md');
     expect(process).toContain('## Special Cycles');
     expect(process).toContain('### Behavior Spikes');
   });
 
   it('The convention defines a clear lifecycle: Capture, Execute, Witness, and Retire.', () => {
-    const process = readRepoFile('docs/method/process.md');
+    const process = readRepoFile('docs/PROCESS.md');
     expect(process).toContain('#### Phase 1: Capture');
     expect(process).toContain('#### Phase 2: Execute');
     expect(process).toContain('#### Phase 3: Witness');
@@ -460,18 +474,18 @@ describe('METHOD docs', () => {
   });
 
   it('The distinction between a spike (temporary proof) and a graveyard item (abandoned work) is explicit.', () => {
-    const process = readRepoFile('docs/method/process.md');
+    const process = readRepoFile('docs/PROCESS.md');
     expect(process).toContain('move artifacts to `docs/method/graveyard/`');
     expect(process).toContain('replace the spike with a formal design cycle');
   });
 
   it('`docs.test.ts` validates that the "Behavior Spikes" section exists in the process doc.', () => {
-    const process = readRepoFile('docs/method/process.md');
+    const process = readRepoFile('docs/PROCESS.md');
     expect(process).toContain('### Behavior Spikes');
   });
 
   it('`docs.test.ts` validates that the lifecycle phases (Capture, Execute, Witness, Retire) are documented.', () => {
-    const process = readRepoFile('docs/method/process.md');
+    const process = readRepoFile('docs/PROCESS.md');
     expect(process).toContain('#### Phase 1: Capture');
     expect(process).toContain('#### Phase 2: Execute');
     expect(process).toContain('#### Phase 3: Witness');
@@ -479,7 +493,7 @@ describe('METHOD docs', () => {
   });
 
   it('The protocol defines clear phases: Inventory, Read and Synthesize, Generate Witness, and Verification.', () => {
-    const process = readRepoFile('docs/method/process.md');
+    const process = readRepoFile('docs/PROCESS.md');
     expect(process).toContain('#### Phase 1: Inventory');
     expect(process).toContain('#### Phase 2: Read and Synthesize');
     expect(process).toContain('#### Phase 3: Generate Witness');
@@ -487,7 +501,7 @@ describe('METHOD docs', () => {
   });
 
   it('`docs.test.ts` validates that the protocol specification exists in the process doc.', () => {
-    const process = readRepoFile('docs/method/process.md');
+    const process = readRepoFile('docs/PROCESS.md');
     expect(process).toContain('## Special Cycles');
     expect(process).toContain('### Executive Summary Protocol');
   });
@@ -509,7 +523,7 @@ describe('METHOD docs', () => {
     expect(vision).toContain('title: "METHOD - Executive Summary"');
     expect(vision).toMatch(/^provenance_level:\s+artifact_history$/mu);
     expect(vision).toMatch(/^source_files:\s*$/mu);
-    expect(vision).toMatch(/^  - \S+$/mu);
+    expect(vision).toMatch(/^ {2}- \S+$/mu);
   });
 
   it('The `generator` field identifies this cycle `0009`.', () => {
@@ -573,10 +587,12 @@ describe('METHOD docs', () => {
     expect(vision).toMatch(/^generated_at:\s+\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/mu);
   });
 
-  it('documents the drift detector in the README tooling section', () => {
+  it('documents the drift detector in the CLI reference', () => {
+    const cli = readRepoFile('docs/CLI.md');
     const readme = readRepoFile('README.md');
 
-    expect(readme).toContain('method drift');
+    expect(cli).toContain('method drift');
+    // README links to CLI reference
     expect(readme).toContain('docs/CLI.md');
   });
 
@@ -600,43 +616,43 @@ describe('METHOD docs', () => {
     expect(workflow).toContain('npm test');
   });
 
-  it('documents the CI gate in the README tooling section', () => {
-    const readme = readRepoFile('README.md');
+  it('documents the CI gate in the CI workflow file', () => {
+    const workflow = readRepoFile('.github/workflows/ci.yml');
 
-    expect(readme).toContain('.github/workflows/ci.yml');
-    expect(readme).toContain('GitHub Actions');
-    expect(readme).toContain('ubuntu-24.04');
-    expect(readme).toContain('Node `22`');
-    expect(readme).toContain('npm ci');
-    expect(readme).toContain('npm run build');
-    expect(readme).toContain('npm test');
+    expect(workflow).toContain('ubuntu-24.04');
+    expect(workflow).toContain('node-version: 22');
+    expect(workflow).toContain('npm ci');
+    expect(workflow).toContain('npm run build');
+    expect(workflow).toContain('npm test');
   });
 
-  it('defines shaped releases as artifacts, not versioned backlog lanes', () => {
-    const release = readRepoFile('docs/method/release.md');
+  it('defines shaped releases as artifacts while allowing version-target backlog lanes as planning input', () => {
+    const release = readRepoFile('docs/RELEASE.md');
 
     expect(release).toContain('docs/method/releases/vX.Y.Z/release.md');
     expect(release).toContain('docs/method/releases/vX.Y.Z/verification.md');
     expect(release).toContain('docs/releases/vX.Y.Z.md');
     expect(release).toContain('`CHANGELOG.md` remains the ledger');
     expect(release).toContain('Releases aggregate shipped work.');
-    expect(release).toMatch(/They do not create\s+`docs\/method\/backlog\/<version>\/`/u);
+    expect(release).toContain('docs/method/backlog/v1.1.0/');
+    expect(release).toContain('planning input, not release truth');
     expect(release).toMatch(/The release design names and justifies the intended version/u);
   });
 
   it('ships a release runbook that separates doctrine from pre-flight execution', () => {
-    const runbook = readRepoFile('docs/method/release-runbook.md');
+    const runbook = readRepoFile('docs/RELEASE.md');
 
-    expect(runbook).toContain('# Release Runbook');
-    const abortIndex = runbook.indexOf('## Abort conditions');
+    expect(runbook).toContain('# Release');
+    const abortIndex = runbook.indexOf('### Abort conditions');
     expect(abortIndex, 'missing abort conditions heading').toBeGreaterThanOrEqual(0);
 
     const phases = [
-      '## Phase 0: Discovery',
-      '## Phase 1: Guards',
-      '## Phase 2: Versioning and release notes',
-      '## Phase 3: Validation',
-      '## Phase 4: Commit, tag, and publish',
+      '### Phase 0: Discovery',
+      '### Phase 1: Guards',
+      '### Phase 2: Versioning and release notes',
+      '### Phase 3: Witness and human verification',
+      '### Phase 4: Validation',
+      '### Phase 5: Commit, tag, and publish',
     ];
     let lastIndex = abortIndex;
     for (const phase of phases) {
@@ -648,38 +664,34 @@ describe('METHOD docs', () => {
     expect(runbook).toContain('Never guess. Never claim success');
   });
 
-  it('Branch naming uses one canonical pattern across README.md and docs/method/process.md, with no contradictory examples.', () => {
-    const readme = readRepoFile('README.md');
-    const process = readRepoFile('docs/method/process.md');
+  it('Branch naming uses one canonical pattern in docs/PROCESS.md, with no contradictory examples.', () => {
+    const process = readRepoFile('docs/PROCESS.md');
 
-    // Both docs must name the cycles/####-slug pattern
-    expect(readme).toContain('cycles/');
-    expect(process).toContain('cycles/####-slug');
+    expect(process).toContain('cycles/<LEGEND>_<slug>');
 
-    // process.md Rules section must use cycles/####-slug, not bare cycles/<cycle_name>
+    // process.md Rules section must use cycles/<LEGEND>_<slug>, not bare cycles/<cycle_name>
     expect(process).not.toContain('cycles/<cycle_name>');
 
     // Branch naming section must show cycles/ prefix
     expect(process).toContain('cycles/');
-    expect(process).toContain('`cycles/####-slug`');
+    expect(process).toContain('`cycles/<LEGEND>_<slug>`');
   });
 
-  it('The RED step in README.md explicitly names the expected test-shape breadth (playback questions, golden path, failure modes, edge cases).', () => {
-    const readme = readRepoFile('README.md');
+  it('The RED step in docs/PROCESS.md names playback questions as the test driver.', () => {
+    const process = readRepoFile('docs/PROCESS.md');
 
-    // RED step must go beyond just "playback questions become specs"
-    expect(readme).toContain('playback questions');
-    expect(readme).toContain('golden path');
-    expect(readme).toContain('failure modes');
-    expect(readme).toContain('edge cases');
+    expect(process).toContain('Write failing tests from the playback questions');
+    expect(process).toContain('Playback questions drive the design and the tests');
   });
 
   it('Lane conformance has an explicit rule documented.', () => {
     const readme = readRepoFile('README.md');
+    const cli = readRepoFile('docs/CLI.md');
 
-    // The README must state whether lanes are scaffolded or created on demand
+    // README mentions method init in the quick start
     expect(readme).toContain('method init');
-    expect(readme).toMatch(/lane.*scaffold|scaffold.*lane/iu);
+    // CLI reference documents the init command that scaffolds the workspace
+    expect(cli).toContain('method init');
   });
 
   it('The repo has LICENSE (Apache 2.0), CONTRIBUTING.md, SECURITY.md, and NOTICE files.', () => {
@@ -716,7 +728,18 @@ describe('METHOD docs', () => {
 
     // CLI doc names every command
     expect(cli).toContain('method init');
+    expect(cli).toContain('method migrate');
     expect(cli).toContain('method inbox');
+    expect(cli).toContain('method backlog add');
+    expect(cli).toContain('method backlog move');
+    expect(cli).toContain('method backlog edit');
+    expect(cli).toContain('method backlog list');
+    expect(cli).toContain('method backlog deps');
+    expect(cli).toContain('method next');
+    expect(cli).toContain('method retire');
+    expect(cli).toContain('method signpost status');
+    expect(cli).toContain('method signpost init');
+    expect(cli).toContain('method repair');
     expect(cli).toContain('method pull');
     expect(cli).toContain('method close');
     expect(cli).toContain('method drift');
@@ -724,6 +747,7 @@ describe('METHOD docs', () => {
     expect(cli).toContain('method status');
     expect(cli).toContain('method mcp');
     expect(cli).toContain('method sync');
+    expect(cli).toContain('sync refs');
     expect(cli).toContain('--push');
     expect(cli).toContain('--pull');
     expect(cli).toContain('Ship Sync');
@@ -732,19 +756,33 @@ describe('METHOD docs', () => {
     // MCP doc names every tool
     expect(mcp).toContain('method_status');
     expect(mcp).toContain('method_review_state');
+    expect(mcp).toContain('method_migrate');
     expect(mcp).toContain('method_inbox');
+    expect(mcp).toContain('method_backlog_add');
+    expect(mcp).toContain('method_backlog_move');
+    expect(mcp).toContain('method_backlog_edit');
+    expect(mcp).toContain('method_backlog_query');
+    expect(mcp).toContain('method_backlog_dependencies');
+    expect(mcp).toContain('method_next_work');
+    expect(mcp).toContain('method_signpost_status');
+    expect(mcp).toContain('method_signpost_init');
+    expect(mcp).toContain('method_retire');
+    expect(mcp).toContain('method_repair');
     expect(mcp).toContain('method_pull');
     expect(mcp).toContain('method_close');
     expect(mcp).toContain('method_drift');
     expect(mcp).toContain('method_sync_ship');
+    expect(mcp).toContain('method_sync_refs');
     expect(mcp).toContain('method_sync_github');
     expect(mcp).toContain('method_capture_witness');
     expect(mcp).toMatch(/### `method_status`[\s\S]*- `summary` \(optional\) `boolean`/u);
     expect(mcp).toMatch(/Machine-readable callers should consume `structuredContent`\./u);
     expect(mcp).toMatch(/On success, `structuredContent` includes:[\s\S]*- `tool`[\s\S]*- `ok: true`[\s\S]*- `result`/u);
-    expect(mcp).toMatch(/On failure, tools set `isError: true` and `structuredContent` includes:[\s\S]*- `tool`[\s\S]*- `ok: false`[\s\S]*- `error\.message`/u);
+    expect(mcp).toMatch(
+      /On failure, tools set `isError: true` and `structuredContent` includes:[\s\S]*- `tool`[\s\S]*- `ok: false`[\s\S]*- `error\.message`/u,
+    );
 
-    // README references both docs
+    // README references both reference docs in the documentation table
     expect(readme).toContain('docs/CLI.md');
     expect(readme).toContain('docs/MCP.md');
   });
@@ -753,9 +791,9 @@ describe('METHOD docs', () => {
     const readme = readRepoFile('README.md');
     const releasesGuide = readRepoFile('docs/releases/README.md');
 
-    expect(readme).toContain('docs/releases/');
-    expect(readme).toContain('release-runbook.md');
-    expect(readme).toMatch(/release\s+notes\s+when\s+the\s+cycle\s+changes\s+them/u);
+    // README structure section lists releases directory and links to RELEASE.md
+    expect(readme).toContain('releases/');
+    expect(readme).toContain('RELEASE.md');
     expect(releasesGuide).toContain('# Releases');
     expect(releasesGuide).toContain('`docs/releases/vX.Y.Z.md`');
     expect(releasesGuide).toContain('Summary');

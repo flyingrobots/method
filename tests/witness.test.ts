@@ -48,14 +48,14 @@ describe('Automated Witness Capture', () => {
     workspace.captureIdea('Witness Test', 'PROCESS', 'Witness Test');
     const cycle = workspace.pullItem('PROCESS_witness-test');
     const expectedDrift = workspace.detectDrift(cycle.name).output.trim();
-    
+
     // No need to spy manually now, index.ts handles it via METHOD_TEST
     const witnessPath = await workspace.captureWitness(cycle.name);
-    
-    expect(witnessPath).toContain('docs/method/retro/0001-witness-test/witness/verification.md');
-    
+
+    expect(witnessPath).toContain('docs/method/retro/PROCESS_witness-test/witness/verification.md');
+
     const content = readFileSync(witnessPath, 'utf8');
-    expect(content).toContain('# Verification Witness for Cycle 1');
+    expect(content).toContain('# Verification Witness for Cycle PROCESS_witness-test');
     expect(content).toContain('[MOCK] Output for npm test');
     expect(content).toContain(expectedDrift);
     expect(content).not.toContain('No drift output captured.');
@@ -114,7 +114,7 @@ describe('Automated Witness Capture', () => {
       driftResult: '\t drift output\n',
     });
 
-    expect(content).toMatch(/## Test Results\n\n```text\n  indented output\n\n```/u);
+    expect(content).toMatch(/## Test Results\n\n```text\n {2}indented output\n\n```/u);
     expect(content).toMatch(/## Drift Results\n\n```text\n\t drift output\n\n```/u);
   });
 
@@ -145,12 +145,12 @@ describe('Automated Witness Capture', () => {
 
   it('Normalizes generated frontmatter paths to POSIX separators.', () => {
     const root = createTempRoot();
-    const designDocPath = join(root, 'docs', 'design', '0001-windows-paths', 'windows-paths.md');
+    const designDocPath = join(root, 'docs', 'design', 'PROCESS_windows-paths.md');
     mkdirSync(dirname(designDocPath), { recursive: true });
     writeFileSync(designDocPath, '# Windows Paths\n', 'utf8');
 
     const designContent = renderDesignDoc({
-      cycleName: '0001-windows-paths',
+      cycleName: 'PROCESS_windows-paths',
       title: 'Windows Paths',
       source: 'docs\\method\\backlog\\asap\\PROCESS_windows-paths.md',
       backlogBody: 'Body',
@@ -159,17 +159,16 @@ describe('Automated Witness Capture', () => {
 
     const retroContent = renderRetroDoc({
       cycle: {
-        name: '0001-windows-paths',
-        number: 1,
+        name: 'PROCESS_windows-paths',
         slug: 'windows-paths',
         designDoc: designDocPath,
         retroDoc: join(root, 'unused.md'),
       },
       root,
       outcome: 'partial',
-      witnessDir: 'docs\\method\\retro\\0001-windows-paths\\witness',
+      witnessDir: 'docs\\method\\retro\\PROCESS_windows-paths\\witness',
     });
-    expect(retroContent).toContain('design_doc: "docs/design/0001-windows-paths/windows-paths.md"');
-    expect(retroContent).toContain('Add artifacts under `docs/method/retro/0001-windows-paths/witness`');
+    expect(retroContent).toContain('design_doc: "docs/design/PROCESS_windows-paths.md"');
+    expect(retroContent).toContain('Artifacts under `docs/method/retro/PROCESS_windows-paths/witness`');
   });
 });

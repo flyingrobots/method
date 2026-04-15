@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { z } from 'zod';
+import type { WorkspaceStatus } from '../domain.js';
 import { readBody, readHeading, type Workspace } from '../index.js';
-import { type WorkspaceStatus } from '../domain.js';
 
 const GitHubIssueResponseSchema = z.object({
   id: z.number(),
@@ -11,10 +11,13 @@ const GitHubIssueResponseSchema = z.object({
   labels: z.array(z.object({ name: z.string() })),
 });
 
-const GitHubCommentResponseSchema = z.array(z.object({
-  user: z.object({ login: z.string() }),
-  body: z.string(),
-}));
+const GitHubCommentResponseSchema = z.array(
+  z.object({
+    id: z.number(),
+    user: z.object({ login: z.string() }),
+    body: z.string(),
+  }),
+);
 
 export interface GitHubIssue {
   id: number;
@@ -77,14 +80,7 @@ export class GitHubAdapter {
   }
 
   private getAllBacklogItems(status: WorkspaceStatus) {
-    return [
-      ...status.backlog.inbox,
-      ...status.backlog.asap,
-      ...status.backlog['up-next'],
-      ...status.backlog['cool-ideas'],
-      ...status.backlog['bad-code'],
-      ...status.backlog.root,
-    ];
+    return Object.values(status.backlog).flat();
   }
 
   async pushItem(relativePath: string): Promise<GitHubSyncResult> {
@@ -135,21 +131,35 @@ export class GitHubAdapter {
       const remoteIssue = await this.fetchIssue(issueNumber);
       const remoteComments = await this.fetchComments(issueNumber);
 
-      // Update local frontmatter
+      // Track synced comment IDs to detect new vs already-synced comments
+      const syncedIdsRaw = frontmatter.github_synced_comment_ids ?? '';
+      const syncedIds = new Set(
+        syncedIdsRaw
+          .split(',')
+          .map((id: string) => id.trim())
+          .filter((id: string) => id.length > 0),
+      );
+      const newComments = remoteComments.filter((c) => !syncedIds.has(String(c.id)));
+      const allSyncedIds = remoteComments.map((c) => String(c.id)).join(',');
+
+      // Update local frontmatter with labels and synced comment IDs
       this.workspace.updateFrontmatter(relativePath, {
         github_issue_url: remoteIssue.url,
         github_labels: remoteIssue.labels.join(','),
+        ...(remoteComments.length > 0 ? { github_synced_comment_ids: allSyncedIds } : {}),
       });
 
-      // Update local body with comments if any
-      if (remoteComments.length > 0) {
+      // Append only new comments to the body
+      if (newComments.length > 0) {
         const fullPath = resolve(this.workspace.root, relativePath);
         const localBody = readBody(fullPath);
-        const commentSection = '\n\n## GitHub Comments\n\n' + remoteComments.map(c => `**@${c.user}**: ${c.body}`).join('\n\n---\n\n');
-        
-        // Simple avoid-duplication check
-        if (!localBody.includes('## GitHub Comments')) {
-          this.workspace.updateBody(relativePath, localBody + commentSection);
+        const commentSection = newComments.map((c) => `**@${c.user}** (comment ${c.id}): ${c.body}`).join('\n\n---\n\n');
+
+        if (localBody.includes('## GitHub Comments')) {
+          // Append to existing section
+          this.workspace.updateBody(relativePath, `${localBody}\n\n---\n\n${commentSection}`);
+        } else {
+          this.workspace.updateBody(relativePath, `${localBody}\n\n## GitHub Comments\n\n${commentSection}`);
         }
       }
 
@@ -193,10 +203,11 @@ export class GitHubAdapter {
     return this.mapIssue(data);
   }
 
-  private async fetchComments(number: number): Promise<{ user: string; body: string }[]> {
+  private async fetchComments(number: number): Promise<{ id: number; user: string; body: string }[]> {
     const data = await this.ghFetch(`/repos/${this.owner}/${this.repo}/issues/${number}/comments`);
     const parsed = GitHubCommentResponseSchema.parse(data);
     return parsed.map((c) => ({
+      id: c.id,
       user: c.user.login,
       body: c.body,
     }));
