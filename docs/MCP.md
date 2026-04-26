@@ -157,11 +157,11 @@ Report which expected repo signposts exist, which are missing, and which can be 
 
 ### `method_signpost_init`
 
-Initialize a narrowly supported missing canonical signpost such as BEARING, MCP, CLI, GUIDE, or ARCHITECTURE.
+Initialize a narrowly supported missing canonical signpost such as BEARING, GUIDE, or ARCHITECTURE when supported by the workspace.
 
 **Parameters:**
 
-- `name` (required) `string` — Canonical signpost name or path, such as BEARING or docs/MCP.md.
+- `name` (required) `string` — Canonical signpost name or path, such as BEARING or docs/GUIDE.md.
 
 ### `method_retire`
 

@@ -62,7 +62,7 @@ Report which expected repo signposts exist, which are missing, and which can be 
 
 ### `method signpost init <name> [--json]`
 
-Initialize a narrowly supported missing canonical signpost such as BEARING or MCP.
+Initialize a narrowly supported missing canonical signpost, such as BEARING or GUIDE when supported by the workspace.
 
 ### `method repair (--plan | --apply) [--json]`
 
