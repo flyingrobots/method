@@ -48,7 +48,6 @@ source_files:
   - docs/design/0036-witness-drift-output-capture/witness-drift-output-capture.md
   - docs/design/0037-test-taxonomy-and-fixture-drift/test-taxonomy-and-fixture-drift.md
 ---
-
 # METHOD - Executive Summary
 
 ## Identity

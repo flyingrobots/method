@@ -1,7 +1,5 @@
-import { execFile } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import { basename, dirname, isAbsolute, relative, resolve } from 'node:path';
-import { promisify } from 'node:util';
 import GitPlumbing from '@git-stunts/plumbing';
 import { type Config, DEFAULT_PATHS, loadConfig, type PathsConfig } from './config.js';
 import { readCycleFromDoc, readCycleRelease, resolveCyclePacketPaths } from './cycle-ops.js';
@@ -36,15 +34,22 @@ import {
   updateFrontmatter as fmUpdateFrontmatter,
   updateTypedFrontmatter as fmUpdateTypedFrontmatter,
 } from './frontmatter.js';
-import { generateReferenceDocs, initializeReferenceDoc, resolveSignpostSpec, SIGNPOST_SPECS } from './generate.js';
+import {
+  generateReferenceDocs,
+  initializeReferenceDoc,
+  isReferenceDocTarget,
+  resolveSignpostSpec,
+  signpostSpecsForRoot,
+} from './generate.js';
 import { renderBearing, renderDesignDoc, renderRetroDoc, renderWitnessDoc, titleCase } from './renderers.js';
+import { type CommandExecutionResult, PROCESS_SCAFFOLD, resolveWitnessTestCommand, runWorkspaceCommand } from './workspace-commands.js';
 import { assertWorkspacePath, collectMarkdownFiles, fileStem, normalizeOptionalString, slugify } from './workspace-utils.js';
 
 export interface ResolvedPaths {
   backlog: string;
   design: string;
   retro: string;
-  tests: string;
+  tests: string[];
   graveyard: string;
   methodDir: string;
 }
@@ -115,11 +120,12 @@ interface RankedNextWorkItem {
 }
 
 function resolvePaths(root: string, paths: PathsConfig): ResolvedPaths {
+  const testsDirs = Array.isArray(paths.tests) ? paths.tests : [paths.tests];
   return {
     backlog: resolve(root, paths.backlog),
     design: resolve(root, paths.design),
     retro: resolve(root, paths.retro),
-    tests: resolve(root, paths.tests),
+    tests: testsDirs.map((dir) => resolve(root, dir)),
     graveyard: resolve(root, paths.graveyard),
     methodDir: resolve(root, paths.method_dir),
   };
@@ -129,7 +135,6 @@ const LEGEND_CODE_PATTERN = /^[A-Z][A-Z0-9]*$/u;
 const LEGEND_PATTERN = /^(?<legend>[A-Z][A-Z0-9]*)_(?<slug>.+)$/u;
 // CYCLE_NAME_PATTERN and LEGACY_CYCLE_PATTERN imported from ./cycle-ops.js
 const FEEDBACK_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/u;
-
 export function workspaceScaffold(
   root: string,
   pathsConfig: PathsConfig = DEFAULT_PATHS,
@@ -147,7 +152,7 @@ export function workspaceScaffold(
     ],
     files: new Map<string, string>([
       [resolve(root, 'CHANGELOG.md'), '# Changelog\n\n## Unreleased\n\n- No externally meaningful changes recorded yet.\n'],
-      [resolve(root, 'docs/PROCESS.md'), '# Process\n\nDescribe how cycles run in this repository.\n'],
+      [resolve(root, 'docs/PROCESS.md'), PROCESS_SCAFFOLD],
       [resolve(root, 'docs/RELEASE.md'), '# Release\n\nDescribe when and how externally meaningful releases ship.\n'],
       [resolve(p.methodDir, 'releases/README.md'), '# Release Packets\n\nStore internal release design and verification artifacts here.\n'],
       [resolve(root, 'docs/releases/README.md'), '# Releases\n\nStore user-facing release notes and migration guides here.\n'],
@@ -415,7 +420,12 @@ export class Workspace {
 
   detectDrift(cycleName?: string): DriftReport {
     const cycles = cycleName === undefined ? this.openCycles() : [this.resolveCycle(cycleName)];
-    return detectWorkspaceDrift(this.root, cycles, this.paths.tests, this.config.drift_thresholds);
+    return detectWorkspaceDrift(
+      this.root,
+      cycles,
+      this.paths.tests.length > 0 ? this.paths.tests : undefined,
+      this.config.drift_thresholds,
+    );
   }
 
   syncRefs(): { targets: string[]; updated: string[] } {
@@ -423,7 +433,7 @@ export class Workspace {
   }
 
   signpostStatus() {
-    const signposts = SIGNPOST_SPECS.map(
+    const signposts = signpostSpecsForRoot(this.root).map(
       (spec): SignpostStatusEntry => ({
         name: spec.name,
         path: spec.path,
@@ -443,17 +453,17 @@ export class Workspace {
   }
 
   async initSignpost(name: string) {
-    const spec = resolveSignpostSpec(name);
+    const activeSignposts = signpostSpecsForRoot(this.root);
+    const spec = resolveSignpostSpec(name, this.root);
     if (spec === undefined) {
       throw new MethodError(
-        `Unknown signpost ${JSON.stringify(name)}. Use one of: ${SIGNPOST_SPECS.map((entry) => entry.name).join(', ')}`,
+        `Unknown signpost ${JSON.stringify(name)}. Use one of: ${activeSignposts.map((entry) => entry.name).join(', ')}`,
       );
     }
     if (spec.initStrategy === undefined) {
       throw new MethodError(
-        `Signpost ${spec.name} is not initable. Current helpers support: ${SIGNPOST_SPECS.filter(
-          (entry) => entry.initStrategy !== undefined,
-        )
+        `Signpost ${spec.name} is not initable. Current helpers support: ${activeSignposts
+          .filter((entry) => entry.initStrategy !== undefined)
           .map((entry) => entry.name)
           .join(', ')}`,
       );
@@ -469,7 +479,10 @@ export class Workspace {
     }
 
     if (spec.initStrategy === 'reference-doc') {
-      const result = initializeReferenceDoc(this.root, spec.path as 'ARCHITECTURE.md' | 'docs/CLI.md' | 'docs/MCP.md' | 'docs/GUIDE.md');
+      if (!isReferenceDocTarget(spec.path)) {
+        throw new MethodError(`Signpost ${spec.name} is not backed by a reference-doc template.`);
+      }
+      const result = initializeReferenceDoc(this.root, spec.path);
       return {
         ok: true,
         requested: spec.name,
@@ -535,8 +548,13 @@ export class Workspace {
 
     mkdirSync(dirname(witnessPath), { recursive: true });
 
-    const testResult = sanitizeWitnessOutput(await this.execCommand('npm', ['test']), this.root);
-    const driftResult = sanitizeWitnessOutput(this.detectDrift(cycle.name).output, this.root);
+    const testResult = await this.captureWitnessTestResult();
+    const driftReport = this.detectDrift(cycle.name);
+    const driftResult = {
+      command: `method drift ${cycle.name}`,
+      exitCode: driftReport.exitCode,
+      output: sanitizeWitnessOutput(driftReport.output, this.root),
+    } as const;
 
     const content = renderWitnessDoc({
       cycle,
@@ -546,6 +564,27 @@ export class Workspace {
 
     writeFileSync(witnessPath, content, 'utf8');
     return witnessPath;
+  }
+
+  private async captureWitnessTestResult(): Promise<{
+    command?: string;
+    output: string;
+    status: 'passed' | 'failed' | 'not-run';
+  }> {
+    const testCommand = resolveWitnessTestCommand(this.root);
+    if (testCommand === undefined) {
+      return {
+        output: 'No automated test command was configured for this workspace.',
+        status: 'not-run',
+      };
+    }
+
+    const result = await this.runCommand(testCommand.command, testCommand.args);
+    return {
+      command: result.command,
+      output: sanitizeWitnessOutput(result.output, this.root),
+      status: result.ok ? 'passed' : 'failed',
+    };
   }
 
   status(): WorkspaceStatus {
@@ -721,6 +760,12 @@ export class Workspace {
 
   backlogDependencies(options: { item?: string; readyOnly?: boolean; criticalPath?: boolean } = {}): BacklogDependencyReport {
     const allBacklogItems = this.collectBacklogItems();
+    const activeCycles = this.openCycles();
+    const activeCycleTargets = activeCycles.map((cycle) => ({
+      path: relative(this.root, cycle.designDoc),
+      stem: cycle.name,
+      slug: cycle.slug,
+    }));
     const dependencyItems = allBacklogItems.map((item) => {
       const frontmatter = fmReadTypedFrontmatter(resolve(this.root, item.path));
       return {
@@ -739,22 +784,32 @@ export class Workspace {
     for (const item of dependencyItems) {
       for (const ref of item.blockedByRefs) {
         const blockerPath = resolveDependencyItemRef(ref, dependencyItems);
-        if (blockerPath === undefined) {
-          item.unresolvedBlockedBySet.add(ref);
+        if (blockerPath !== undefined) {
+          const edgeKey = `${blockerPath}=>${item.path}`;
+          edgeMap.set(edgeKey, { blocker: blockerPath, blocked: item.path });
           continue;
         }
-        const edgeKey = `${blockerPath}=>${item.path}`;
-        edgeMap.set(edgeKey, { blocker: blockerPath, blocked: item.path });
+        const cyclePath = resolveDependencyItemRef(ref, activeCycleTargets);
+        if (cyclePath !== undefined) {
+          item.blockedBySet.add(cyclePath);
+          continue;
+        }
+        item.unresolvedBlockedBySet.add(ref);
       }
 
       for (const ref of item.blocksRefs) {
         const blockedPath = resolveDependencyItemRef(ref, dependencyItems);
-        if (blockedPath === undefined) {
-          item.unresolvedBlocksSet.add(ref);
+        if (blockedPath !== undefined) {
+          const edgeKey = `${item.path}=>${blockedPath}`;
+          edgeMap.set(edgeKey, { blocker: item.path, blocked: blockedPath });
           continue;
         }
-        const edgeKey = `${item.path}=>${blockedPath}`;
-        edgeMap.set(edgeKey, { blocker: item.path, blocked: blockedPath });
+        const cyclePath = resolveDependencyItemRef(ref, activeCycleTargets);
+        if (cyclePath !== undefined) {
+          item.blocksSet.add(cyclePath);
+          continue;
+        }
+        item.unresolvedBlocksSet.add(ref);
       }
     }
 
@@ -1213,25 +1268,15 @@ export class Workspace {
   }
 
   async execCommand(command: string, args: string[] = [], options?: { timeoutMs?: number }): Promise<string> {
-    const fullCommand = [command, ...args].join(' ');
-    if (process.env.METHOD_TEST === 'true') {
-      return `[MOCK] Output for ${fullCommand}`;
+    const result = await this.runCommand(command, args, options);
+    if (result.timedOut) {
+      throw new MethodError(result.output);
     }
-    const execFileAsync = promisify(execFile);
-    try {
-      const { stdout, stderr } = await execFileAsync(command, args, {
-        cwd: this.root,
-        encoding: 'utf8',
-        timeout: options?.timeoutMs,
-      });
-      return stdout + stderr;
-    } catch (error: unknown) {
-      const execError = error as { killed?: boolean; signal?: string; stdout?: string; stderr?: string };
-      if (execError.killed || execError.signal === 'SIGTERM') {
-        throw new MethodError(`Command timed out: ${fullCommand}`);
-      }
-      return (execError.stdout ?? '') + (execError.stderr ?? '');
-    }
+    return result.output;
+  }
+
+  private async runCommand(command: string, args: string[] = [], options?: { timeoutMs?: number }): Promise<CommandExecutionResult> {
+    return runWorkspaceCommand(this.root, command, args, options);
   }
 }
 

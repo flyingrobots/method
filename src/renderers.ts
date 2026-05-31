@@ -2,6 +2,18 @@ import * as path from 'node:path';
 import { type BacklogItem, type Cycle, isCanonicalLane, type Outcome, orderedBacklogLaneNames, type WorkspaceStatus } from './domain.js';
 import { readHeading } from './frontmatter.js';
 
+export interface WitnessTestResult {
+  command?: string;
+  output: string;
+  status: 'passed' | 'failed' | 'not-run';
+}
+
+export interface WitnessDriftResult {
+  command: string;
+  exitCode: 0 | 2;
+  output: string;
+}
+
 export function titleCase(value: string): string {
   return value
     .split('-')
@@ -94,10 +106,40 @@ function firstCustomPriorityLane(status: WorkspaceStatus): { lane: string; items
   return undefined;
 }
 
-export function renderWitnessDoc(options: { cycle: Cycle; testResult: string; driftResult: string }): string {
+export function renderWitnessDoc(options: { cycle: Cycle; testResult: WitnessTestResult; driftResult: WitnessDriftResult }): string {
   const title = readHeading(options.cycle.designDoc) || titleCase(options.cycle.slug);
-  const testResult = options.testResult.trim().length === 0 ? 'No test output captured.' : options.testResult;
-  const driftResult = options.driftResult.trim().length === 0 ? 'No drift output captured.' : options.driftResult;
+  const testResult =
+    options.testResult.output.trim().length === 0
+      ? options.testResult.status === 'not-run'
+        ? 'No automated test command was configured for this workspace.'
+        : 'No test output captured.'
+      : options.testResult.output;
+  const driftResult = options.driftResult.output.trim().length === 0 ? 'No drift output captured.' : options.driftResult.output;
+  const automatedCaptureLines =
+    options.testResult.status === 'passed'
+      ? [`- [x] Test command succeeded: \`${options.testResult.command}\`.`]
+      : options.testResult.status === 'failed'
+        ? [`- [ ] Test command failed: \`${options.testResult.command}\`.`]
+        : ['- [ ] No automated test command was configured for this workspace.'];
+  automatedCaptureLines.push(
+    options.driftResult.exitCode === 0
+      ? `- [x] Drift check passed: \`${options.driftResult.command}\`.`
+      : `- [ ] Drift check reported playback-question drift: \`${options.driftResult.command}\`.`,
+  );
+  const replayCommands = [options.testResult.command, options.driftResult.command].filter(
+    (command): command is string => command !== undefined,
+  );
+  const expectationLines =
+    options.testResult.status === 'passed'
+      ? ['Expected: the recorded test command exits successfully.']
+      : options.testResult.status === 'failed'
+        ? ['Expected: the recorded test command currently fails; inspect the captured output before closing the cycle.']
+        : ['Expected: no automated test command was recorded; use repo-specific verification steps before closing the cycle.'];
+  expectationLines.push(
+    options.driftResult.exitCode === 0
+      ? 'Expected: the recorded drift command exits 0.'
+      : 'Expected: the recorded drift command currently reports playback-question drift.',
+  );
   return [
     '---',
     `title: "Verification Witness for Cycle ${options.cycle.name}"`,
@@ -120,27 +162,19 @@ export function renderWitnessDoc(options: { cycle: Cycle; testResult: string; dr
     driftResult,
     '```',
     '',
-    '## Manual Verification',
+    '## Automated Capture',
     '',
-    '- [x] Automated capture completed successfully.',
+    ...automatedCaptureLines,
     '',
     '## Human Verification',
     '',
-    'To reproduce this verification independently:',
+    'To reproduce this verification independently from the workspace root:',
     '',
     '```sh',
-    '# Clone and set up',
-    'git clone <repo-url> && cd <repo>',
-    `git checkout <branch-containing-this-cycle>`,
-    'npm ci',
-    '',
-    '# Run the verification',
-    'npm run build',
-    'npm test',
-    `npm run method -- drift ${options.cycle.name}`,
+    ...replayCommands,
     '```',
     '',
-    'Expected: build succeeds, all tests pass, drift check exits 0.',
+    ...expectationLines,
     '',
   ].join('\n');
 }

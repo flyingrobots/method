@@ -282,7 +282,7 @@ export function usage(topic?: string): string {
     return [
       'Usage: method signpost init <name> [--json]',
       '',
-      'Initialize a narrowly supported missing canonical signpost such as BEARING or MCP.',
+      'Initialize a narrowly supported missing canonical signpost, such as BEARING or GUIDE when supported by the workspace.',
     ].join('\n');
   }
   if (topic === 'repair') {

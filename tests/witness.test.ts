@@ -42,6 +42,7 @@ describe('Automated Witness Capture', () => {
   it('Does automated witness capture record the actual drift output for the active cycle?', async () => {
     const root = createTempRoot();
     initWorkspace(root);
+    writeFileSync(join(root, 'package.json'), JSON.stringify({ scripts: { test: 'echo ok' } }, null, 2), 'utf8');
     const workspace = new Workspace(root);
 
     // Create and close a cycle (which calls captureWitness internally)
@@ -59,25 +60,71 @@ describe('Automated Witness Capture', () => {
     expect(content).toContain('[MOCK] Output for npm test');
     expect(content).toContain(expectedDrift);
     expect(content).not.toContain('No drift output captured.');
-    expect(content).toContain('- [x] Automated capture completed successfully.');
+    expect(content).toContain('- [x] Test command succeeded: `npm test`.');
+    expect(content).toContain('- [ ] Drift check reported playback-question drift: `method drift PROCESS_witness-test`.');
   });
 
   it('Does `captureWitness()` record `detectDrift(cycle.name).output` directly instead of shelling out through `tsx`?', async () => {
     const root = createTempRoot();
     initWorkspace(root);
+    writeFileSync(join(root, 'package.json'), JSON.stringify({ scripts: { test: 'echo ok' } }, null, 2), 'utf8');
     const workspace = new Workspace(root);
 
     workspace.captureIdea('Witness Drift Path Test', 'PROCESS', 'Witness Drift Path Test');
     const cycle = workspace.pullItem('PROCESS_witness-drift-path-test');
     const expectedDrift = workspace.detectDrift(cycle.name).output.trim();
-    const execSpy = vi.spyOn(workspace, 'execCommand');
 
     const witnessPath = await workspace.captureWitness(cycle.name);
     const content = readFileSync(witnessPath, 'utf8');
 
     expect(content).toContain(expectedDrift);
-    expect(execSpy).toHaveBeenCalledWith('npm', ['test']);
-    expect(execSpy).not.toHaveBeenCalledWith('tsx', ['src/cli.ts', 'drift', cycle.name]);
+    expect(content).toContain('[MOCK] Output for npm test');
+    expect(content).toContain('method drift PROCESS_witness-drift-path-test');
+    expect(content).not.toContain('tsx src/cli.ts drift');
+  });
+
+  it('records that no automated test command was configured instead of pretending npm verification ran.', async () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.captureIdea('No Test Command', 'PROCESS', 'No Test Command');
+    const cycle = workspace.pullItem('PROCESS_no-test-command');
+
+    const witnessPath = await workspace.captureWitness(cycle.name);
+    const content = readFileSync(witnessPath, 'utf8');
+
+    expect(content).toContain('No automated test command was configured for this workspace.');
+    expect(content).toContain('- [ ] No automated test command was configured for this workspace.');
+    expect(content).toContain('method drift PROCESS_no-test-command');
+    expect(content).not.toContain('npm run build');
+    expect(content).not.toContain('npm ci');
+  });
+
+  it('marks failed automated test capture as failed instead of claiming success.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.captureIdea('Witness Failure', 'PROCESS', 'Witness Failure');
+    const cycle = workspace.pullItem('PROCESS_witness-failure');
+
+    const content = renderWitnessDoc({
+      cycle,
+      testResult: {
+        command: 'pytest',
+        output: 'FAILED tests/test_example.py::test_case',
+        status: 'failed',
+      },
+      driftResult: {
+        command: 'method drift PROCESS_witness-failure',
+        exitCode: 0,
+        output: 'No playback-question drift found.\n',
+      },
+    });
+
+    expect(content).toContain('- [ ] Test command failed: `pytest`.');
+    expect(content).toContain('Expected: the recorded test command currently fails; inspect the captured output before closing the cycle.');
   });
 
   it('Does the witness scaffold label fenced output as text and avoid empty test or drift fences?', () => {
@@ -90,12 +137,19 @@ describe('Automated Witness Capture', () => {
 
     const content = renderWitnessDoc({
       cycle,
-      testResult: '',
-      driftResult: '',
+      testResult: {
+        output: '',
+        status: 'not-run',
+      },
+      driftResult: {
+        command: 'method drift PROCESS_witness-fence-test',
+        exitCode: 0,
+        output: '',
+      },
     });
 
     expect(content).toContain('## Test Results');
-    expect(content).toContain('```text\nNo test output captured.\n```');
+    expect(content).toContain('```text\nNo automated test command was configured for this workspace.\n```');
     expect(content).toContain('## Drift Results');
     expect(content).toContain('```text\nNo drift output captured.\n```');
   });
@@ -110,8 +164,16 @@ describe('Automated Witness Capture', () => {
 
     const content = renderWitnessDoc({
       cycle,
-      testResult: '  indented output\n',
-      driftResult: '\t drift output\n',
+      testResult: {
+        command: 'npm test',
+        output: '  indented output\n',
+        status: 'passed',
+      },
+      driftResult: {
+        command: 'method drift PROCESS_witness-payload-test',
+        exitCode: 0,
+        output: '\t drift output\n',
+      },
     });
 
     expect(content).toMatch(/## Test Results\n\n```text\n {2}indented output\n\n```/u);

@@ -594,8 +594,8 @@ describe('MCP Server', () => {
 
     expect(result.isError).toBe(false);
     expect(result.structuredContent.tool).toBe('method_sync_refs');
-    expect(result.structuredContent.result.targets).toEqual(['ARCHITECTURE.md', 'docs/CLI.md', 'docs/MCP.md', 'docs/GUIDE.md']);
-    expect(result.content[0].text).toContain('Refreshed ARCHITECTURE.md, docs/CLI.md, docs/MCP.md, docs/GUIDE.md');
+    expect(result.structuredContent.result.targets).toEqual(['ARCHITECTURE.md', 'docs/GUIDE.md']);
+    expect(result.content[0].text).toContain('Refreshed ARCHITECTURE.md, docs/GUIDE.md');
     expect(readFileSync(join(root, 'CHANGELOG.md'), 'utf8')).toBe(changelogBefore);
     expect(existsSync(bearingPath)).toBe(false);
   });
@@ -1031,6 +1031,8 @@ describe('MCP Server', () => {
     expect(status.isError).toBe(false);
     expect(status.structuredContent.tool).toBe('method_signpost_status');
     expect(status.structuredContent.result.missing).toContain('docs/BEARING.md');
+    expect(status.structuredContent.result.signposts.map((entry: { name: string }) => entry.name)).not.toContain('CLI');
+    expect(status.structuredContent.result.signposts.map((entry: { name: string }) => entry.name)).not.toContain('MCP');
     expect(status.structuredContent.result.signposts).toContainEqual(
       expect.objectContaining({
         name: 'BEARING',

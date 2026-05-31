@@ -720,6 +720,9 @@ describe('Method API', () => {
     const statusBefore = workspace.signpostStatus();
     expect(statusBefore.missing).toContain('README.md');
     expect(statusBefore.missing).toContain('docs/BEARING.md');
+    expect(statusBefore.signposts.map((entry) => entry.name)).not.toContain('VISION');
+    expect(statusBefore.signposts.map((entry) => entry.name)).not.toContain('CLI');
+    expect(statusBefore.signposts.map((entry) => entry.name)).not.toContain('MCP');
     expect(statusBefore.signposts).toContainEqual(
       expect.objectContaining({
         name: 'BEARING',
@@ -729,16 +732,6 @@ describe('Method API', () => {
         initable: true,
       }),
     );
-    expect(statusBefore.signposts).toContainEqual(
-      expect.objectContaining({
-        name: 'VISION',
-        path: 'docs/VISION.md',
-        kind: 'Generated',
-        exists: false,
-        initable: false,
-      }),
-    );
-
     const initialized = await workspace.initSignpost('BEARING');
     expect(initialized.ok).toBe(true);
     expect(initialized.requested).toBe('BEARING');
@@ -1046,8 +1039,52 @@ describe('Method API', () => {
     const workspace = new Workspace(root);
 
     const result = workspace.syncRefs();
+    expect(result.targets).toEqual(['ARCHITECTURE.md', 'docs/GUIDE.md']);
+    expect(Array.isArray(result.updated)).toBe(true);
+  });
+
+  it('Does `generateReferenceDocs()` include CLI and MCP docs only inside the METHOD repo?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    writeFileSync(join(root, 'package.json'), JSON.stringify({ name: '@flyingrobots/method' }, null, 2), 'utf8');
+    const workspace = new Workspace(root);
+
+    const result = workspace.syncRefs();
     expect(result.targets).toEqual(['ARCHITECTURE.md', 'docs/CLI.md', 'docs/MCP.md', 'docs/GUIDE.md']);
     expect(Array.isArray(result.updated)).toBe(true);
+  });
+
+  it('Does generic `ARCHITECTURE.md` describe the actual repo layout instead of METHOD source modules?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    const workspace = new Workspace(root);
+
+    workspace.syncRefs();
+    const architecture = readFileSync(join(root, 'ARCHITECTURE.md'), 'utf8');
+
+    expect(architecture).toContain('This signpost inventories the current repository layout.');
+    expect(architecture).toContain('## Repo Layout');
+    expect(architecture).toContain('docs/');
+    expect(architecture).not.toContain('METHOD is a TypeScript CLI and library');
+    expect(architecture).not.toContain('### `mcp.ts`');
+  });
+
+  it('Does METHOD-repo signpost status include METHOD-only generated surfaces such as VISION?', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    writeFileSync(join(root, 'package.json'), JSON.stringify({ name: '@flyingrobots/method' }, null, 2), 'utf8');
+    const workspace = new Workspace(root);
+
+    const status = workspace.signpostStatus();
+    expect(status.signposts).toContainEqual(
+      expect.objectContaining({
+        name: 'VISION',
+        path: 'docs/VISION.md',
+        kind: 'Generated',
+        exists: false,
+        initable: false,
+      }),
+    );
   });
 
   it('Does `pullItem` warn when a backlog item is missing acceptance criteria or priority?', () => {
@@ -1193,5 +1230,59 @@ describe('Method API', () => {
     expect(path).not.toContain('DX_dx-022');
     // Should contain DX_ prefix followed by the slug without the legend prefix
     expect(path).toContain('DX_022');
+  });
+
+  it('resolves blocked_by refs pointing to active cycle design docs instead of marking them unresolved', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    ensureBacklogLane(root, 'up-next');
+    const workspace = new Workspace(root);
+
+    // Create an active cycle design doc (no retro = still open)
+    mkdirSync(join(root, 'docs/design'), { recursive: true });
+    writeFileSync(
+      join(root, 'docs/design/PROCESS_active-feature.md'),
+      [
+        '---',
+        'title: "Active Feature"',
+        '---',
+        '',
+        '# Active Feature',
+        '',
+        '## Playback Questions',
+        '',
+        '### Human',
+        '',
+        '- [ ] Does it work?',
+      ].join('\n'),
+      'utf8',
+    );
+
+    // Create a backlog item blocked by the active cycle
+    writeFileSync(
+      join(root, 'docs/method/backlog/up-next/PROCESS_follow-up.md'),
+      [
+        '---',
+        'title: "Follow Up"',
+        'legend: PROCESS',
+        'lane: up-next',
+        'blocked_by:',
+        '  - active-feature',
+        '---',
+        '',
+        '# Follow Up',
+        '',
+        'Body',
+      ].join('\n'),
+      'utf8',
+    );
+
+    const report = workspace.backlogDependencies();
+    const followUp = report.items.find((item) => item.slug === 'follow-up');
+
+    expect(followUp).toBeDefined();
+    expect(followUp?.unresolvedBlockedBy).toEqual([]);
+    expect(followUp?.blockedBy).toContain('docs/design/PROCESS_active-feature.md');
+    expect(followUp?.ready).toBe(false);
   });
 });

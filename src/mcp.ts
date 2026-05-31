@@ -250,12 +250,13 @@ export const MCP_TOOLS: McpToolDef[] = [
   },
   {
     name: 'method_signpost_init',
-    description: 'Initialize a narrowly supported missing canonical signpost such as BEARING, MCP, CLI, GUIDE, or ARCHITECTURE.',
+    description:
+      'Initialize a narrowly supported missing canonical signpost such as BEARING, GUIDE, or ARCHITECTURE when supported by the workspace.',
     inputSchema: {
       type: 'object',
       properties: {
         ...workspaceProperty,
-        name: { type: 'string', description: 'Canonical signpost name or path, such as BEARING or docs/MCP.md.' },
+        name: { type: 'string', description: 'Canonical signpost name or path, such as BEARING or docs/GUIDE.md.' },
       },
       required: ['workspace', 'name'],
     },

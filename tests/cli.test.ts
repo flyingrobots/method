@@ -53,6 +53,22 @@ describe('method CLI', () => {
     expectFile(root, 'CHANGELOG.md');
   });
 
+  it('seeds `docs/PROCESS.md` with a task lifecycle guide instead of a placeholder stub.', async () => {
+    const root = createTempRoot();
+
+    const exitCode = await runCli(['init'], { cwd: root, stdout: new MemoryWriter(), stderr: new MemoryWriter() });
+    const processDoc = readFile(root, 'docs/PROCESS.md');
+
+    expect(exitCode).toBe(0);
+    expect(processDoc).toContain('# Process');
+    expect(processDoc).toContain('## Task Lifecycle');
+    expect(processDoc).toContain('```mermaid');
+    expect(processDoc).toContain('sequenceDiagram');
+    expect(processDoc).toContain('## Working With an LLM');
+    expect(processDoc).toContain('## Working By Hand');
+    expect(processDoc).not.toContain('Describe how cycles run in this repository.');
+  });
+
   it('shows command-specific help for help <command>', async () => {
     const root = createTempRoot();
     const stdout = new MemoryWriter();
@@ -227,9 +243,9 @@ describe('method CLI', () => {
 
     expect(exitCode).toBe(0);
     expect(stdout.output).toContain('Refreshed ARCHITECTURE.md');
-    expect(stdout.output).toContain('Refreshed docs/CLI.md');
-    expect(stdout.output).toContain('Refreshed docs/MCP.md');
     expect(stdout.output).toContain('Refreshed docs/GUIDE.md');
+    expect(stdout.output).not.toContain('docs/CLI.md');
+    expect(stdout.output).not.toContain('docs/MCP.md');
     expect(stdout.output).not.toContain('CHANGELOG.md');
     expect(stdout.output).not.toContain('docs/BEARING.md');
     expect(readFile(root, 'CHANGELOG.md')).toBe(changelogBefore);

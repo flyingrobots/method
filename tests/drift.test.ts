@@ -44,6 +44,14 @@ function setupTestFile(root: string, descriptions: string[]): void {
   writeFileSync(resolve(testsDir, 'example.test.ts'), lines);
 }
 
+function setupTestFileInDir(root: string, dir: string, descriptions: string[]): void {
+  const testsDir = resolve(root, dir);
+  mkdirSync(testsDir, { recursive: true });
+
+  const lines = descriptions.map((d) => `it('${d.replace(/'/gu, "\\'")}', () => {});`).join('\n');
+  writeFileSync(resolve(testsDir, 'example.test.ts'), lines);
+}
+
 describe('Drift Detection', () => {
   it('returns exit code 0 and clean message when all questions match exactly', () => {
     const root = createTempRoot();
@@ -152,6 +160,19 @@ describe('Drift Detection', () => {
     expect(lenientReport.exitCode).toBe(0);
   });
 
+  it('reports the configured test search path instead of hardcoding `tests/` in the summary text.', () => {
+    const root = createTempRoot();
+    const cycle = setupCycleWithQuestions(root, ['The widget renders correctly.']);
+    setupTestFileInDir(root, 'spec', ['The widget renders correctly.']);
+
+    const report = detectWorkspaceDrift(root, [cycle], resolve(root, 'spec'));
+
+    expect(report.exitCode).toBe(0);
+    expect(report.output).toContain('spec/**/*.test.*');
+    expect(report.output).toContain('spec/**/*.spec.*');
+    expect(report.output).not.toContain('tests/**/*.test.*');
+  });
+
   it('Does the drift detector show the similarity score alongside near-miss hints?', () => {
     const root = createTempRoot();
     const cycle = setupCycleWithQuestions(root, ['The drift detector catches renamed test descriptions in the workspace test directory.']);
@@ -190,5 +211,32 @@ describe('Drift Detection', () => {
     const report = detectWorkspaceDrift(root, [cycle]);
     // Only difference is backticks and trailing punctuation — should match semantically
     expect(report.exitCode).toBe(0);
+  });
+
+  it('scans multiple test directories when given an array of paths', () => {
+    const root = createTempRoot();
+    const cycle = setupCycleWithQuestions(root, ['The widget renders correctly.', 'The API handles errors gracefully.']);
+    setupTestFileInDir(root, 'tests', ['The widget renders correctly.']);
+    setupTestFileInDir(root, 'test', ['The API handles errors gracefully.']);
+
+    const report = detectWorkspaceDrift(root, [cycle], [resolve(root, 'tests'), resolve(root, 'test')]);
+
+    expect(report.exitCode).toBe(0);
+    expect(report.output).toContain('No playback-question drift found.');
+    expect(report.output).toContain('tests/**/*.test.*');
+    expect(report.output).toContain('test/**/*.test.*');
+  });
+
+  it('reports drift when only one of multiple test directories is scanned', () => {
+    const root = createTempRoot();
+    const cycle = setupCycleWithQuestions(root, ['The widget renders correctly.', 'The API handles errors gracefully.']);
+    setupTestFileInDir(root, 'tests', ['The widget renders correctly.']);
+    setupTestFileInDir(root, 'test', ['The API handles errors gracefully.']);
+
+    // Only scanning tests/ misses the test in test/
+    const report = detectWorkspaceDrift(root, [cycle], resolve(root, 'tests'));
+
+    expect(report.exitCode).toBe(2);
+    expect(report.output).toContain('Playback-question drift found.');
   });
 });

@@ -103,6 +103,27 @@ describe('doctor engine', () => {
     );
   });
 
+  it('restores the richer `docs/PROCESS.md` scaffold when repair recreates a missing process doc.', () => {
+    const root = createTempRoot();
+    initWorkspace(root);
+    rmSync(join(root, 'docs/PROCESS.md'), { force: true });
+
+    const result = runDoctorRepair(root, 'apply');
+    const processDoc = readFileSync(join(root, 'docs/PROCESS.md'), 'utf8');
+
+    expect(result.repairs).toContainEqual(
+      expect.objectContaining({
+        kind: 'restore-file',
+        targetPath: 'docs/PROCESS.md',
+        status: 'applied',
+      }),
+    );
+    expect(processDoc).toContain('## Task Lifecycle');
+    expect(processDoc).toContain('```mermaid');
+    expect(processDoc).toContain('sequenceDiagram');
+    expect(processDoc).toContain('## Working With an LLM');
+  });
+
   it('skips path-based checks when malformed JSON makes the configured workspace paths unknowable.', () => {
     const root = createTempRoot();
     writeFileSync(join(root, '.method.json'), '{ broken json }\n', 'utf8');

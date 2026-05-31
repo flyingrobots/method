@@ -21,7 +21,12 @@ const BACKTICK_PATTERN = /`/gu;
 const QUESTION_PREFIX_PATTERN = /^(?:does|is|can|will|are|do|has|have)\s+/u;
 const TRAILING_PUNCTUATION_PATTERN = /[.?!]+$/u;
 
-export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], testsDir?: string, thresholds?: DriftThresholds): DriftReport {
+export function detectWorkspaceDrift(
+  root: string,
+  cycles: readonly Cycle[],
+  testsDirs?: string | readonly string[],
+  thresholds?: DriftThresholds,
+): DriftReport {
   const semanticMatchThreshold = thresholds?.semantic_match ?? DEFAULT_SEMANTIC_MATCH_THRESHOLD;
   const nearMissThreshold = thresholds?.near_miss ?? DEFAULT_NEAR_MISS_THRESHOLD;
   if (cycles.length === 0) {
@@ -32,7 +37,9 @@ export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], tes
   }
 
   const questions = cycles.flatMap((cycle) => extractPlaybackQuestions(cycle.designDoc));
-  const testDescriptions = collectTestDescriptions(testsDir ?? resolve(root, 'tests'));
+  const resolvedTestsDirs =
+    testsDirs === undefined ? [resolve(root, 'tests')] : typeof testsDirs === 'string' ? [testsDirs] : [...testsDirs];
+  const testDescriptions = resolvedTestsDirs.flatMap((dir) => collectTestDescriptions(dir));
   const normalizedDescriptions = testDescriptions.map((d) => ({
     original: d,
     normalized: normalizeForMatch(d),
@@ -53,8 +60,13 @@ export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], tes
     return bestScore < semanticMatchThreshold;
   });
   const summaryLine = `Scanned ${cycles.length} active cycle${plural(cycles.length)}, ${questions.length} playback question${plural(questions.length)}, ${testDescriptions.length} test description${plural(testDescriptions.length)}.`;
-  const searchBasis =
-    'Search basis: normalized match, semantic normalization, or high-confidence token similarity in tests/**/*.test.* and tests/**/*.spec.* descriptions.';
+  const searchPaths = resolvedTestsDirs
+    .map((dir) => {
+      const p = formatDriftSearchPath(root, dir);
+      return `${p}/**/*.test.* and ${p}/**/*.spec.*`;
+    })
+    .join(', ');
+  const searchBasis = `Search basis: normalized match, semantic normalization, or high-confidence token similarity in ${searchPaths} descriptions.`;
 
   if (unmatched.length === 0) {
     return {
@@ -90,6 +102,11 @@ export function detectWorkspaceDrift(root: string, cycles: readonly Cycle[], tes
     exitCode: 2,
     output: ['Playback-question drift found.', summaryLine, searchBasis, '', ...findingLines].join('\n'),
   };
+}
+
+function formatDriftSearchPath(root: string, testsDir: string): string {
+  const relativePath = relative(root, testsDir).replace(/\\/gu, '/');
+  return relativePath.length === 0 ? '.' : relativePath;
 }
 
 function collectTestDescriptions(testsDir: string): string[] {

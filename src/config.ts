@@ -6,7 +6,7 @@ export const PathsSchema = z.object({
   backlog: z.string().default('docs/method/backlog'),
   design: z.string().default('docs/design'),
   retro: z.string().default('docs/method/retro'),
-  tests: z.string().default('tests'),
+  tests: z.union([z.string(), z.array(z.string())]).default('tests'),
   graveyard: z.string().default('docs/method/graveyard'),
   method_dir: z.string().default('docs/method'),
 });
@@ -36,7 +36,7 @@ export const ConfigSchema = z.object({
     backlog: 'docs/method/backlog',
     design: 'docs/design',
     retro: 'docs/method/retro',
-    tests: 'tests',
+    tests: ['tests'],
     graveyard: 'docs/method/graveyard',
     method_dir: 'docs/method',
   }),

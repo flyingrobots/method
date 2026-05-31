@@ -46,41 +46,71 @@ export const SIGNPOST_SPECS: readonly SignpostSpec[] = [
 ] as const;
 
 export const REFERENCE_DOC_TARGETS = ['ARCHITECTURE.md', 'docs/CLI.md', 'docs/MCP.md', 'docs/GUIDE.md'] as const;
+export type ReferenceDocTarget = (typeof REFERENCE_DOC_TARGETS)[number];
 
-const REFERENCE_DOC_TEMPLATES: Record<(typeof REFERENCE_DOC_TARGETS)[number], string> = {
-  'ARCHITECTURE.md': [
-    '---',
-    'title: "Architecture"',
-    'generator: "method sync refs"',
-    'provenance_level: artifact_history',
-    '---',
-    '',
-    '# Architecture',
-    '',
-    'METHOD is a TypeScript CLI and library that implements the METHOD',
-    'development workflow.',
-    '',
-    '## Source Layout',
-    '',
-    '<!-- generate:source-layout -->',
-    '<!-- /generate -->',
-    '',
-    '## Key Modules',
-    '',
-    '### `index.ts` — Workspace',
-    '',
-    'The `Workspace` class owns backlog operations, cycle lifecycle,',
-    'reference sync, ship sync, and status.',
-    '',
-    '### `cli.ts` — CLI Entry Point',
-    '',
-    'Dispatches commands parsed by `cli-args.ts`.',
-    '',
-    '### `mcp.ts` — MCP Server',
-    '',
-    'Exposes the same workspace operations through MCP tools.',
-    '',
-  ].join('\n'),
+const METHOD_ONLY_SIGNPOSTS = new Set(['VISION', 'CLI', 'MCP']);
+const METHOD_ONLY_REFERENCE_DOCS = new Set<ReferenceDocTarget>(['docs/CLI.md', 'docs/MCP.md']);
+
+const METHOD_ARCHITECTURE_TEMPLATE = [
+  '---',
+  'title: "Architecture"',
+  'generator: "method sync refs"',
+  'provenance_level: artifact_history',
+  '---',
+  '',
+  '# Architecture',
+  '',
+  'METHOD is a TypeScript CLI and library that implements the METHOD',
+  'development workflow.',
+  '',
+  '## Source Layout',
+  '',
+  '<!-- generate:source-layout -->',
+  '<!-- /generate -->',
+  '',
+  '## Key Modules',
+  '',
+  '### `index.ts` — Workspace',
+  '',
+  'The `Workspace` class owns backlog operations, cycle lifecycle,',
+  'reference sync, ship sync, and status.',
+  '',
+  '### `cli.ts` — CLI Entry Point',
+  '',
+  'Dispatches commands parsed by `cli-args.ts`.',
+  '',
+  '### `mcp.ts` — MCP Server',
+  '',
+  'Exposes the same workspace operations through MCP tools.',
+  '',
+].join('\n');
+
+const GENERIC_ARCHITECTURE_TEMPLATE = [
+  '---',
+  'title: "Architecture"',
+  'generator: "method sync refs"',
+  'provenance_level: artifact_history',
+  '---',
+  '',
+  '# Architecture',
+  '',
+  'This signpost inventories the current repository layout. Keep it',
+  'grounded in real files, entry points, and architectural boundaries',
+  'instead of assuming a specific stack.',
+  '',
+  '## Repo Layout',
+  '',
+  '<!-- generate:source-layout -->',
+  '<!-- /generate -->',
+  '',
+  '## Notes',
+  '',
+  'Add repo-specific module boundaries, runtime entry points, and design',
+  'constraints here as the system evolves.',
+  '',
+].join('\n');
+
+const REFERENCE_DOC_TEMPLATES: Record<Exclude<ReferenceDocTarget, 'ARCHITECTURE.md'>, string> = {
   'docs/CLI.md': [
     '---',
     'title: CLI Reference',
@@ -157,6 +187,48 @@ const REFERENCE_DOC_TEMPLATES: Record<(typeof REFERENCE_DOC_TARGETS)[number], st
 
 const MARKER_PATTERN = /<!-- generate:(\S+) -->\n[\s\S]*?<!-- \/generate -->/gu;
 
+function isMethodReferenceWorkspace(root: string): boolean {
+  const packageJsonPath = resolve(root, 'package.json');
+  if (!existsSync(packageJsonPath)) {
+    return false;
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as { name?: unknown };
+    return parsed.name === '@flyingrobots/method';
+  } catch {
+    return false;
+  }
+}
+
+function referenceDocTemplate(root: string, target: ReferenceDocTarget): string {
+  if (target === 'ARCHITECTURE.md') {
+    return isMethodReferenceWorkspace(root) ? METHOD_ARCHITECTURE_TEMPLATE : GENERIC_ARCHITECTURE_TEMPLATE;
+  }
+
+  return REFERENCE_DOC_TEMPLATES[target];
+}
+
+export function signpostSpecsForRoot(root: string): readonly SignpostSpec[] {
+  if (isMethodReferenceWorkspace(root)) {
+    return SIGNPOST_SPECS;
+  }
+
+  return SIGNPOST_SPECS.filter((spec) => !METHOD_ONLY_SIGNPOSTS.has(spec.name));
+}
+
+export function referenceDocTargetsForRoot(root: string): ReferenceDocTarget[] {
+  if (isMethodReferenceWorkspace(root)) {
+    return [...REFERENCE_DOC_TARGETS];
+  }
+
+  return REFERENCE_DOC_TARGETS.filter((target) => !METHOD_ONLY_REFERENCE_DOCS.has(target));
+}
+
+export function isReferenceDocTarget(path: string): path is ReferenceDocTarget {
+  return REFERENCE_DOC_TARGETS.includes(path as ReferenceDocTarget);
+}
+
 export function replaceGeneratedSections(content: string, generators: GeneratorRegistry): string {
   return content.replace(MARKER_PATTERN, (match, name: string) => {
     const generator = generators[name];
@@ -172,7 +244,7 @@ export function createGenerators(root: string): GeneratorRegistry {
   return {
     'cli-commands': cliCommandsGenerator,
     'mcp-tools': mcpToolsGenerator,
-    'signpost-inventory': signpostInventoryGenerator,
+    'signpost-inventory': () => signpostInventoryGenerator(root),
     'source-layout': () => sourceLayoutGenerator(root),
     'test-summary': () => testSummaryGenerator(root),
     dependencies: () => dependenciesGenerator(root),
@@ -184,11 +256,11 @@ export function generateReferenceDocs(root: string): { targets: string[]; update
   const targets: string[] = [];
   const updated: string[] = [];
 
-  for (const signpost of REFERENCE_DOC_TARGETS) {
+  for (const signpost of referenceDocTargetsForRoot(root)) {
     const signpostPath = resolve(root, signpost);
     if (!existsSync(signpostPath)) {
       mkdirSync(dirname(signpostPath), { recursive: true });
-      writeFileSync(signpostPath, REFERENCE_DOC_TEMPLATES[signpost], 'utf8');
+      writeFileSync(signpostPath, referenceDocTemplate(root, signpost), 'utf8');
     }
 
     targets.push(signpost);
@@ -203,29 +275,27 @@ export function generateReferenceDocs(root: string): { targets: string[]; update
   return { targets, updated };
 }
 
-export function initializeReferenceDoc(
-  root: string,
-  target: (typeof REFERENCE_DOC_TARGETS)[number],
-): { path: string; initialized: boolean } {
+export function initializeReferenceDoc(root: string, target: ReferenceDocTarget): { path: string; initialized: boolean } {
   const signpostPath = resolve(root, target);
   if (existsSync(signpostPath)) {
     return { path: target, initialized: false };
   }
 
   mkdirSync(dirname(signpostPath), { recursive: true });
-  const content = replaceGeneratedSections(REFERENCE_DOC_TEMPLATES[target], createGenerators(root));
+  const content = replaceGeneratedSections(referenceDocTemplate(root, target), createGenerators(root));
   writeFileSync(signpostPath, content, 'utf8');
   return { path: target, initialized: true };
 }
 
-export function resolveSignpostSpec(query: string): SignpostSpec | undefined {
+export function resolveSignpostSpec(query: string, root?: string): SignpostSpec | undefined {
   const normalized = query.trim();
   if (normalized.length === 0) {
     return undefined;
   }
 
   const upper = normalized.toUpperCase();
-  return SIGNPOST_SPECS.find(
+  const signposts = root === undefined ? SIGNPOST_SPECS : signpostSpecsForRoot(root);
+  return signposts.find(
     (spec) =>
       spec.name === upper ||
       spec.path === normalized ||
@@ -289,17 +359,21 @@ export function mcpToolsGenerator(): string {
   return lines.join('\n');
 }
 
-export function signpostInventoryGenerator(): string {
+export function signpostInventoryGenerator(root: string): string {
   const lines: string[] = [
     '| Signpost | Type | Description |',
     '|----------|------|-------------|',
-    ...SIGNPOST_SPECS.map((spec) => `| \`${spec.path}\` | ${spec.kind} | ${spec.description} |`),
+    ...signpostSpecsForRoot(root).map((spec) => `| \`${spec.path}\` | ${spec.kind} | ${spec.description} |`),
     '',
   ];
   return lines.join('\n');
 }
 
 function sourceLayoutGenerator(root: string): string {
+  if (!isMethodReferenceWorkspace(root)) {
+    return repoLayoutGenerator(root);
+  }
+
   const srcDir = resolve(root, 'src');
   if (!existsSync(srcDir)) {
     return '(no src/ directory found)\n';
@@ -315,6 +389,49 @@ function sourceLayoutGenerator(root: string): string {
   lines.push('```');
   lines.push('');
   return lines.join('\n');
+}
+
+function repoLayoutGenerator(root: string): string {
+  const entries = collectRepoEntries(root, 2);
+  if (entries.length === 0) {
+    return '(no visible repo entries found)\n';
+  }
+
+  return ['```', '.', ...entries, '```', ''].join('\n');
+}
+
+function collectRepoEntries(dir: string, depth: number): string[] {
+  if (depth <= 0 || !existsSync(dir)) {
+    return [];
+  }
+
+  const entries: string[] = [];
+  const items = readdirSync(dir, { withFileTypes: true }).sort((a, b) => {
+    if (a.isDirectory() && !b.isDirectory()) return -1;
+    if (!a.isDirectory() && b.isDirectory()) return 1;
+    return a.name.localeCompare(b.name);
+  });
+
+  for (const item of items) {
+    if (item.name.startsWith('.') || item.name === 'node_modules') {
+      continue;
+    }
+
+    if (item.isDirectory()) {
+      entries.push(`  ${item.name}/`);
+      const children = collectRepoEntries(resolve(dir, item.name), depth - 1);
+      for (const child of children) {
+        entries.push(`  ${child}`);
+      }
+      continue;
+    }
+
+    if (item.isFile()) {
+      entries.push(`  ${item.name}`);
+    }
+  }
+
+  return entries;
 }
 
 function collectSourceEntries(dir: string, prefix: string): string[] {

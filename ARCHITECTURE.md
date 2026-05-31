@@ -35,6 +35,7 @@ src/
   mcp.ts
   renderers.ts
   review-state.ts
+  workspace-commands.ts
   workspace-utils.ts
 ```
 <!-- /generate -->

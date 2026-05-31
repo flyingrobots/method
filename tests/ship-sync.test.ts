@@ -152,9 +152,11 @@ describe('Ship Sync', () => {
 
     const result = workspace.syncRefs();
 
-    expect(result.targets).toEqual(['ARCHITECTURE.md', 'docs/CLI.md', 'docs/MCP.md', 'docs/GUIDE.md']);
+    expect(result.targets).toEqual(['ARCHITECTURE.md', 'docs/GUIDE.md']);
     expect(result.targets).not.toContain('CHANGELOG.md');
     expect(result.targets).not.toContain('docs/BEARING.md');
+    expect(result.targets).not.toContain('docs/CLI.md');
+    expect(result.targets).not.toContain('docs/MCP.md');
     expect(readFileSync(join(root, 'CHANGELOG.md'), 'utf8')).toBe(changelogBefore);
     expect(existsSync(bearingPath)).toBe(false);
   });
