@@ -13,6 +13,7 @@ function readRepoFile(relativePath: string): string {
 function readBacklogDoc(filename: string): string {
   const matches = [
     ...walkMarkdownFiles('docs/method/backlog'),
+    ...walkMarkdownFiles('docs/method/graveyard/github-issue-migration'),
     ...walkMarkdownFiles('docs/design'),
     ...walkMarkdownFiles('docs/releases'),
   ].filter((relativePath) => relativePath.endsWith(`/${filename}`));
