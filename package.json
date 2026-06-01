@@ -20,6 +20,7 @@
     "lint": "biome check src/ tests/",
     "lint:fix": "biome check --fix src/ tests/",
     "method": "tsx src/cli.ts",
+    "migrate": "node scripts/migrate-backlog-to-github-issues.mjs",
     "test": "vitest run --config vitest.config.ts",
     "test:watch": "vitest --config vitest.config.ts"
   },

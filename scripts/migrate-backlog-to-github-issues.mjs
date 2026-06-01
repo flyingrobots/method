@@ -1,0 +1,350 @@
+#!/usr/bin/env node
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { basename, join, relative, resolve } from 'node:path';
+import { parse as parseYaml } from 'yaml';
+
+const DEFAULT_BACKLOG_ROOT = 'docs/method/backlog';
+
+const LABELS = new Map([
+  ['lane:inbox', ['D0E8FF', 'Raw intake; needs triage before work starts.']],
+  ['lane:asap', ['FFB3BA', 'Highest-priority Method lane; pull next.']],
+  ['lane:bad-code', ['FFDFBA', 'Known debt, rot, or structural risk.']],
+  ['lane:cool-ideas', ['D5E8D4', 'Interesting but not committed work.']],
+  ['lane:release', ['E1D5E7', 'Release-scoped work; pair with a milestone.']],
+  ['legend:process', ['1D76DB', 'Method process, workflow, adapters, and CLI work.']],
+  ['legend:synth', ['5319E7', 'Synthesis, signposts, executive summaries, provenance.']],
+  ['legend:core', ['0052CC', 'Core Method runtime/domain behavior.']],
+  ['priority:high', ['D93F0B', 'High priority.']],
+  ['priority:medium', ['FBCA04', 'Medium priority.']],
+  ['priority:low', ['C2E0C6', 'Low priority.']],
+  ['type:spike', ['C5DEF5', 'Temporary proof or learning cycle.']],
+  ['type:maintenance', ['BFDADC', 'Maintenance, cleanup, or operational workflow work.']],
+]);
+
+function main() {
+  const args = parseArgs(process.argv.slice(2));
+  const root = process.cwd();
+  const backlogRoot = resolve(root, args.backlogRoot ?? DEFAULT_BACKLOG_ROOT);
+  const repo = args.repo ?? process.env.GITHUB_REPO ?? currentGitHubRepo();
+  const dryRun = args.dryRun;
+
+  if (!repo.includes('/')) {
+    fail('GitHub repo must be OWNER/REPO. Pass --repo OWNER/REPO or set GITHUB_REPO.');
+  }
+  if (!existsSync(backlogRoot)) {
+    fail(`Backlog root does not exist: ${relative(root, backlogRoot)}`);
+  }
+
+  const cards = collectBacklogCards(root, backlogRoot);
+  if (!dryRun) {
+    ensureLabels(repo, [...new Set(cards.flatMap((card) => card.labels))]);
+  }
+
+  const results = [];
+  for (const card of cards) {
+    const existing = findExistingIssue(repo, card.relativePath);
+    if (existing !== undefined) {
+      results.push({ action: 'skip-existing', card, issue: existing });
+      continue;
+    }
+    if (dryRun) {
+      results.push({ action: 'create-dry-run', card });
+      continue;
+    }
+    const issue = createIssue(repo, card);
+    results.push({ action: 'created', card, issue });
+  }
+
+  if (args.json) {
+    process.stdout.write(`${JSON.stringify(renderJson(results), null, 2)}\n`);
+  } else {
+    renderText(results, repo, dryRun);
+  }
+}
+
+function parseArgs(argv) {
+  const args = {
+    dryRun: false,
+    json: false,
+    repo: undefined,
+    backlogRoot: undefined,
+  };
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === '--dry-run') {
+      args.dryRun = true;
+      continue;
+    }
+    if (arg === '--json') {
+      args.json = true;
+      continue;
+    }
+    if (arg === '--repo') {
+      args.repo = requireValue(argv, (index += 1), '--repo');
+      continue;
+    }
+    if (arg === '--backlog-root') {
+      args.backlogRoot = requireValue(argv, (index += 1), '--backlog-root');
+      continue;
+    }
+    if (arg === '--help' || arg === '-h') {
+      process.stdout.write(helpText());
+      process.exit(0);
+    }
+    fail(`Unknown argument: ${arg}\n\n${helpText()}`);
+  }
+  return args;
+}
+
+function requireValue(argv, index, flag) {
+  const value = argv[index];
+  if (value === undefined || value.startsWith('--')) {
+    fail(`${flag} requires a value.`);
+  }
+  return value;
+}
+
+function helpText() {
+  return [
+    'Usage: npm run migrate -- [--repo OWNER/REPO] [--backlog-root PATH] [--dry-run] [--json]',
+    '',
+    'Migrates live Method backlog lane cards into GitHub Issues.',
+    '',
+    'Only files under docs/method/backlog/<lane>/*.md are migrated.',
+    'Design docs, retros, witnesses, releases, and graveyard files are ignored.',
+    '',
+  ].join('\n');
+}
+
+function currentGitHubRepo() {
+  const result = run('gh', ['repo', 'view', '--json', 'nameWithOwner', '--jq', '.nameWithOwner'], { allowFailure: true });
+  return result.ok ? result.stdout.trim() : '';
+}
+
+function collectBacklogCards(root, backlogRoot) {
+  const cards = [];
+  for (const laneName of sortedDirNames(backlogRoot)) {
+    const laneDir = join(backlogRoot, laneName);
+    if (!statSync(laneDir).isDirectory()) {
+      continue;
+    }
+    for (const fileName of sortedDirNames(laneDir)) {
+      if (!fileName.endsWith('.md')) {
+        continue;
+      }
+      const fullPath = join(laneDir, fileName);
+      if (!statSync(fullPath).isFile()) {
+        continue;
+      }
+      cards.push(readBacklogCard(root, backlogRoot, laneName, fullPath));
+    }
+  }
+  return cards;
+}
+
+function sortedDirNames(dir) {
+  return readdirSync(dir).sort((left, right) => left.localeCompare(right));
+}
+
+function readBacklogCard(root, backlogRoot, laneName, fullPath) {
+  const raw = readFileSync(fullPath, 'utf8');
+  const parsed = parseMarkdownDoc(raw);
+  const relativePath = relative(root, fullPath);
+  const stem = basename(fullPath, '.md');
+  const filenameLegend = stem.includes('_') ? stem.split('_')[0] : undefined;
+  const filenameSlug = stem.includes('_') ? stem.slice(stem.indexOf('_') + 1) : stem;
+  const title = normalizeString(parsed.frontmatter.title) ?? firstHeading(parsed.body) ?? titleCase(filenameSlug);
+  const lane = normalizeString(parsed.frontmatter.lane) ?? laneName;
+  const legend = normalizeString(parsed.frontmatter.legend) ?? filenameLegend;
+  const priority = normalizeString(parsed.frontmatter.priority);
+  const labels = labelsFor({ lane, legend, priority });
+  const body = renderIssueBody({ relativePath, lane, legend, priority, title, originalBody: parsed.body.trim() });
+  return {
+    fullPath,
+    relativePath,
+    title,
+    lane,
+    legend,
+    priority,
+    labels,
+    body,
+  };
+}
+
+function parseMarkdownDoc(raw) {
+  if (!raw.startsWith('---\n')) {
+    return { frontmatter: {}, body: raw };
+  }
+  const closeIndex = raw.indexOf('\n---', 4);
+  if (closeIndex === -1) {
+    return { frontmatter: {}, body: raw };
+  }
+  const yaml = raw.slice(4, closeIndex);
+  const bodyStart = raw.indexOf('\n', closeIndex + 4);
+  const body = bodyStart === -1 ? '' : raw.slice(bodyStart + 1);
+  try {
+    return { frontmatter: parseYaml(yaml) ?? {}, body };
+  } catch {
+    return { frontmatter: {}, body: raw };
+  }
+}
+
+function firstHeading(body) {
+  const match = /^#\s+(.+)$/mu.exec(body);
+  return match?.[1]?.trim();
+}
+
+function normalizeString(value) {
+  return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function labelsFor({ lane, legend, priority }) {
+  const labels = [];
+  const laneLabel = /^v\d+\.\d+\.\d+$/u.test(lane) ? 'lane:release' : `lane:${lane}`;
+  labels.push(laneLabel);
+
+  if (legend !== undefined) {
+    labels.push(`legend:${legend.toLowerCase()}`);
+  }
+  if (priority !== undefined) {
+    labels.push(`priority:${priority.toLowerCase()}`);
+  }
+  if (lane === 'bad-code') {
+    labels.push('type:maintenance');
+  }
+  if (legend?.toUpperCase() === 'SPIKE') {
+    labels.push('type:spike');
+  }
+  return [...new Set(labels)];
+}
+
+function renderIssueBody({ relativePath, lane, legend, priority, title, originalBody }) {
+  const metadata = [
+    `Source backlog: \`${relativePath}\``,
+    `Original lane: \`${lane}\``,
+    legend === undefined ? undefined : `Original legend: \`${legend}\``,
+    priority === undefined ? undefined : `Original priority: \`${priority}\``,
+  ].filter(Boolean);
+
+  return [
+    '## Migrated from Method backlog',
+    '',
+    'This issue was created from a legacy filesystem backlog card. GitHub Issues are now the live work tracker; repository docs remain Method evidence.',
+    '',
+    ...metadata,
+    '',
+    '## Original backlog card',
+    '',
+    originalBody.length > 0 ? originalBody : `# ${title}`,
+    '',
+  ].join('\n');
+}
+
+function ensureLabels(repo, labels) {
+  const existingRaw = run('gh', ['label', 'list', '--repo', repo, '--limit', '500', '--json', 'name', '--jq', '.[].name']).stdout;
+  const existing = new Set(existingRaw.split('\n').map((line) => line.trim()).filter(Boolean));
+  for (const label of labels) {
+    if (existing.has(label)) {
+      continue;
+    }
+    const [color, description] = LABELS.get(label) ?? ['BFDADC', 'Migrated Method label.'];
+    run('gh', ['label', 'create', label, '--repo', repo, '--color', color, '--description', description]);
+    existing.add(label);
+  }
+}
+
+function findExistingIssue(repo, relativePath) {
+  const search = `"${relativePath}" in:body`;
+  const result = run(
+    'gh',
+    ['issue', 'list', '--repo', repo, '--state', 'all', '--search', search, '--limit', '10', '--json', 'number,title,url,state'],
+    { allowFailure: true },
+  );
+  if (!result.ok) {
+    return undefined;
+  }
+  const matches = JSON.parse(result.stdout);
+  const exact = matches.find((issue) => typeof issue.url === 'string');
+  if (exact === undefined) {
+    return undefined;
+  }
+  return {
+    number: exact.number,
+    title: exact.title,
+    url: exact.url,
+    state: exact.state,
+  };
+}
+
+function createIssue(repo, card) {
+  const dir = mkdtempSync(join(tmpdir(), 'method-migrate-'));
+  const bodyFile = join(dir, 'body.md');
+  try {
+    writeFileSync(bodyFile, card.body, 'utf8');
+    const args = ['issue', 'create', '--repo', repo, '--title', card.title, '--body-file', bodyFile];
+    for (const label of card.labels) {
+      args.push('--label', label);
+    }
+    const stdout = run('gh', args).stdout.trim();
+    const number = Number.parseInt(stdout.slice(stdout.lastIndexOf('/') + 1), 10);
+    return { number, title: card.title, url: stdout, state: 'OPEN' };
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+function run(command, args, options = {}) {
+  const result = spawnSync(command, args, {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  const ok = result.status === 0;
+  if (!ok && !options.allowFailure) {
+    fail(`${command} ${args.join(' ')} failed:\n${result.stderr || result.stdout}`);
+  }
+  return {
+    ok,
+    stdout: result.stdout ?? '',
+    stderr: result.stderr ?? '',
+    status: result.status ?? 1,
+  };
+}
+
+function renderJson(results) {
+  return results.map((result) => ({
+    action: result.action,
+    path: result.card.relativePath,
+    title: result.card.title,
+    labels: result.card.labels,
+    issue: result.issue,
+  }));
+}
+
+function renderText(results, repo, dryRun) {
+  process.stdout.write(`Method backlog migration ${dryRun ? '(dry-run)' : '(apply)'} for ${repo}\n`);
+  for (const result of results) {
+    const issueText = result.issue === undefined ? '' : ` -> ${result.issue.url}`;
+    process.stdout.write(`${result.action.padEnd(15)} ${result.card.relativePath}${issueText}\n`);
+  }
+  const created = results.filter((result) => result.action === 'created').length;
+  const skipped = results.filter((result) => result.action === 'skip-existing').length;
+  const dry = results.filter((result) => result.action === 'create-dry-run').length;
+  process.stdout.write(`Summary: created=${created} skipped_existing=${skipped} dry_run=${dry}\n`);
+}
+
+function titleCase(slug) {
+  return slug
+    .split(/[-_]/u)
+    .filter(Boolean)
+    .map((word) => `${word.slice(0, 1).toUpperCase()}${word.slice(1)}`)
+    .join(' ');
+}
+
+function fail(message) {
+  process.stderr.write(`${message}\n`);
+  process.exit(1);
+}
+
+main();

@@ -80,7 +80,8 @@ creates corresponding GitHub Issues and archives/stubs the old files.
 3. Update doctrine so GitHub Issues are the live tracker and repo files
    are the evidence ledger.
 4. Migrate live Method backlog cards into GitHub Issues with source-file
-   provenance in the issue body.
+   provenance in the issue body using
+   `scripts/migrate-backlog-to-github-issues.mjs` or `npm run migrate`.
 5. Archive or stub migrated backlog cards so they stop acting as a
    second live tracker.
 6. Leave historical graveyard files read-only until a separate cleanup
