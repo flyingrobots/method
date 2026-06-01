@@ -22,8 +22,8 @@ method init .
 # Check workspace health
 method doctor
 
-# See what's on the backlog
-method status
+# See live work
+gh issue list --label lane:asap
 ```
 
 ## The cycle lifecycle
@@ -32,7 +32,7 @@ Every unit of shipped work follows the same loop:
 
 ```mermaid
 flowchart TD
-    A[Backlog item] -->|method pull| B[Design doc]
+    A[GitHub issue] -->|pull issue| B[Design doc]
     B --> C[Write failing tests]
     C --> D[Make tests pass]
     D --> E[Playback witness]
@@ -45,24 +45,24 @@ flowchart TD
     style H fill:#bfb,stroke:#333
 ```
 
-## Backlog flow
+## Issue flow
 
-Ideas enter the inbox, get triaged into lanes, and eventually get
-pulled into cycles or retired to the graveyard:
+Ideas enter GitHub Issues, get triaged with lane labels, and eventually
+get pulled into cycles or closed with a disposition:
 
 ```mermaid
 flowchart LR
-    Idea -->|method inbox| Inbox
-    Inbox -->|triage| ASAP
-    Inbox -->|triage| CoolIdeas[cool-ideas]
-    Inbox -->|triage| BadCode[bad-code]
-    Inbox -->|triage| Release[vX.Y.Z]
-    Inbox -->|method retire| Graveyard
+    Idea -->|open issue| Inbox[lane:inbox]
+    Inbox -->|triage label| ASAP[lane:asap]
+    Inbox -->|triage label| CoolIdeas[lane:cool-ideas]
+    Inbox -->|triage label| BadCode[lane:bad-code]
+    Inbox -->|milestone + label| Release[lane:release]
+    Inbox -->|close with disposition| Closed
 
-    ASAP -->|method pull| Cycle
-    BadCode -->|method pull| Cycle
-    CoolIdeas -->|method pull| Cycle
-    Release -->|method pull| Cycle
+    ASAP -->|work-in-progress| Cycle
+    BadCode -->|work-in-progress| Cycle
+    CoolIdeas -->|work-in-progress| Cycle
+    Release -->|work-in-progress| Cycle
 ```
 
 ## Cycle branches
@@ -70,7 +70,7 @@ flowchart LR
 ```mermaid
 gitGraph
     commit id: "main"
-    branch cycles/PROCESS_my-feature
+    branch my-feature
     commit id: "design doc"
     commit id: "failing tests"
     commit id: "make tests pass"
@@ -80,12 +80,12 @@ gitGraph
     commit id: "ship sync"
 ```
 
-## File lifecycle
+## Evidence lifecycle
 
 ```mermaid
 flowchart TD
-    subgraph Backlog
-        BI[backlog/inbox/PROCESS_foo.md]
+    subgraph Tracker
+        I[GitHub issue]
     end
 
     subgraph Active
@@ -98,26 +98,27 @@ flowchart TD
     end
 
     subgraph Retired
-        GY[graveyard/PROCESS_foo.md]
+        C[closed issue with disposition]
     end
 
-    BI -->|pull| DD
+    I -->|pull| DD
     DD -->|close| RD
     DD -->|close| W
-    BI -->|retire| GY
+    I -->|close| C
 ```
 
 ## Common commands
 
 | Task | Command |
 |------|---------|
-| Capture an idea | `method inbox "idea" --legend PROCESS` |
-| Add shaped backlog item | `method backlog add --lane asap --title "Title" --legend PROCESS` |
-| Move between lanes | `method backlog move PROCESS_foo --to asap` |
-| Pull into a cycle | `method pull PROCESS_foo` |
+| Capture an idea | Open a GitHub issue with `lane:inbox` |
+| Move between lanes | Change the issue `lane:*` label |
+| Mark active work | Add `work-in-progress` |
+| Create branch | Use the issue title slug |
+| Pull into a cycle | Link the issue from the design doc |
 | Check drift | `method drift` |
 | Close a cycle | `method close --drift-check yes --outcome hill-met` |
-| Retire an item | `method retire PROCESS_foo --reason "Replaced by X" --yes` |
+| Retire an item | Close the issue with a disposition comment |
 | Check workspace health | `method doctor` |
 | Generate health receipt | `method doctor --receipt` |
 | Refresh generated docs | `method sync refs` |
@@ -150,18 +151,21 @@ runbook.
 
 ### Capture ideas immediately
 
-If a backlog-worthy idea surfaces during work, capture it now. Do not
-leave it in chat or assume you'll remember it later.
+If work-worthy idea surfaces during work, capture it now as a GitHub
+Issue. Do not leave it in chat or assume you'll remember it later.
 
 ```bash
-method inbox "the idea" --legend PROCESS
+gh issue create --label lane:inbox
 ```
 
 ### Keep one raw-intake path
 
 Review notes, critique, and outside-in observations all go to
-`method inbox` with `--source` and `--captured-at` when provenance
+GitHub Issues with provenance in the issue body or comments when it
 matters. Don't invent parallel holding areas.
+
+Filesystem backlog commands still exist for migration and legacy repos,
+but new Method work should start in GitHub Issues.
 
 ### Advice is not doctrine
 

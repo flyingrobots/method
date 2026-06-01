@@ -1,0 +1,53 @@
+name: Bug report
+description: Report a Method defect or regression.
+title: ""
+labels:
+  - bug
+  - lane:inbox
+body:
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+      description: What happened?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Minimal commands, repo state, and inputs needed to reproduce.
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact
+      description: Who is blocked or misled by this?
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      placeholder: |
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: witness
+    attributes:
+      label: Witness plan
+      value: |
+        Expected evidence:
+        - failing test or reproduction:
+        - fix validation:
+        - retro:

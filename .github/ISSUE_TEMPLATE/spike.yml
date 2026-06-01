@@ -1,0 +1,45 @@
+name: Method spike
+description: Capture a temporary proof, learning cycle, or constraint probe.
+title: ""
+labels:
+  - lane:inbox
+  - type:spike
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question
+      description: What are we trying to prove or learn?
+    validations:
+      required: true
+  - type: textarea
+    id: why-now
+    attributes:
+      label: Why now
+      description: What decision will this unblock?
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints
+      description: Stack, time, safety, or quality constraints.
+      placeholder: |
+        - ...
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Expected evidence
+      description: What transcript, demo, test, or artifact proves the learning?
+      placeholder: |
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: closeout
+    attributes:
+      label: Adopt, adapt, or retire decision
+      description: Fill this in during closeout.
+      value: |
+        Decision:
+        Follow-up:

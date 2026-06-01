@@ -4,7 +4,10 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
 
 ## Rules
 
-- Pulling work is commitment. The backlog item does not go back.
+- GitHub Issues are the live work tracker. Repository files are the
+  evidence ledger.
+- Pulling work is commitment. The issue is marked `work-in-progress`
+  and does not silently fall back into the queue.
 - Playback questions drive the design and the tests.
 - Playback verification requires the matching perspective: Human
   playback questions must be verified by a human operator, and Agent
@@ -28,10 +31,10 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
   where a human operator attests that each human hill holds true.
 - `human`, `agent`, and `user` are abstract seats or perspectives in
   METHOD doctrine, not literal people, accounts, or model brands.
-- Backlog maintenance happens at cycle boundaries, not continuously.
-- All raw intake, including feedback or review notes, lands in
-  `docs/method/backlog/inbox/`. Use explicit metadata such as
-  `source` and `captured_at` when provenance matters.
+- Issue maintenance happens at cycle boundaries, not continuously.
+- All raw intake, including feedback or review notes, lands in GitHub
+  Issues with `lane:inbox`. Use the issue body and comments for
+  provenance when origin or timing matters.
 - Repo-level ship surfaces such as `BEARING.md` and `CHANGELOG.md`
   reflect merged `main` state, not branch-local closeout state.
 - If merged `main` is ever found carrying an open cycle packet, treat
@@ -40,7 +43,8 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
 - Review visibility is available through `method review-state`, which
   summarizes branch and PR context without turning METHOD into a forge
   cockpit.
-- All cycle work must be done on a branch named `cycles/<LEGEND>_<slug>`.
+- All cycle work must be done on a branch named from the linked issue
+  title slug, for example `foo-feature-needs-external-bar-integration`.
 - Once a full cycle is complete (after the retro), the operator must
   push the branch and open a PR to the target branch (usually `main`).
 - Agents must stage and commit all modified files at the end of each turn
@@ -48,8 +52,10 @@ METHOD cycles run as a calm pull-design-test-playback-close-review-ship-sync loo
 
 ## Default Loop
 
-1. Pull an item from the backlog into `docs/design/<cycle>.md` or, for
+1. Pull a GitHub issue into `docs/design/<cycle>.md` or, for
    release-tagged work, into `docs/releases/<version>/design/<cycle>.md`.
+   Add `work-in-progress` to the issue and link the issue from the
+   design doc frontmatter.
 2. Write the design with both human and agent sponsors named as
    abstract roles (e.g., "System Architect", "Workflow Automator"),
    plus the accessibility, localization, and agent-inspectability
@@ -78,21 +84,27 @@ repair it before continuing.
 
 ## Workflow
 
-METHOD uses Git for distributed coordination but remains forge-agnostic.
+METHOD uses Git for distributed coordination. GitHub Issues are the
+default live tracker for work in this implementation.
 
 ### Branch Naming
 
-- **Cycle Branches:** Use `cycles/<LEGEND>_<slug>` (e.g.,
-  `cycles/PROCESS_git-branch-workflow-policy`).
+- **Cycle Branches:** Use the linked issue title slug (e.g.,
+  `foo-feature-needs-external-bar-integration`).
 - **Maintenance Branches:** Use `maint-slug` for low-risk changes that
   require review (e.g., `maint-fix-typos`).
-- **Triage/Backlog:** Small backlog captures or moves can happen
-  directly on `main` or on a `triage-slug` branch.
+- **Triage:** Small label, title, or issue-body cleanup can happen in
+  GitHub without a branch when no repo files change.
+
+Issue titles are workflow identity. Before work starts, keep titles
+short, branch-safe, and readable. Avoid legend prefixes, issue numbers,
+and vague titles.
 
 ### The Cycle Lifecycle
 
-1. **Pull:** Pull the backlog item.
-2. **Branch:** Create a cycle branch from the latest `main`.
+1. **Pull:** Pull the GitHub issue.
+2. **Branch:** Create a branch from the latest `main` using the issue
+   title slug.
 3. **Execute:** Perform the loop (design, tests, act, playback).
 4. **Close:** Run `method close` to write the retro and witness metadata.
 5. **Merge:** Open a PR/Review. Once approved, merge to `main`.
@@ -100,14 +112,19 @@ METHOD uses Git for distributed coordination but remains forge-agnostic.
 ### Intake and Triage
 
 1. **Capture:** Store raw review notes, critique, or outside-in
-   observations as backlog notes in `docs/method/backlog/inbox/`.
-2. **Annotate when useful:** Record explicit frontmatter metadata such
-   as `source` and `captured_at` when the origin or timing matters.
+   observations as GitHub Issues with `lane:inbox`.
+2. **Annotate when useful:** Record provenance in the issue body or
+   comments when the origin or timing matters.
 3. **Process:** During a maintenance pass, convert the inbox item into
-   a durable choice: `asap`, a release lane such as `v2.4.5`,
-   `bad-code`, `cool-ideas`, a direct docs repair, or the graveyard.
-4. **Do not split intake systems:** The inbox is the raw intake path.
-   Avoid parallel holding areas for critique or review notes.
+   a durable choice: `lane:asap`, `lane:bad-code`,
+   `lane:cool-ideas`, `lane:release` plus a milestone, a direct docs
+   repair, or closure with a disposition comment.
+4. **Do not split intake systems:** GitHub Issues are the raw intake
+   path. Avoid parallel holding areas for critique or review notes.
+
+Legacy filesystem backlog commands and `docs/method/backlog/**` remain
+compatibility and migration surfaces until repo-local migrations are
+complete. They are not the new authority model.
 
 ### The Ship Sync Maneuver
 
@@ -254,13 +271,14 @@ ceremonies. The mechanism is passive legibility.
 If you can answer these questions by reading the repo, you do not need
 a standup:
 
-- What is actively open? → `method status`
+- What is actively open? → GitHub Issues by Method lane label
 - Is this workspace healthy? → `method doctor`
 - What is under review? → `method review-state`
 - What is committed? → each design doc names its sponsors and hill
-- What is next? → `method status` and the backlog
+- What is next? → `lane:asap` issues without `work-in-progress`
 - What failed and why? → `ls docs/method/retro/`
-- What did we decide not to do? → `ls docs/method/graveyard/`
+- What did we decide not to do? → closed GitHub Issues with disposition
+  comments, plus legacy `docs/method/graveyard/` during migration
 
 No standups. No syncs. No status emails. No sprint planning. No retro
 meetings. The retro is a document, not a ceremony. The repo is the

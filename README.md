@@ -1,13 +1,14 @@
 # METHOD
 
-A backlog, a loop, and honest bookkeeping.
+Issues, a loop, and honest bookkeeping.
 
 ## What is METHOD?
 
 METHOD is a lightweight process framework for software projects where
 humans and agents collaborate. It provides:
 
-- A **backlog** organized by lanes (inbox, asap, bad-code, cool-ideas)
+- **GitHub Issues** organized by Method labels (`lane:inbox`,
+  `lane:asap`, `lane:bad-code`, `lane:cool-ideas`, release milestones)
 - A **cycle loop** (pull → design → test → playback → close → review → ship)
 - **Honest bookkeeping** through design docs, retros, witnesses, and drift detection
 
@@ -32,8 +33,8 @@ method inbox "Add dark mode support" --legend PROCESS
 # Check workspace health
 method doctor
 
-# See what's in the backlog
-method status
+# Pick work from GitHub Issues
+gh issue list --label lane:asap
 ```
 
 ## Documentation
@@ -51,8 +52,14 @@ method status
 
 ## Principles
 
-**The filesystem is the database.** A directory is a priority. A
-filename is an identity. Moving a file is a decision. `ls` is the query.
+**GitHub Issues are the live work tracker.** A label is a lane. A
+milestone is release scope. `work-in-progress` means someone is actively
+working the issue. This keeps METHOD legible to ordinary open-source
+contributors.
+
+**The repository is the evidence ledger.** Design docs, tests, playback
+witnesses, retros, release notes, and generated signposts stay in the
+repo because they are durable evidence, not ephemeral tracker state.
 
 **Tests are the executable spec.** Design names the hill and the
 playback questions. Tests prove the answers.
@@ -61,7 +68,7 @@ playback questions. Tests prove the answers.
 are rerunnable proof, not victory photos.
 
 **Process should be calm.** No sprints. No velocity. No burndown. A
-backlog tiered by judgment, and a loop for doing it well.
+small issue taxonomy, clear evidence, and a loop for doing work well.
 
 **The METHOD repo gets no special pleading.** This repository uses
 METHOD on itself. If repo truth conflicts with doctrine, repair the
@@ -83,20 +90,20 @@ docs/
   releases/
     vX.Y.Z.md                       user-facing release notes
   method/
-    backlog/
-      inbox/                        raw ideas
-      asap/                         pull next
-      cool-ideas/                   experiments
-      bad-code/                     tech debt
+    backlog/                        legacy/migration-only backlog cards
     legends/                        named domains
     retro/<cycle>/                  retrospectives + witnesses
-    graveyard/                      retired work
+    graveyard/                      legacy retired work
+.github/
+  ISSUE_TEMPLATE/                   GitHub issue forms for Method work
+  pull_request_template.md          PR evidence checklist
 ```
 
 ## The loop
 
 ```text
-idea → inbox → lane → design doc → RED → GREEN → playback → retro
+GitHub issue → lane label → branch → design doc → RED → GREEN
+  → playback → retro
   → PR/review → main → ship sync
 ```
 
