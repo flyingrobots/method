@@ -34,6 +34,7 @@ const LABELS = new Map([
 ]);
 
 const CANONICAL_LABELS = [...LABELS.keys()];
+const RELEASE_LANE_PATTERN = /^v\d+\.\d+\.\d+$/u;
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
@@ -190,13 +191,12 @@ function parseMarkdownDoc(raw) {
   if (!raw.startsWith('---\n')) {
     return { frontmatter: {}, body: raw };
   }
-  const closeIndex = raw.indexOf('\n---', 4);
+  const closeIndex = raw.indexOf('\n---\n', 4);
   if (closeIndex === -1) {
     return { frontmatter: {}, body: raw };
   }
   const yaml = raw.slice(4, closeIndex);
-  const bodyStart = raw.indexOf('\n', closeIndex + 4);
-  const body = bodyStart === -1 ? '' : raw.slice(bodyStart + 1);
+  const body = raw.slice(closeIndex + '\n---\n'.length);
   try {
     return { frontmatter: parseYaml(yaml) ?? {}, body };
   } catch {
@@ -215,8 +215,7 @@ function normalizeString(value) {
 
 function labelsFor({ lane, legend, priority }) {
   const labels = [];
-  const laneLabel = /^v\d+\.\d+\.\d+$/u.test(lane) ? 'lane:release' : `lane:${lane}`;
-  labels.push(laneLabel);
+  labels.push(labelForLane(lane));
 
   if (legend !== undefined) {
     labels.push(`legend:${legend.toLowerCase()}`);
@@ -231,6 +230,24 @@ function labelsFor({ lane, legend, priority }) {
     labels.push('type:spike');
   }
   return [...new Set(labels)];
+}
+
+function labelForLane(lane) {
+  const laneValue = normalizeString(lane);
+  if (laneValue === undefined) {
+    throw new Error('Missing Method backlog lane.');
+  }
+  if (RELEASE_LANE_PATTERN.test(laneValue)) {
+    return 'lane:release';
+  }
+  if (laneValue === 'up-next') {
+    return 'lane:asap';
+  }
+  const label = `lane:${laneValue}`;
+  if (!LABELS.has(label)) {
+    throw new Error(`Unknown Method backlog lane "${laneValue}". Refusing to create non-canonical label ${label}.`);
+  }
+  return label;
 }
 
 function renderIssueBody({ relativePath, lane, legend, priority, title, originalBody }) {
@@ -255,15 +272,26 @@ function renderIssueBody({ relativePath, lane, legend, priority, title, original
   ].join('\n');
 }
 
-function ensureLabels(repo, labels) {
-  const existingRaw = run('gh', ['label', 'list', '--repo', repo, '--limit', '500', '--json', 'name', '--jq', '.[].name']).stdout;
+function ensureLabels(repo, labels, runner) {
+  const commandRunner = runner ?? run;
+  const existingRaw = commandRunner('gh', [
+    'api',
+    `repos/${repo}/labels`,
+    '--method',
+    'GET',
+    '--paginate',
+    '-f',
+    'per_page=100',
+    '--jq',
+    '.[].name',
+  ]).stdout;
   const existing = new Set(existingRaw.split('\n').map((line) => line.trim()).filter(Boolean));
   for (const label of labels) {
     if (existing.has(label)) {
       continue;
     }
     const [color, description] = LABELS.get(label) ?? ['BFDADC', 'Migrated Method label.'];
-    run('gh', ['label', 'create', label, '--repo', repo, '--color', color, '--description', description]);
+    commandRunner('gh', ['label', 'create', label, '--repo', repo, '--color', color, '--description', description]);
     existing.add(label);
   }
 }
@@ -336,7 +364,8 @@ function normalizeSourcePath(relativePath) {
   return relativePath.replace(/\\/gu, '/');
 }
 
-function createIssue(repo, card) {
+function createIssue(repo, card, runner) {
+  const commandRunner = runner ?? run;
   const dir = mkdtempSync(join(tmpdir(), 'method-migrate-'));
   const bodyFile = join(dir, 'body.md');
   try {
@@ -345,18 +374,27 @@ function createIssue(repo, card) {
     for (const label of card.labels) {
       args.push('--label', label);
     }
-    const stdout = run('gh', args).stdout.trim();
-    const number = Number.parseInt(stdout.slice(stdout.lastIndexOf('/') + 1), 10);
-    return { number, title: card.title, url: stdout, state: 'OPEN' };
+    const stdout = commandRunner('gh', args).stdout.trim();
+    return { number: issueNumberFromCreateOutput(stdout), title: card.title, url: stdout, state: 'OPEN' };
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 }
 
-function run(command, args, options = {}) {
-  if (options.runner !== undefined) {
-    return options.runner(command, args, options);
+function issueNumberFromCreateOutput(stdout) {
+  const url = stdout.trim();
+  const match = /\/issues\/(\d+)(?:[?#].*)?$/u.exec(url);
+  if (match === null) {
+    throw new Error(`Could not parse issue number from gh issue create output: ${JSON.stringify(stdout)}`);
   }
+  const number = Number.parseInt(match[1], 10);
+  if (!Number.isSafeInteger(number)) {
+    throw new Error(`Could not parse issue number from gh issue create output: ${JSON.stringify(stdout)}`);
+  }
+  return number;
+}
+
+function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -411,6 +449,8 @@ function fail(message) {
 export {
   CANONICAL_LABELS,
   collectBacklogCards,
+  createIssue,
+  ensureLabels,
   labelsFor,
   loadExistingIssueMap,
   parseMarkdownDoc,

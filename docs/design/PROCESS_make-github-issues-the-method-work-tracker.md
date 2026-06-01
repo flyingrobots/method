@@ -29,19 +29,19 @@ docs, witnesses, playbacks, and retros remain durable repo evidence.
 
 ### Human
 
-- [ ] Does a new contributor see GitHub Issues as the canonical place to
+- [x] Does a new contributor see GitHub Issues as the canonical place to
       find and propose work?
-- [ ] Does the repo still explain that design docs, witnesses, playbacks,
+- [x] Does the repo still explain that design docs, witnesses, playbacks,
       retros, and release evidence remain Method artifacts?
-- [ ] Does active work have a predictable branch name derived from the
+- [x] Does active work have a predictable branch name derived from the
       issue title?
 
 ### Agent
 
-- [ ] Are Method lane, legend, priority, type, and active-work states
+- [x] Are Method lane, legend, priority, type, and active-work states
       represented as explicit GitHub labels?
-- [ ] Do issue and PR templates encode the Method evidence contract?
-- [ ] Do docs classify existing filesystem backlog commands as legacy or
+- [x] Do issue and PR templates encode the Method evidence contract?
+- [x] Do docs classify existing filesystem backlog commands as legacy or
       migration surfaces rather than the new authority model?
 
 ## Design
@@ -128,14 +128,14 @@ but not in live backlog lanes.
 
 ## Acceptance Criteria
 
-- [ ] GitHub labels for the Method issue taxonomy exist in
+- [x] GitHub labels for the Method issue taxonomy exist in
       `flyingrobots/method`.
-- [ ] GitHub issue templates exist for work items, bugs, and spikes.
-- [ ] A PR template links GitHub issue tracking to Method evidence.
-- [ ] README and PROCESS state that GitHub Issues are the live tracker.
-- [ ] CONTRIBUTING starts from GitHub Issues, not local backlog files.
-- [ ] Branch naming doctrine uses issue-title slugs.
-- [ ] Existing filesystem-backlog GitHub sync behavior is documented as
+- [x] GitHub issue templates exist for work items, bugs, and spikes.
+- [x] A PR template links GitHub issue tracking to Method evidence.
+- [x] README and PROCESS state that GitHub Issues are the live tracker.
+- [x] CONTRIBUTING starts from GitHub Issues, not local backlog files.
+- [x] Branch naming doctrine uses issue-title slugs.
+- [x] Existing filesystem-backlog GitHub sync behavior is documented as
       migration/legacy behavior.
-- [ ] The current Method backlog migration path is documented before
+- [x] The current Method backlog migration path is documented before
       Echo migration starts.

@@ -5,8 +5,11 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   CANONICAL_LABELS,
   collectBacklogCards,
+  createIssue,
+  ensureLabels,
   labelsFor,
   loadExistingIssueMap,
+  parseMarkdownDoc,
   renderJson,
   sourceBacklogMarker,
   sourceBacklogPaths,
@@ -60,6 +63,11 @@ describe('backlog GitHub issue migration script', () => {
       'legend:process',
       'priority:medium',
     ]);
+    expect(labelsFor({ lane: 'up-next', legend: 'PROCESS', priority: 'high' })).toEqual(['lane:asap', 'legend:process', 'priority:high']);
+  });
+
+  it('rejects unknown lanes instead of creating non-canonical labels', () => {
+    expect(() => labelsFor({ lane: 'somegarbage', legend: 'PROCESS' })).toThrow('Unknown Method backlog lane "somegarbage"');
   });
 
   it('loads exact migrated source paths from existing GitHub issue bodies without search indexing', () => {
@@ -131,6 +139,60 @@ describe('backlog GitHub issue migration script', () => {
         stderr: 'rate limited',
       })),
     ).toThrow('Unable to load existing GitHub issues');
+  });
+
+  it('parses frontmatter only when the closing delimiter is exact', () => {
+    const raw = ['---', 'title: Not Frontmatter', '---not-a-close', '# Body', ''].join('\n');
+
+    expect(parseMarkdownDoc(raw)).toEqual({ frontmatter: {}, body: raw });
+  });
+
+  it('keeps raw markdown when YAML frontmatter cannot be parsed', () => {
+    const raw = ['---', 'title: [unterminated', '---', '', '# Body', ''].join('\n');
+
+    expect(parseMarkdownDoc(raw)).toEqual({ frontmatter: {}, body: raw });
+  });
+
+  it('uses paginated GitHub label loading before creating missing labels', () => {
+    const calls: string[][] = [];
+
+    ensureLabels('owner/repo', ['lane:inbox', 'type:bug'], (_command, args) => {
+      calls.push(args);
+      if (args[0] === 'api') {
+        return { ok: true, status: 0, stderr: '', stdout: 'lane:inbox\n' };
+      }
+      return { ok: true, status: 0, stderr: '', stdout: '' };
+    });
+
+    expect(calls[0]).toEqual(expect.arrayContaining(['api', 'repos/owner/repo/labels', '--paginate', '-f', 'per_page=100']));
+    expect(calls[1]).toEqual(expect.arrayContaining(['label', 'create', 'type:bug', '--repo', 'owner/repo']));
+  });
+
+  it('parses issue numbers from gh issue create URLs', () => {
+    const issue = createIssue('owner/repo', { title: 'Card', body: 'Body', labels: ['lane:inbox'] }, () => ({
+      ok: true,
+      status: 0,
+      stderr: '',
+      stdout: 'https://github.com/owner/repo/issues/42?created=1\n',
+    }));
+
+    expect(issue).toMatchObject({
+      number: 42,
+      title: 'Card',
+      url: 'https://github.com/owner/repo/issues/42?created=1',
+      state: 'OPEN',
+    });
+  });
+
+  it('fails closed when gh issue create output does not contain an issue number', () => {
+    expect(() =>
+      createIssue('owner/repo', { title: 'Card', body: 'Body', labels: ['lane:inbox'] }, () => ({
+        ok: true,
+        status: 0,
+        stderr: '',
+        stdout: 'https://github.com/owner/repo/pulls/nope\n',
+      })),
+    ).toThrow('Could not parse issue number from gh issue create output');
   });
 
   it('renders dry-run style JSON without shelling out to GitHub', () => {
