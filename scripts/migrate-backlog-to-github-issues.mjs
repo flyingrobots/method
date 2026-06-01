@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join, relative, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { parse as parseYaml } from 'yaml';
 
 const DEFAULT_BACKLOG_ROOT = 'docs/method/backlog';
@@ -13,15 +14,26 @@ const LABELS = new Map([
   ['lane:bad-code', ['FFDFBA', 'Known debt, rot, or structural risk.']],
   ['lane:cool-ideas', ['D5E8D4', 'Interesting but not committed work.']],
   ['lane:release', ['E1D5E7', 'Release-scoped work; pair with a milestone.']],
+  ['work-in-progress', ['FBCA04', 'Someone is actively working this issue.']],
+  ['blocked', ['D93F0B', 'Blocked; cannot proceed without external input or dependency.']],
+  ['needs-design', ['5319E7', 'Needs or is missing a Method design artifact.']],
+  ['needs-playback', ['1D76DB', 'Needs playback review or verification.']],
+  ['needs-witness', ['006B75', 'Needs reproducible witness evidence.']],
+  ['needs-retro', ['7057FF', 'Needs Method retro/closeout evidence.']],
   ['legend:process', ['1D76DB', 'Method process, workflow, adapters, and CLI work.']],
   ['legend:synth', ['5319E7', 'Synthesis, signposts, executive summaries, provenance.']],
   ['legend:core', ['0052CC', 'Core Method runtime/domain behavior.']],
   ['priority:high', ['D93F0B', 'High priority.']],
   ['priority:medium', ['FBCA04', 'Medium priority.']],
   ['priority:low', ['C2E0C6', 'Low priority.']],
+  ['type:bug', ['D73A4A', 'Defect or regression.']],
+  ['type:enhancement', ['A2EEEF', 'Feature or improvement.']],
+  ['type:docs', ['0075CA', 'Documentation work.']],
   ['type:spike', ['C5DEF5', 'Temporary proof or learning cycle.']],
   ['type:maintenance', ['BFDADC', 'Maintenance, cleanup, or operational workflow work.']],
 ]);
+
+const CANONICAL_LABELS = [...LABELS.keys()];
 
 function main() {
   const args = parseArgs(process.argv.slice(2));
@@ -38,13 +50,14 @@ function main() {
   }
 
   const cards = collectBacklogCards(root, backlogRoot);
+  const existingIssues = loadExistingIssueMap(repo);
   if (!dryRun) {
-    ensureLabels(repo, [...new Set(cards.flatMap((card) => card.labels))]);
+    ensureLabels(repo, CANONICAL_LABELS);
   }
 
   const results = [];
   for (const card of cards) {
-    const existing = findExistingIssue(repo, card.relativePath);
+    const existing = existingIssues.get(card.relativePath);
     if (existing !== undefined) {
       results.push({ action: 'skip-existing', card, issue: existing });
       continue;
@@ -222,7 +235,7 @@ function labelsFor({ lane, legend, priority }) {
 
 function renderIssueBody({ relativePath, lane, legend, priority, title, originalBody }) {
   const metadata = [
-    `Source backlog: \`${relativePath}\``,
+    sourceBacklogMarker(relativePath),
     `Original lane: \`${lane}\``,
     legend === undefined ? undefined : `Original legend: \`${legend}\``,
     priority === undefined ? undefined : `Original priority: \`${priority}\``,
@@ -255,27 +268,59 @@ function ensureLabels(repo, labels) {
   }
 }
 
-function findExistingIssue(repo, relativePath) {
-  const search = `"${relativePath}" in:body`;
-  const result = run(
+function loadExistingIssueMap(repo, runner) {
+  const commandRunner = runner ?? run;
+  const result = commandRunner(
     'gh',
-    ['issue', 'list', '--repo', repo, '--state', 'all', '--search', search, '--limit', '10', '--json', 'number,title,url,state'],
-    { allowFailure: true },
+    [
+      'api',
+      `repos/${repo}/issues`,
+      '--method',
+      'GET',
+      '--paginate',
+      '-f',
+      'state=all',
+      '-f',
+      'per_page=100',
+      '--jq',
+      '.[] | select(.pull_request == null) | {number,title,url:.html_url,state,body}',
+    ],
   );
   if (!result.ok) {
-    return undefined;
+    throw new Error(`Unable to load existing GitHub issues for ${repo}; aborting to avoid duplicate migration issues.`);
   }
-  const matches = JSON.parse(result.stdout);
-  const exact = matches.find((issue) => typeof issue.url === 'string');
-  if (exact === undefined) {
-    return undefined;
+  const issues = parseJsonLines(result.stdout);
+  const bySourcePath = new Map();
+  for (const issue of issues) {
+    const body = typeof issue.body === 'string' ? issue.body : '';
+    for (const relativePath of sourceBacklogPaths(body)) {
+      if (!bySourcePath.has(relativePath)) {
+        bySourcePath.set(relativePath, {
+          number: issue.number,
+          title: issue.title,
+          url: issue.url,
+          state: issue.state,
+        });
+      }
+    }
   }
-  return {
-    number: exact.number,
-    title: exact.title,
-    url: exact.url,
-    state: exact.state,
-  };
+  return bySourcePath;
+}
+
+function parseJsonLines(raw) {
+  return raw
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => JSON.parse(line));
+}
+
+function sourceBacklogMarker(relativePath) {
+  return `Source backlog: \`${relativePath}\``;
+}
+
+function sourceBacklogPaths(body) {
+  return [...body.matchAll(/Source backlog: `([^`]+)`/gu)].map((match) => match[1]).filter(Boolean);
 }
 
 function createIssue(repo, card) {
@@ -296,6 +341,9 @@ function createIssue(repo, card) {
 }
 
 function run(command, args, options = {}) {
+  if (options.runner !== undefined) {
+    return options.runner(command, args, options);
+  }
   const result = spawnSync(command, args, {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -347,4 +395,19 @@ function fail(message) {
   process.exit(1);
 }
 
-main();
+export {
+  CANONICAL_LABELS,
+  collectBacklogCards,
+  labelsFor,
+  loadExistingIssueMap,
+  parseMarkdownDoc,
+  renderIssueBody,
+  renderJson,
+  sourceBacklogMarker,
+  sourceBacklogPaths,
+  titleCase,
+};
+
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
+}

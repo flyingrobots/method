@@ -2,8 +2,8 @@ name: Bug report
 description: Report a Method defect or regression.
 title: ""
 labels:
-  - bug
   - lane:inbox
+  - type:bug
 body:
   - type: textarea
     id: observed

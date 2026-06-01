@@ -76,7 +76,7 @@ gitGraph
     commit id: "make tests pass"
     commit id: "close cycle"
     checkout main
-    merge cycles/PROCESS_my-feature id: "PR merge"
+    merge my-feature id: "PR merge"
     commit id: "ship sync"
 ```
 
@@ -151,7 +151,7 @@ runbook.
 
 ### Capture ideas immediately
 
-If work-worthy idea surfaces during work, capture it now as a GitHub
+If a work-worthy idea surfaces during work, capture it now as a GitHub
 Issue. Do not leave it in chat or assume you'll remember it later.
 
 ```bash

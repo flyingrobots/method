@@ -3,37 +3,22 @@ description: Propose shaped Method work with a hill, scope, and witness plan.
 title: ""
 labels:
   - lane:inbox
+  - type:enhancement
 body:
   - type: markdown
     attributes:
       value: |
         Use a short, branch-safe title. Active work uses a branch slug derived from this title.
-  - type: dropdown
-    id: lane
+        Labels are canonical tracker metadata. If you want a lane or legend other than inbox triage,
+        request it below; a maintainer or agent must apply the actual label.
+  - type: textarea
+    id: requested-classification
     attributes:
-      label: Lane
-      description: The Method lane for this work.
-      options:
-        - lane:inbox
-        - lane:asap
-        - lane:bad-code
-        - lane:cool-ideas
-        - lane:release
-      default: 0
-    validations:
-      required: true
-  - type: dropdown
-    id: legend
-    attributes:
-      label: Legend
-      description: Repo-local Method legend.
-      options:
-        - legend:process
-        - legend:synth
-        - legend:core
-      default: 0
-    validations:
-      required: true
+      label: Requested classification
+      description: Optional triage request. This does not set canonical labels.
+      placeholder: |
+        Suggested lane:
+        Suggested legend:
   - type: textarea
     id: hill
     attributes:

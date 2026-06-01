@@ -28,7 +28,7 @@ npm install @flyingrobots/method
 method init .
 
 # Capture an idea
-method inbox "Add dark mode support" --legend PROCESS
+gh issue create --title "Add dark mode support" --label lane:inbox
 
 # Check workspace health
 method doctor
@@ -41,7 +41,7 @@ gh issue list --label lane:asap
 
 | Document | What it covers |
 |----------|---------------|
-| [`docs/PROCESS.md`](docs/PROCESS.md) | Cycle doctrine — how work flows from backlog to shipped |
+| [`docs/PROCESS.md`](docs/PROCESS.md) | Cycle doctrine — how work flows from issue to shipped |
 | [`docs/RELEASE.md`](docs/RELEASE.md) | Release doctrine and runbook |
 | [`docs/GUIDE.md`](docs/GUIDE.md) | Operator advice and getting started |
 | [`docs/CLI.md`](docs/CLI.md) | CLI command reference |

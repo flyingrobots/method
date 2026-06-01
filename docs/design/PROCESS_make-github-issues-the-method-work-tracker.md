@@ -2,6 +2,7 @@
 title: "Make GitHub Issues The Method Work Tracker"
 legend: PROCESS
 cycle: "PROCESS_make-github-issues-the-method-work-tracker"
+github_issue_url: "https://github.com/flyingrobots/method/issues/27"
 ---
 
 # Make GitHub Issues The Method Work Tracker
@@ -65,9 +66,9 @@ short, sane, branch-safe, and contributor-readable.
 
 ### Decision 4: Filesystem backlog becomes legacy/migration surface
 
-Existing backlog files are not deleted in this cycle. They remain as
-migration input until a migration command or manual migration pass
-creates corresponding GitHub Issues and archives/stubs the old files.
+Existing live backlog files are archived after their corresponding
+GitHub Issues are created. They remain available as historical evidence,
+but not in live backlog lanes.
 
 ## Migration Plan
 
@@ -80,8 +81,8 @@ creates corresponding GitHub Issues and archives/stubs the old files.
 4. Migrate live Method backlog cards into GitHub Issues with source-file
    provenance in the issue body using
    `scripts/migrate-backlog-to-github-issues.mjs` or `npm run migrate`.
-5. Archive or stub migrated backlog cards so they stop acting as a
-   second live tracker.
+5. Archive migrated backlog cards under the Method graveyard so they
+   stop acting as a second live tracker.
 6. Leave historical graveyard files read-only until a separate cleanup
    decision says whether to archive or import them.
 
