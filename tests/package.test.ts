@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -8,9 +9,12 @@ const REPO_ROOT = resolve(__dirname, '..');
 
 type PackFile = { path: string };
 type PackResult = { files: PackFile[]; filename: string };
+type PackageJson = { name: string; version: string };
 
 describe('METHOD package', () => {
   it('packs only the built runtime surface and essential metadata', () => {
+    const packageJson = JSON.parse(readFileSync(resolve(REPO_ROOT, 'package.json'), 'utf8')) as PackageJson;
+    const packageFileStem = packageJson.name.replace(/^@/u, '').replace('/', '-');
     const output = execFileSync('npm', ['pack', '--dry-run', '--json'], {
       cwd: REPO_ROOT,
       encoding: 'utf8',
@@ -22,7 +26,7 @@ describe('METHOD package', () => {
     const pack = parsed[0];
     const packedPaths = pack.files.map((entry) => entry.path).sort((left, right) => left.localeCompare(right));
 
-    expect(pack.filename).toBe('flyingrobots-method-2.0.0.tgz');
+    expect(pack.filename).toBe(`${packageFileStem}-${packageJson.version}.tgz`);
     expect(packedPaths).toContain('package.json');
     expect(packedPaths).toContain('README.md');
     expect(packedPaths).toContain('CHANGELOG.md');

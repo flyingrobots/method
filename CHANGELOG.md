@@ -4,6 +4,45 @@
 
 - No externally meaningful changes recorded yet.
 
+## v2.1.0
+
+### Added
+
+- GitHub Issues are now the canonical live work tracker for Method
+  repositories, with repository files retained as the durable evidence
+  ledger.
+- GitHub issue templates for work items, bugs, and spikes.
+- Pull request template linking GitHub issue tracking to Method
+  evidence.
+- `npm run migrate` / `scripts/migrate-backlog-to-github-issues.mjs`
+  for migrating legacy filesystem backlog lane cards into GitHub
+  Issues.
+- Migration archive for Method's former live backlog cards.
+- Tests covering backlog migration idempotency, canonical labels,
+  source-path normalization, parser behavior, and issue creation
+  failure modes.
+- User-facing release notes and internal release packet for `v2.1.0`.
+
+### Changed
+
+- PROCESS, GUIDE, README, and CONTRIBUTING now describe GitHub Issues as
+  the live tracker and repo files as Method evidence.
+- Cycle branches now use linked issue-title slugs.
+- Legacy filesystem backlog commands are documented as compatibility and
+  migration surfaces rather than the new authority model.
+- Issue templates now ask for abstract sponsored perspectives, explicit
+  witness plans, and Method artifact links.
+
+### Fixed
+
+- Production dependency alerts from the prior default branch state are
+  fixed in `package-lock.json`.
+- Migration fails closed on duplicate source markers, GitHub
+  existing-issue loading failures, unknown lanes, and malformed
+  `gh issue create` output.
+- Legacy `up-next` backlog cards map to canonical `lane:asap` instead
+  of emitting non-canonical `lane:up-next`.
+
 ## v2.0.0
 
 ### Breaking Changes
