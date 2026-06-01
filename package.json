@@ -13,7 +13,7 @@
     "NOTICE"
   ],
   "bin": {
-    "method": "./dist/cli.js"
+    "method": "dist/cli.js"
   },
   "scripts": {
     "build": "rm -rf dist && tsc -p tsconfig.json",
