@@ -70,13 +70,13 @@ flowchart LR
 ```mermaid
 gitGraph
     commit id: "main"
-    branch my-feature
+    branch foo-feature-needs-external-bar-integration
     commit id: "design doc"
     commit id: "failing tests"
     commit id: "make tests pass"
     commit id: "close cycle"
     checkout main
-    merge my-feature id: "PR merge"
+    merge foo-feature-needs-external-bar-integration id: "PR merge"
     commit id: "ship sync"
 ```
 

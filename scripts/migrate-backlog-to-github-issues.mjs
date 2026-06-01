@@ -164,7 +164,7 @@ function sortedDirNames(dir) {
 function readBacklogCard(root, backlogRoot, laneName, fullPath) {
   const raw = readFileSync(fullPath, 'utf8');
   const parsed = parseMarkdownDoc(raw);
-  const relativePath = relative(root, fullPath);
+  const relativePath = normalizeSourcePath(relative(root, fullPath));
   const stem = basename(fullPath, '.md');
   const filenameLegend = stem.includes('_') ? stem.split('_')[0] : undefined;
   const filenameSlug = stem.includes('_') ? stem.slice(stem.indexOf('_') + 1) : stem;
@@ -294,7 +294,13 @@ function loadExistingIssueMap(repo, runner) {
   for (const issue of issues) {
     const body = typeof issue.body === 'string' ? issue.body : '';
     for (const relativePath of sourceBacklogPaths(body)) {
-      if (!bySourcePath.has(relativePath)) {
+      const existing = bySourcePath.get(relativePath);
+      if (existing !== undefined && existing.number !== issue.number) {
+        throw new Error(
+          `Duplicate Source backlog marker ${relativePath}: issue #${existing.number} ${existing.url} conflicts with issue #${issue.number} ${issue.url}`,
+        );
+      }
+      if (existing === undefined) {
         bySourcePath.set(relativePath, {
           number: issue.number,
           title: issue.title,
@@ -320,7 +326,14 @@ function sourceBacklogMarker(relativePath) {
 }
 
 function sourceBacklogPaths(body) {
-  return [...body.matchAll(/Source backlog: `([^`]+)`/gu)].map((match) => match[1]).filter(Boolean);
+  return [...body.matchAll(/Source backlog: `([^`]+)`/gu)]
+    .map((match) => match[1])
+    .filter(Boolean)
+    .map((relativePath) => normalizeSourcePath(relativePath));
+}
+
+function normalizeSourcePath(relativePath) {
+  return relativePath.replace(/\\/gu, '/');
 }
 
 function createIssue(repo, card) {
@@ -403,6 +416,7 @@ export {
   parseMarkdownDoc,
   renderIssueBody,
   renderJson,
+  normalizeSourcePath,
   sourceBacklogMarker,
   sourceBacklogPaths,
   titleCase,

@@ -9,6 +9,7 @@ import {
   loadExistingIssueMap,
   renderJson,
   sourceBacklogMarker,
+  sourceBacklogPaths,
 } from '../scripts/migrate-backlog-to-github-issues.mjs';
 
 const tempDirs: string[] = [];
@@ -87,6 +88,38 @@ describe('backlog GitHub issue migration script', () => {
       url: 'https://github.com/owner/repo/issues/7',
       state: 'OPEN',
     });
+  });
+
+  it('normalizes source backlog paths before comparing migration identity', () => {
+    expect(sourceBacklogPaths('Source backlog: `docs\\method\\backlog\\cool-ideas\\PROCESS_card.md`')).toEqual([
+      'docs/method/backlog/cool-ideas/PROCESS_card.md',
+    ]);
+  });
+
+  it('fails closed when two issues claim the same migrated source path', () => {
+    expect(() =>
+      loadExistingIssueMap('owner/repo', () => ({
+        ok: true,
+        status: 0,
+        stderr: '',
+        stdout: [
+          JSON.stringify({
+            number: 7,
+            title: 'First migrated card',
+            url: 'https://github.com/owner/repo/issues/7',
+            state: 'OPEN',
+            body: sourceBacklogMarker('docs/method/backlog/cool-ideas/PROCESS_card.md'),
+          }),
+          JSON.stringify({
+            number: 8,
+            title: 'Duplicate migrated card',
+            url: 'https://github.com/owner/repo/issues/8',
+            state: 'OPEN',
+            body: sourceBacklogMarker('docs/method/backlog/cool-ideas/PROCESS_card.md'),
+          }),
+        ].join('\n'),
+      })),
+    ).toThrow('Duplicate Source backlog marker docs/method/backlog/cool-ideas/PROCESS_card.md');
   });
 
   it('fails closed when existing issue loading fails', () => {
