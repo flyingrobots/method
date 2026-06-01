@@ -21,13 +21,17 @@ npm test
 
 ## Making Changes
 
-1. **Check the backlog.** Run `method status` to see what is in
-   `inbox/`, `asap/`, `up-next/`, and `cool-ideas/`.
-2. **Open an issue** if you want to propose new work or discuss an
-   existing backlog item before starting.
-3. **Create a cycle branch** from `main`: `cycles/####-slug`.
-4. **Follow the loop.** Design, RED, GREEN, playback, close, PR.
-5. **Open a pull request** against `main` with the full cycle packet
+1. **Start from GitHub Issues.** Work is tracked in repo-local GitHub
+   Issues, not local backlog files. Use Method lane labels such as
+   `lane:inbox`, `lane:asap`, `lane:bad-code`, and `lane:cool-ideas`.
+2. **Normalize the issue title before starting.** Issue titles should be
+   short, branch-safe, and contributor-readable.
+3. **Mark active work.** Add `work-in-progress` when you start so other
+   contributors and agents know the issue is claimed.
+4. **Create a branch from the issue title slug** from `main`, for
+   example `foo-feature-needs-external-bar-integration`.
+5. **Follow the loop.** Design, RED, GREEN, playback, close, PR.
+6. **Open a pull request** against `main` with the full Method evidence
    (design doc, tests, implementation, retro, witness).
 
 ## Code Style

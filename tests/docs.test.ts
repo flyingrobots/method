@@ -13,6 +13,7 @@ function readRepoFile(relativePath: string): string {
 function readBacklogDoc(filename: string): string {
   const matches = [
     ...walkMarkdownFiles('docs/method/backlog'),
+    ...walkMarkdownFiles('docs/method/graveyard/github-issue-migration'),
     ...walkMarkdownFiles('docs/design'),
     ...walkMarkdownFiles('docs/releases'),
   ].filter((relativePath) => relativePath.endsWith(`/${filename}`));
@@ -424,7 +425,7 @@ describe('METHOD docs', () => {
 
   it('docs/PROCESS.md contains the branching and commitment rules.', () => {
     const process = readRepoFile('docs/PROCESS.md');
-    expect(process).toContain('cycles/<LEGEND>_<slug>');
+    expect(process).toContain('linked issue title slug');
     expect(process).toContain('stage and commit all modified files');
   });
 
@@ -433,9 +434,9 @@ describe('METHOD docs', () => {
     expect(process).toContain('## Workflow');
   });
 
-  it('`docs.test.ts` validates that the policy includes specific naming patterns (e.g., `<LEGEND>_<slug>`).', () => {
+  it('`docs.test.ts` validates that the policy includes specific naming patterns (e.g., issue-title slugs).', () => {
     const process = readRepoFile('docs/PROCESS.md');
-    expect(process).toContain('<LEGEND>_<slug>');
+    expect(process).toContain('foo-feature-needs-external-bar-integration');
     expect(process).toContain('maint-slug');
   });
 
@@ -664,17 +665,17 @@ describe('METHOD docs', () => {
     expect(runbook).toContain('Never guess. Never claim success');
   });
 
-  it('Branch naming uses one canonical pattern in docs/PROCESS.md, with no contradictory examples.', () => {
+  it('Branch naming uses one canonical issue-title-slug pattern in docs/PROCESS.md, with no contradictory examples.', () => {
     const process = readRepoFile('docs/PROCESS.md');
 
-    expect(process).toContain('cycles/<LEGEND>_<slug>');
+    expect(process).toContain('linked issue title slug');
 
-    // process.md Rules section must use cycles/<LEGEND>_<slug>, not bare cycles/<cycle_name>
+    // process.md must not retain the old cycle-name branch placeholders.
     expect(process).not.toContain('cycles/<cycle_name>');
+    expect(process).not.toContain('cycles/<LEGEND>_<slug>');
 
-    // Branch naming section must show cycles/ prefix
-    expect(process).toContain('cycles/');
-    expect(process).toContain('`cycles/<LEGEND>_<slug>`');
+    // Branch naming section must show the issue-title slug pattern.
+    expect(process).toContain('`foo-feature-needs-external-bar-integration`');
   });
 
   it('The RED step in docs/PROCESS.md names playback questions as the test driver.', () => {

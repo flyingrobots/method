@@ -1,0 +1,94 @@
+name: Method work item
+description: Propose shaped Method work with a hill, scope, and witness plan.
+title: ""
+labels:
+  - lane:inbox
+  - type:enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use a short, branch-safe title. Active work uses a branch slug derived from this title.
+        Labels are canonical tracker metadata. If you want a lane or legend other than inbox triage,
+        request it below; a maintainer or agent must apply the actual label.
+  - type: textarea
+    id: requested-classification
+    attributes:
+      label: Requested classification
+      description: Optional triage request. This does not set canonical labels.
+      placeholder: |
+        Suggested lane:
+        Suggested legend:
+  - type: textarea
+    id: hill
+    attributes:
+      label: Hill
+      description: Name the user value in Method/IBM Design Thinking style.
+      placeholder: As a contributor, I want ..., so that ...
+    validations:
+      required: true
+  - type: textarea
+    id: sponsored-perspectives
+    attributes:
+      label: Sponsored perspectives
+      description: Name abstract human and agent seats, not literal people or model brands.
+      value: |
+        Human:
+        Agent:
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What repo truth, user need, or defect motivates this work?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: What is in bounds?
+      placeholder: |
+        - ...
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: What should not be solved in this issue?
+      placeholder: |
+        - ...
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Concrete checks that prove the issue is complete.
+      placeholder: |
+        - [ ] ...
+    validations:
+      required: true
+  - type: textarea
+    id: witness
+    attributes:
+      label: Witness plan
+      description: Expected evidence for tests, playback, docs, and retro.
+      value: |
+        Expected evidence:
+        - tests:
+        - playback:
+        - docs:
+        - retro:
+    validations:
+      required: true
+  - type: textarea
+    id: method-artifacts
+    attributes:
+      label: Method artifacts
+      description: Fill these links as the work proceeds.
+      value: |
+        Design:
+        Witness:
+        Retro:
+        PR:

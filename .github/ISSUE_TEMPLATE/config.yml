@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Method process overview
+    url: https://github.com/flyingrobots/method/blob/main/docs/PROCESS.md
+    about: Read the Method workflow before opening work.
