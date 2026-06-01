@@ -2,7 +2,6 @@
 title: "Make GitHub Issues The Method Work Tracker"
 legend: PROCESS
 cycle: "PROCESS_make-github-issues-the-method-work-tracker"
-branch: "make-github-issues-the-method-work-tracker"
 ---
 
 # Make GitHub Issues The Method Work Tracker

@@ -424,7 +424,7 @@ describe('METHOD docs', () => {
 
   it('docs/PROCESS.md contains the branching and commitment rules.', () => {
     const process = readRepoFile('docs/PROCESS.md');
-    expect(process).toContain('cycles/<LEGEND>_<slug>');
+    expect(process).toContain('linked issue title slug');
     expect(process).toContain('stage and commit all modified files');
   });
 
