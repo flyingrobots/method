@@ -84,8 +84,9 @@ repair it before continuing.
 
 ## Workflow
 
-METHOD uses Git for distributed coordination. GitHub Issues are the
-default live tracker for work in this implementation.
+METHOD remains forge-agnostic in doctrine: it uses Git for distributed
+coordination. GitHub Issues are the default live tracker for work in this
+implementation.
 
 ### Branch Naming
 
