@@ -31,10 +31,12 @@ body:
     id: sponsored-perspectives
     attributes:
       label: Sponsored perspectives
-      description: Name abstract human and agent seats, not literal people or model brands.
+      description: Name abstract sponsored human and agent seats, not literal people or model brands.
       value: |
-        Human:
-        Agent:
+        - Sponsored Human: Name the served operator, maintainer, contributor, or user perspective.
+        - Sponsored Agent: Name the automation, implementation, review, or reproducibility perspective.
+
+        These are Method sponsorship seats, not literal people, accounts, or model brands.
     validations:
       required: true
   - type: textarea
@@ -75,11 +77,17 @@ body:
       label: Witness plan
       description: Expected evidence for tests, playback, docs, and retro.
       value: |
-        Expected evidence:
-        - tests:
-        - playback:
-        - docs:
-        - retro:
+        ### Tests
+        Name the deterministic test command, failing-before-fix reproduction, or reason no code test applies.
+
+        ### Playback
+        Name the human-visible playback, demo, transcript, or reproduction that proves the result.
+
+        ### Docs
+        Name the documentation, issue template, signpost, or changelog surface updated, or explain why none is required.
+
+        ### Retro / Closeout
+        Name the closeout note, follow-up issue links, shipped retro, or close reason that will preserve the decision.
     validations:
       required: true
   - type: textarea
@@ -88,7 +96,7 @@ body:
       label: Method artifacts
       description: Fill these links as the work proceeds.
       value: |
-        Design:
-        Witness:
-        Retro:
-        PR:
+        - Design: Link `docs/design/<LEGEND>-<issue>-<slug>.md`, or state why issue-only triage is sufficient.
+        - Witness: Link committed witness evidence or the issue/PR comment that records verification.
+        - Retro: Link the retro/closeout artifact or the issue close comment.
+        - PR: Link the pull request before closing implementation work.

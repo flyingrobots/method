@@ -4,8 +4,8 @@ title: "Invariant: Role and Perspective Abstractness"
 
 ## What must remain true?
 
-When METHOD says `Human`, `Agent`, or `User`, it means an abstract role
-or perspective, not a specific individual, account, model brand, or
+When METHOD says `Sponsored Human`, `Sponsored Agent`, `Human`, `Agent`,
+or `User`, it means an abstract role or perspective, not a specific individual, account, model brand, or
 running agent instance.
 
 ## Why does it matter?
@@ -23,7 +23,8 @@ present during authorship, review, or playback.
 
 ## How do you check?
 
-- Design documents name sponsors as roles (e.g., "Human: System Architect").
+- Design documents and issue cards name sponsors as roles (e.g.,
+  "Sponsored Human: System Architect").
 - Doctrine uses `human`, `agent`, and `user` to describe seats or
   perspectives in the workflow, not literal identities.
 - No literal personal names or specific agent brand names are used in
